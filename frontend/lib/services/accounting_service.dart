@@ -1,0 +1,77 @@
+import 'http_service.dart';
+
+class AccountingService {
+  final HttpService _http = HttpService();
+
+  Future<List<dynamic>> getCatalogo() async {
+    return await _http.get('contabilidad/catalogo', params: {'plano': '1'});
+  }
+
+  Future<List<dynamic>> getAsientos() async {
+    return await _http.get('contabilidad/asientos');
+  }
+
+  Future<void> deleteAsiento(int id) async {
+    await _http.delete('contabilidad/asientos/$id');
+  }
+
+  Future<List<dynamic>> getBancos() async {
+    return await _http.get('contabilidad/bancos');
+  }
+
+  Future<Map<String, dynamic>> getEstadoResultados({int? proyectoId}) async {
+    final Map<String, String> params = {};
+    if (proyectoId != null) params['proyecto_id'] = proyectoId.toString();
+    return await _http.get('contabilidad/estado-resultados', params: params);
+  }
+
+  Future<List<dynamic>> getCuentasPorCobrar() async {
+    return await _http.get('cuentas-por-cobrar');
+  }
+
+  Future<List<dynamic>> getCuentasPorPagar() async {
+    return await _http.get('cuentas-por-pagar');
+  }
+
+  Future<void> createPago(Map<String, dynamic> data, {dynamic file}) async {
+    if (file != null) {
+      final fields = data.map((key, value) => MapEntry(key, value.toString()));
+      await _http.multipart('pagos', fields: fields, files: [file]);
+    } else {
+      await _http.post('pagos', data);
+    }
+  }
+
+  Future<List<dynamic>> getAllPagosHistorial() async {
+    return await _http.get('pagos-historial');
+  }
+
+  Future<void> registrarPagoCompra(Map<String, dynamic> data) async {
+    await _http.post('pagos-compras', data);
+  }
+
+  Future<void> deleteComprobantePago(int id) async {
+    await _http.delete('pagos/$id/comprobante');
+  }
+
+  Future<List<dynamic>> getObligaciones() async {
+    return await _http.get('contabilidad/obligaciones');
+  }
+
+  Future<void> pagarObligacion(Map<String, dynamic> data) async {
+    await _http.post('contabilidad/obligaciones/pagar', data);
+  }
+
+  Future<List<dynamic>> getHistorialPagosObligaciones({
+    String? startDate,
+    String? endDate,
+  }) async {
+    final Map<String, String> params = {};
+    if (startDate != null) params['start_date'] = startDate;
+    if (endDate != null) params['end_date'] = endDate;
+    return await _http.get(
+      'contabilidad/obligaciones/historial',
+      params: params,
+    );
+  }
+}
