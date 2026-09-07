@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/app_theme.dart';
 import '../../../../core/constants.dart';
@@ -20,6 +21,10 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
   List<CxcAlertaModel> _alertasPendientes = [];
   List<CxcAlertaModel> _alertasProcesadas = [];
   bool _isLoading = true;
+
+  String _formatCurrency(double amount) {
+    return NumberFormat.currency(locale: 'en_US', symbol: '\$').format(amount);
+  }
 
   @override
   void initState() {
@@ -225,336 +230,276 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: alertas.length,
-        itemBuilder: (_, i) =>
-            _buildAlertaCard(alertas[i], isPendiente: isPendiente),
-      ),
+    final double totalSuma = alertas.fold(
+      0.0,
+      (sum, a) => sum + (a.montoInformado ?? 0.0),
+    );
+
+    return Column(
+      children: [
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _load,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  dataRowMinHeight: 48,
+                  dataRowMaxHeight: 70,
+                  columnSpacing: 24,
+                  headingTextStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueGrey,
+                  ),
+                  columns: const [
+                    DataColumn(label: Text('FECHA')),
+                    DataColumn(label: Text('CLIENTE')),
+                    DataColumn(label: Text('CONCEPTO')),
+                    DataColumn(label: Text('FACTURA')),
+                    DataColumn(label: Text('MONTO')),
+                    DataColumn(label: Text('ACCIONES')),
+                  ],
+                  rows: alertas
+                      .map((alerta) => _buildDataRow(alerta, isPendiente))
+                      .toList(),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: Colors.grey.shade300)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isPendiente ? 'Total Pendiente:' : 'Total Procesado:',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                _formatCurrency(totalSuma),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildAlertaCard(CxcAlertaModel alerta, {required bool isPendiente}) {
+  DataRow _buildDataRow(CxcAlertaModel alerta, bool isPendiente) {
     final tipo = alerta.tipo;
-    final vendedor = alerta.vendedor;
     final cxc = alerta.cxc;
     final cliente = cxc?.cliente;
 
     Color tipoColor;
-    IconData tipoIcon;
     switch (tipo) {
       case 'pago_recibido':
         tipoColor = Colors.green;
-        tipoIcon = Icons.payments_rounded;
         break;
       case 'consulta':
         tipoColor = Colors.blue;
-        tipoIcon = Icons.help_outline_rounded;
+        break;
+      case 'credito':
+      case 'debito':
+      case 'devolucion':
+      case 'retencion':
+        tipoColor = Colors.purple;
         break;
       default:
         tipoColor = Colors.orange;
-        tipoIcon = Icons.info_outline_rounded;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: tipoColor.withValues(alpha: 0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header coloreado
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: tipoColor.withValues(alpha: 0.06),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(tipoIcon, color: tipoColor, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  _tipoLabel(tipo),
-                  style: TextStyle(
-                    color: tipoColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  _formatTimestamp(alerta.createdAt),
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
+    final listaEvidencias = <EvidenciaModel>[];
+    final idsVistos = <int>{};
+    for (var ev in alerta.evidencias) {
+      if (!idsVistos.contains(ev.id)) {
+        listaEvidencias.add(ev);
+        idsVistos.add(ev.id);
+      }
+    }
+    if (alerta.cxc?.evidencias != null) {
+      for (var ev in alerta.cxc!.evidencias) {
+        if (!idsVistos.contains(ev.id)) {
+          listaEvidencias.add(ev);
+          idsVistos.add(ev.id);
+        }
+      }
+    }
+
+    return DataRow(
+      cells: [
+        DataCell(Text(_formatTimestamp(alerta.createdAt))),
+        DataCell(Text(cliente?.nombre ?? '-')),
+        DataCell(
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Info del CXC y Cliente
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInfoChip(
-                        Icons.receipt_long_outlined,
-                        cxc?.noFactura ?? '-',
-                        Colors.blueGrey,
-                      ),
-                    ),
-                    if (cliente != null) ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildInfoChip(
-                          Icons.person_outline,
-                          cliente.nombre,
-                          Colors.blueGrey,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Vendedor y Monto
-                Row(
-                  children: [
-                    if (vendedor != null) ...[
-                      const Icon(
-                        Icons.assignment_ind_outlined,
-                        size: 14,
-                        color: Colors.purple,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        vendedor.name,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.purple,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                    const Spacer(),
-                    if (alerta.montoInformado != null) ...[
-                      _buildInfoChip(
-                        Icons.attach_money,
-                        '\$${alerta.montoInformado}',
-                        Colors.green,
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Nota
                 Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF9FAFB),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade200),
+                    color: tipoColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    alerta.nota ?? '',
-                    style: const TextStyle(fontSize: 13, height: 1.4),
+                    _tipoLabel(tipo),
+                    style: TextStyle(
+                      color: tipoColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-
-                // Evidencias
-                // Evidencias
-                Builder(
-                  builder: (context) {
-                    final listaEvidencias = <EvidenciaModel>[];
-                    final idsVistos = <int>{};
-
-                    for (var ev in alerta.evidencias) {
-                      if (!idsVistos.contains(ev.id)) {
-                        listaEvidencias.add(ev);
-                        idsVistos.add(ev.id);
-                      }
-                    }
-                    if (alerta.cxc?.evidencias != null) {
-                      for (var ev in alerta.cxc!.evidencias) {
-                        if (!idsVistos.contains(ev.id)) {
-                          listaEvidencias.add(ev);
-                          idsVistos.add(ev.id);
-                        }
-                      }
-                    }
-
-                    if (listaEvidencias.isEmpty) return const SizedBox.shrink();
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 6,
-                          children: listaEvidencias.map<Widget>((ev) {
-                            return ActionChip(
-                              avatar: Icon(
-                                ev.isImage
-                                    ? Icons.image_outlined
-                                    : Icons.picture_as_pdf,
-                                size: 14,
-                                color: Colors.red,
-                              ),
-                              label: Text(
-                                ev.nombreArchivo,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              backgroundColor: Colors.red.shade50,
-                              padding: EdgeInsets.zero,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              side: BorderSide(color: Colors.red.shade200),
-                              onPressed: () async {
-                                final ruta = ev.rutaArchivo;
-                                if (ruta.isNotEmpty) {
-                                  final url = Uri.parse('$host/storage/$ruta');
-                                  if (await canLaunchUrl(url)) {
-                                    await launchUrl(url);
-                                  } else {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'No se pudo abrir el archivo',
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                }
-                              },
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-
-                // Acciones (solo si pendiente)
-                if (isPendiente) ...[
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () =>
-                              _resolverAlerta(alerta, estadoAlerta: 'revisada'),
-                          icon: const Icon(Icons.visibility_outlined, size: 16),
-                          label: const Text(
-                            'Marcar revisada',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.orange,
-                            side: const BorderSide(color: Colors.orange),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
+                if (alerta.nota != null && alerta.nota!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: 200,
+                    child: Text(
+                      alerta.nota!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _mostrarDialogoProcesar(alerta),
-                          icon: const Icon(Icons.edit_rounded, size: 16),
-                          label: const Text(
-                            'Procesar',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.ledhouseBlue,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Procesada por ${alerta.revisador?.name ?? '-'}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.green,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
+        ),
+        DataCell(Text(cxc?.noFactura ?? '-')),
+        DataCell(
+          Text(
+            alerta.montoInformado != null
+                ? _formatCurrency(alerta.montoInformado!)
+                : '-',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
             ),
           ),
-        ],
-      ),
+        ),
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isPendiente) ...[
+                IconButton(
+                  icon: const Icon(
+                    Icons.visibility_outlined,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
+                  tooltip: 'Marcar revisada',
+                  onPressed: () =>
+                      _resolverAlerta(alerta, estadoAlerta: 'revisada'),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.edit_rounded,
+                    color: Colors.blue,
+                    size: 20,
+                  ),
+                  tooltip: 'Procesar',
+                  onPressed: () => _mostrarDialogoProcesar(alerta),
+                ),
+              ] else ...[
+                Tooltip(
+                  message: 'Procesada por ${alerta.revisador?.name ?? '-'}',
+                  child: const Icon(
+                    Icons.check_circle,
+                    color: Colors.green,
+                    size: 20,
+                  ),
+                ),
+              ],
+              if (listaEvidencias.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(
+                    Icons.attach_file,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                  tooltip: 'Ver evidencias',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Evidencias Adjuntas'),
+                        content: SingleChildScrollView(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: listaEvidencias.map((ev) {
+                              return ActionChip(
+                                avatar: Icon(
+                                  ev.isImage
+                                      ? Icons.image_outlined
+                                      : Icons.picture_as_pdf,
+                                  size: 16,
+                                  color: Colors.red,
+                                ),
+                                label: Text(ev.nombreArchivo),
+                                onPressed: () async {
+                                  final ruta = ev.rutaArchivo;
+                                  if (ruta.isNotEmpty) {
+                                    final url = Uri.parse(
+                                      '$host/storage/$ruta',
+                                    );
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(url);
+                                    }
+                                  }
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Cerrar'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -719,11 +664,26 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
   String _tipoLabel(String tipo) {
     switch (tipo) {
       case 'pago_recibido':
-        return '💰 Pago Recibido';
+        return '💵 Pago Recibido';
+      case 'credito':
+        return '💳 Nota de credito';
+      case 'debito':
+        return '🧾 Nota de débito';
+      case 'devolucion':
+        return '↩️ Devolución';
+      case 'retencion':
+        return '✂️ Retención';
+      case 'diferencia':
+        return '⚖️ Diferencia de Precio';
+      case 'mer_no_entregada':
+        return '📦 Mercancía No Entregada';
+      case 'anular':
+        return '❌ Anular Factura';
       case 'consulta':
         return '❓ Consulta';
+      case 'informacion':
       default:
-        return '📋 Información';
+        return '📝 Información';
     }
   }
 
@@ -731,7 +691,7 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
     if (ts == null) return '';
     try {
       final dt = DateTime.parse(ts).toLocal();
-      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      return DateFormat('dd-MM-yyyy HH:mm').format(dt);
     } catch (_) {
       return ts;
     }

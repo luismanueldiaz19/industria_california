@@ -43,7 +43,8 @@ class CxcAlertaModel {
           ? UserModel.fromJson(json['revisador'])
           : null,
       cxc: json['cxc'] != null ? CxcModel.fromJson(json['cxc']) : null,
-      evidencias: (json['evidencias'] as List?)
+      evidencias:
+          (json['evidencias'] as List?)
               ?.map((e) => EvidenciaModel.fromJson(e))
               .toList() ??
           [],
@@ -89,11 +90,17 @@ class CxcModel {
       id: json['id'] ?? 0,
       noFactura: json['no_factura'] ?? json['documento'] ?? '',
       idClienteExterno: json['id_cliente_externo'],
-      totalFactura: double.tryParse(json['total_factura'].toString() ?? json['monto_factura'].toString()) ?? 0.0,
+      totalFactura:
+          double.tryParse(
+            json['total_factura'].toString() ??
+                json['monto_factura'].toString(),
+          ) ??
+          0.0,
       cliente: json['cliente'] != null
           ? ClienteModel.fromJson(json['cliente'])
           : null,
-      evidencias: (json['evidencias'] as List?)
+      evidencias:
+          (json['evidencias'] as List?)
               ?.map((e) => EvidenciaModel.fromJson(e))
               .toList() ??
           [],
@@ -136,6 +143,7 @@ class EvidenciaModel {
       tipoArchivo: json['tipo_archivo'] ?? '',
     );
   }
-  
-  bool get isImage => ['jpg', 'jpeg', 'png'].contains(tipoArchivo.toLowerCase());
+
+  bool get isImage =>
+      ['jpg', 'jpeg', 'png'].contains(tipoArchivo.toLowerCase());
 }

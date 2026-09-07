@@ -381,7 +381,7 @@ class LedhouseCxcController extends Controller
         }
 
         $validated = $request->validate([
-            'tipo'            => 'required|in:pago_recibido,informacion,consulta',
+            'tipo'            => 'required|string|max:50',
             'monto_informado' => 'nullable|numeric|min:0',
             'nota'            => 'required|string|max:1000',
         ]);
@@ -437,7 +437,7 @@ class LedhouseCxcController extends Controller
             }
         }
 
-        return response()->json($alerta->load(['vendedor', 'revisadaPor']));
+        return response()->json($alerta->load(['vendedor', 'revisador']));
     }
 
     // ─────────────────────────────────────────────────────────────

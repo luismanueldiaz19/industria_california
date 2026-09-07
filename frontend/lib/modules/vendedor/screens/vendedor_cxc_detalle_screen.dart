@@ -10,7 +10,8 @@ class VendedorCxcDetalleScreen extends StatefulWidget {
   const VendedorCxcDetalleScreen({super.key, required this.cxcData});
 
   @override
-  State<VendedorCxcDetalleScreen> createState() => _VendedorCxcDetalleScreenState();
+  State<VendedorCxcDetalleScreen> createState() =>
+      _VendedorCxcDetalleScreenState();
 }
 
 class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
@@ -51,11 +52,13 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
       _montoController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Row(children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Alerta enviada a contabilidad'),
-          ]),
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Alerta enviada a contabilidad'),
+            ],
+          ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
         ),
@@ -92,11 +95,13 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Row(children: [
-            Icon(Icons.attach_file, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Evidencia subida correctamente'),
-          ]),
+          content: Row(
+            children: [
+              Icon(Icons.attach_file, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Evidencia subida correctamente'),
+            ],
+          ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
         ),
@@ -119,13 +124,16 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
     Color estadoColor = estado == 'pagado'
         ? Colors.green
         : estado == 'cancelado'
-            ? Colors.red
-            : Colors.orange;
+        ? Colors.red
+        : Colors.orange;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4FF),
       appBar: AppBar(
-        title: Text(cxc['documento'] ?? 'Detalle', style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          cxc['documento'] ?? 'Detalle',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: _blue,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -138,21 +146,39 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
           children: [
             // Tarjeta principal
             Container(
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
               child: Column(
                 children: [
                   // Barra de estado
                   Container(
                     decoration: BoxDecoration(
                       color: estadoColor,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 20,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(estado.toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        const Icon(Icons.receipt_long, color: Colors.white, size: 20),
+                        Text(
+                          estado.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Icon(
+                          Icons.receipt_long,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ],
                     ),
                   ),
@@ -160,14 +186,40 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        _buildInfoRow(Icons.person_outline, 'Cliente', cxc['cliente']?['nombre'] ?? '-'),
+                        _buildInfoRow(
+                          Icons.person_outline,
+                          'Cliente',
+                          cxc['cliente']?['nombre'] ?? '-',
+                        ),
                         const Divider(height: 20),
-                        _buildInfoRow(Icons.attach_money, 'Monto Factura', '\$${cxc['monto_factura'] ?? '0.00'}'),
-                        _buildInfoRow(Icons.money_off, 'Monto Pendiente', '\$${cxc['monto_pendiente'] ?? '0.00'}', valueColor: Colors.orange),
-                        _buildInfoRow(Icons.check_circle_outline, 'Monto Pagado', '\$${cxc['monto_pagado'] ?? '0.00'}', valueColor: Colors.green),
+                        _buildInfoRow(
+                          Icons.attach_money,
+                          'Monto Factura',
+                          '\$${cxc['monto_factura'] ?? '0.00'}',
+                        ),
+                        _buildInfoRow(
+                          Icons.money_off,
+                          'Monto Pendiente',
+                          '\$${cxc['monto_pendiente'] ?? '0.00'}',
+                          valueColor: Colors.orange,
+                        ),
+                        _buildInfoRow(
+                          Icons.check_circle_outline,
+                          'Monto Pagado',
+                          '\$${cxc['monto_pagado'] ?? '0.00'}',
+                          valueColor: Colors.green,
+                        ),
                         const Divider(height: 20),
-                        _buildInfoRow(Icons.calendar_today, 'Fecha Factura', _formatDate(cxc['fecha_factura'])),
-                        _buildInfoRow(Icons.event_busy, 'Fecha Vencimiento', _formatDate(cxc['fecha_vencimiento'])),
+                        _buildInfoRow(
+                          Icons.calendar_today,
+                          'Fecha Factura',
+                          _formatDate(cxc['fecha_factura']),
+                        ),
+                        _buildInfoRow(
+                          Icons.event_busy,
+                          'Fecha Vencimiento',
+                          _formatDate(cxc['fecha_vencimiento']),
+                        ),
                       ],
                     ),
                   ),
@@ -179,29 +231,85 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
             // Sección: Agregar Alerta
             _buildSectionTitle('📣 Enviar Alerta a Contabilidad'),
             Container(
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<String>(
                     value: _tipoAlerta,
-                    decoration: _inputDeco('Tipo de alerta', Icons.label_outline),
+                    decoration: _inputDeco(
+                      'Tipo de alerta',
+                      Icons.label_outline,
+                    ),
                     items: const [
-                      DropdownMenuItem(value: 'pago_recibido', child: Text('💰 Pago Recibido')),
-                      DropdownMenuItem(value: 'informacion', child: Text('📋 Información')),
-                      DropdownMenuItem(value: 'consulta', child: Text('❓ Consulta')),
+                      DropdownMenuItem(
+                        value: 'pago_recibido',
+                        child: Text('💰 Pago Recibido'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'informacion',
+                        child: Text('📋 Información'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'consulta',
+                        child: Text('❓ Consulta'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'credito',
+                        child: Text('📄 Nota de Crédito'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'debito',
+                        child: Text('🧾 Nota de Débito'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'devolucion',
+                        child: Text('🔄 Devolución'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'retencion',
+                        child: Text('📑 Carta de Retención'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'diferencia',
+                        child: Text('⚖️ Diferencia de precio'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'mer_no_entregada',
+                        child: Text('📦 Mercancía no entregada'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'anular',
+                        child: Text('❌ Anular Factura'),
+                      ),
                     ],
                     onChanged: (v) => setState(() => _tipoAlerta = v!),
                   ),
                   const SizedBox(height: 12),
-                  if (_tipoAlerta == 'pago_recibido')
+                  if ([
+                    'pago_recibido',
+                    'credito',
+                    'debito',
+                    'devolucion',
+                    'retencion',
+                    'diferencia',
+                    'mer_no_entregada',
+                    'anular',
+                    'informacion',
+                  ].contains(_tipoAlerta))
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: TextFormField(
                         controller: _montoController,
                         keyboardType: TextInputType.number,
-                        decoration: _inputDeco('Monto informado por el cliente', Icons.attach_money),
+                        decoration: _inputDeco(
+                          'Monto informado por el cliente',
+                          Icons.attach_money,
+                        ),
                       ),
                     ),
                   TextFormField(
@@ -215,12 +323,17 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                     child: ElevatedButton.icon(
                       onPressed: _isSubmitting ? null : _enviarAlerta,
                       icon: const Icon(Icons.send_rounded),
-                      label: const Text('Enviar Alerta', style: TextStyle(fontWeight: FontWeight.bold)),
+                      label: const Text(
+                        'Enviar Alerta',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange.shade700,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -232,24 +345,34 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
             // Sección: Evidencias
             _buildSectionTitle('📎 Adjuntar Comprobante'),
             Container(
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  Text('Sube un PDF o imagen del comprobante de pago.',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                  Text(
+                    'Sube un PDF o imagen del comprobante de pago.',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  ),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: _isSubmitting ? null : _subirEvidencia,
                       icon: const Icon(Icons.upload_file_rounded),
-                      label: const Text('Seleccionar archivo', style: TextStyle(fontWeight: FontWeight.bold)),
+                      label: const Text(
+                        'Seleccionar archivo',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _blue,
                         side: const BorderSide(color: _blue, width: 1.5),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -266,19 +389,45 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E))),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF1A1A2E),
+        ),
+      ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(children: [
-        Icon(icon, size: 18, color: Colors.grey.shade500),
-        const SizedBox(width: 12),
-        Expanded(child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade600))),
-        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: valueColor ?? Colors.black87)),
-      ]),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.grey.shade500),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: valueColor ?? Colors.black87,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -288,8 +437,14 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
       prefixIcon: Icon(icon, size: 20),
       filled: true,
       fillColor: const Color(0xFFF9FAFB),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _blue, width: 1.5)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade200),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: _blue, width: 1.5),
+      ),
     );
   }
 
