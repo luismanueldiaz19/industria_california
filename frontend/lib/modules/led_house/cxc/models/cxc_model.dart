@@ -13,6 +13,7 @@ class CxcModel {
   final String estado;
   final int totalIntervenciones;
   final String? ultimaFechaVisita;
+  final int? vendedorId;
 
   CxcModel({
     this.id,
@@ -27,6 +28,7 @@ class CxcModel {
     this.estado = 'pendiente',
     this.totalIntervenciones = 0,
     this.ultimaFechaVisita,
+    this.vendedorId,
   });
 
   String get cliente => clienteObj?.nombre ?? 'Desconocido';
@@ -45,6 +47,7 @@ class CxcModel {
       estado: json['estado'] ?? 'pendiente',
       totalIntervenciones: json['total_intervenciones'] ?? 0,
       ultimaFechaVisita: json['ultima_fecha_visita'],
+      vendedorId: json['vendedor_id'],
     );
   }
 

@@ -10,25 +10,7 @@
             color: #2c3e50;
             margin: 30px;
         }
-        .header-top {
-            width: 100%;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #2c3e50;
-            padding-bottom: 20px;
-        }
-        .logo-text {
-            font-size: 28px;
-            font-weight: 900;
-            color: #2c3e50;
-            letter-spacing: 1px;
-            margin: 0;
-        }
-        .company-details {
-            color: #7f8c8d;
-            font-size: 11px;
-            margin-top: 5px;
-            line-height: 1.4;
-        }
+
         .badge {
             background-color: #27ae60;
             color: #fff;

@@ -14,19 +14,7 @@
         .container {
             /* DOMPDF breaks with width:100% + padding. Letting block layout handle it. */
         }
-        .header-top {
-            width: 100%;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #2c3e50;
-            padding-bottom: 20px;
-        }
-        .logo-text {
-            font-size: 28px;
-            font-weight: 900;
-            color: #2c3e50;
-            letter-spacing: 1px;
-            margin: 0;
-        }
+
         .badge {
             background-color: #2c3e50;
             color: #fff;
@@ -101,27 +89,7 @@
 <body>
     <div class="container">
         
-        <table class="header-top">
-            <tr>
-                <td style="width: 50%; vertical-align: middle;">
-                    <h1 class="logo-text">NEO PROJECT S.R.L</h1>
-                    <div style="color: #7f8c8d; font-size: 11px; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px;">
-                        Gestión y Control de Obras
-                    </div>
-                </td>
-                <td style="width: 50%; text-align: right; vertical-align: middle;">
-                    <div style="margin-bottom: 12px;">
-                        <span class="badge">Comprobante Oficial de Pago</span>
-                    </div>
-                    <div style="font-size: 14px;">
-                        <strong>Recibo N°:</strong> <span style="color: #e74c3c; font-weight: bold;">#{{ str_pad($gasto->id, 6, '0', STR_PAD_LEFT) }}</span>
-                    </div>
-                    <div style="font-size: 12px; color: #7f8c8d; margin-top: 4px;">
-                        Fecha de emisión: {{ \Carbon\Carbon::parse($gasto->fecha)->format('d/m/Y') }}
-                    </div>
-                </td>
-            </tr>
-        </table>
+        <x-pdf-header title="Recibo de Gasto #{{ str_pad($gasto->id, 6, '0', STR_PAD_LEFT) }}" subtitle="Fecha: {{ \Carbon\Carbon::parse($gasto->fecha_gasto)->format('d/m/Y') }}" />
 
         <div class="info-card">
             <table style="width: 100%;">

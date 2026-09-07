@@ -38,4 +38,10 @@ class LedhouseCxcAlertaService {
     final res = await _http.get('ledhouse/cxc/$cxcId/evidencias');
     return (res as List?) ?? [];
   }
+
+  /// Eliminar una alerta
+  Future<bool> deleteAlerta(int alertaId) async {
+    await _http.delete('ledhouse/cxc/alertas/$alertaId');
+    return true;
+  }
 }

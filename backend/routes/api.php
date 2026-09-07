@@ -21,6 +21,16 @@ Route::prefix('v1')->group(function () {
     // Rutas Públicas
     Route::post('login', [AuthController::class, 'login']);
 
+    // Rutas Públicas (Módulo Ledhouse - PDFs)
+    Route::prefix('ledhouse')->group(function () {
+        Route::get('/estado-resultado/matriz-pdf', [LedhouseEstadoResultadoController::class, 'generateMatrizPdf']);
+        Route::get('/estado-resultado/pdf', [LedhouseEstadoResultadoController::class, 'generatePdf']);
+        Route::get('cxc/reporte-general-pdf', [LedhouseCxcController::class, 'reporteGeneralPdf']);
+        Route::get('cxc/reporte-agrupado-pdf', [LedhouseCxcController::class, 'reporteAgrupadoPdf']);
+        Route::get('cxc/reporte-pdf/{cliente_id}', [LedhouseCxcController::class, 'reportePdf']);
+        Route::get('cxc/alertas-pdf', [LedhouseCxcController::class, 'reporteAlertasPdf']);
+    });
+
     // Rutas Protegidas
     Route::middleware('auth:sanctum')->group(function () {
         
@@ -39,8 +49,6 @@ Route::prefix('v1')->group(function () {
         // ── MÓDULO LED-HOUSE ───────────────────────────────────────────────
         Route::prefix('ledhouse')->group(function () {
             Route::get('/estado-resultado/matriz', [LedhouseEstadoResultadoController::class, 'matriz']);
-            Route::get('/estado-resultado/matriz-pdf', [LedhouseEstadoResultadoController::class, 'generateMatrizPdf']);
-            Route::get('/estado-resultado/pdf', [LedhouseEstadoResultadoController::class, 'generatePdf']);
             Route::get('/estado-resultado', [LedhouseEstadoResultadoController::class, 'index']);
             Route::get('/estado-resultado/summary', [LedhouseEstadoResultadoController::class, 'summary']);
             Route::post('/estado-resultado', [LedhouseEstadoResultadoController::class, 'store']);
@@ -52,9 +60,6 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('cxp', LedhouseCxpController::class);
 
             // CXC
-            Route::get('cxc/reporte-general-pdf', [LedhouseCxcController::class, 'reporteGeneralPdf']);
-            Route::get('cxc/reporte-agrupado-pdf', [LedhouseCxcController::class, 'reporteAgrupadoPdf']);
-            Route::get('cxc/reporte-pdf/{cliente_id}', [LedhouseCxcController::class, 'reportePdf']);
             Route::get('cxc/grouped', [LedhouseCxcController::class, 'groupedByCliente']);
             Route::post('cxc/import-by-cliente/{cliente_id}', [LedhouseCxcController::class, 'importByCliente']);
             // Sync masivo (Fase 1 preview + Fase 2 confirm)
@@ -64,6 +69,7 @@ Route::prefix('v1')->group(function () {
             Route::get('cxc/alertas', [LedhouseCxcController::class, 'getAlertas']);
             Route::post('cxc/{cxc}/alerta', [LedhouseCxcController::class, 'addAlerta']);
             Route::patch('cxc/alertas/{alerta}/resolver', [LedhouseCxcController::class, 'resolverAlerta']);
+            Route::delete('cxc/alertas/{alerta}', [LedhouseCxcController::class, 'destroyAlerta']);
             // Evidencias (archivos PDF/JPG)
             Route::post('cxc/{cxc}/evidencia', [LedhouseCxcController::class, 'uploadEvidencia']);
             Route::get('cxc/{cxc}/evidencias', [LedhouseCxcController::class, 'getEvidencias']);

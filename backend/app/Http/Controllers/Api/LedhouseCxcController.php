@@ -369,6 +369,64 @@ class LedhouseCxcController extends Controller
     }
 
     /**
+     * Genera un reporte en PDF de las alertas (con filtros).
+     */
+    public function reporteAlertasPdf(Request $request)
+    {
+        $query = LedhouseCxcAlerta::with(['cxc.cliente', 'vendedor'])
+            ->orderBy('created_at', 'desc');
+
+        $user = $request->user();
+        if ($user && $user->hasRole('vendedor')) {
+            $query->where('vendedor_id', $user->id);
+        } elseif ($request->has('vendedor_id')) {
+            $query->where('vendedor_id', $request->vendedor_id);
+        }
+
+        if ($request->has('estado')) {
+            $query->where('estado_alerta', $request->estado);
+        }
+
+        if ($request->has('cliente_id')) {
+            $query->whereHas('cxc', function ($q) use ($request) {
+                $q->where('cliente_id', $request->cliente_id);
+            });
+        }
+
+        if ($request->has('tipo')) {
+            $query->where('tipo', $request->tipo);
+        }
+
+        $alertas = $query->get();
+
+        $totalInformado = $alertas->sum('monto_informado');
+        
+        $cxcQuery = \App\Models\LedhouseCxc::query();
+        if ($user && $user->hasRole('vendedor')) {
+            $cxcQuery->where('vendedor_id', $user->id);
+        } elseif ($request->has('vendedor_id')) {
+            $cxcQuery->where('vendedor_id', $request->vendedor_id);
+        }
+        if ($request->has('cliente_id')) {
+            $cxcQuery->where('cliente_id', $request->cliente_id);
+        }
+        
+        $totalPendiente = $cxcQuery->sum('monto_pendiente');
+        
+        $montoReal = $totalPendiente - $totalInformado;
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.alertas_vendedores', [
+            'alertas' => $alertas,
+            'totalInformado' => $totalInformado,
+            'totalPendiente' => $totalPendiente,
+            'montoReal' => $montoReal,
+            'estado' => $request->estado ?? 'todas',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream('Reporte_Alertas_' . date('Ymd_His') . '.pdf');
+    }
+
+    /**
      * El vendedor agrega una alerta a uno de sus CXC.
      */
     public function addAlerta(Request $request, LedhouseCxc $cxc)
@@ -438,6 +496,23 @@ class LedhouseCxcController extends Controller
         }
 
         return response()->json($alerta->load(['vendedor', 'revisador']));
+    }
+
+    /**
+     * Eliminar una alerta.
+     */
+    public function destroyAlerta(Request $request, LedhouseCxcAlerta $alerta)
+    {
+        $user = $request->user();
+
+        // Validar permisos (solo contabilidad/admin o el propio vendedor pueden borrarla)
+        if ($user->hasRole('vendedor') && $alerta->vendedor_id !== $user->id) {
+            return response()->json(['error' => 'No tienes permiso para eliminar esta alerta.'], 403);
+        }
+
+        $alerta->delete();
+
+        return response()->json(['message' => 'Alerta eliminada exitosamente.']);
     }
 
     // ─────────────────────────────────────────────────────────────

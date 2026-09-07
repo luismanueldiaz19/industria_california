@@ -10,9 +10,10 @@ import '../models/cxc_model.dart';
 import '../providers/cxc_provider.dart';
 import '../widgets/cxc_form_dialog.dart';
 import '../widgets/cxc_soporte_dialog.dart';
-import '../../../../widgets/hover_total_card.dart';
+import '../widgets/cxc_modern_totals_bar.dart';
 import 'cxc_cliente_detail_screen.dart';
 import '../../../vendedor/screens/vendedor_cxc_sync_screen.dart';
+import '../../../../widgets/general_header.dart';
 
 class CxcScreen extends StatefulWidget {
   const CxcScreen({super.key});
@@ -181,6 +182,12 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FA),
+          bottomNavigationBar: ModernTotalsBar(
+            facturado: totalFactura,
+            pendiente: totalPendiente,
+            vencido: totalVencido,
+            intervenciones: totalIntervenciones,
+          ),
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -208,24 +215,17 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                     Column(
                       children: [
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                           child: Column(
                             children: [
-                              _buildTotales(
-                                totalFactura,
-                                totalPendiente,
-                                totalVencido,
-                                totalIntervenciones,
-                              ),
-                              const SizedBox(height: 16),
                               Row(
                                 children: [
                                   Expanded(child: _buildSearchBar()),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 8),
                                   _buildFilterDropdown(),
                                 ],
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 8),
                               _buildCheckboxes(),
                             ],
                           ),
@@ -336,8 +336,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
               ? const Center(child: Text('No hay clientes coincidentes.'))
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
+                    horizontal: 16,
+                    vertical: 8,
                   ),
                   itemCount: groupedClients.length,
                   itemBuilder: (context, index) {
@@ -349,25 +349,25 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                         0;
 
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: Colors.grey.shade200,
-                          width: 1.5,
+                          width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.02),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withOpacity(0.015),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                       child: Material(
                         color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           onTap: () {
                             Navigator.push(
@@ -379,15 +379,15 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                               ),
                             );
                           },
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(12),
                             child: Row(
                               children: [
                                 // Avatar Premium
                                 Container(
-                                  width: 48,
-                                  height: 48,
+                                  width: 40,
+                                  height: 40,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -608,176 +608,62 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
 
   // ── Header ─────────────────────────────────────────────────────────────────
   Widget _buildHeader(int total, bool isLoading) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppTheme.ledhouseBlue.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.request_quote_rounded,
-              color: AppTheme.ledhouseBlue,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Cuentas por Cobrar (CXC)',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.2,
+    return GeneralHeader(
+      title: 'Cuentas por Cobrar (CXC)',
+      subtitle: isLoading
+          ? null
+          : '$total ${total == 1 ? 'registro' : 'registros'}',
+      icon: Icons.request_quote_rounded,
+      iconColor: AppTheme.ledhouseBlue,
+      actions: [
+        HeaderButton(
+          icon: Icons.picture_as_pdf_rounded,
+          tooltip: 'Generar PDF',
+          color: Colors.redAccent,
+          onTap: () async {
+            String endpoint = _tabController.index == 0
+                ? '/api/v1/ledhouse/cxc/reporte-agrupado-pdf'
+                : '/api/v1/ledhouse/cxc/reporte-general-pdf';
+            final url = Uri.parse('$host$endpoint');
+            if (!await launchUrl(url)) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('No se pudo abrir el PDF'),
+                    backgroundColor: Colors.red,
                   ),
-                ),
-                if (!isLoading)
-                  Text(
-                    '$total ${total == 1 ? 'registro' : 'registros'}',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.55),
-                      fontSize: 12,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          _buildHeaderButton(
-            icon: Icons.picture_as_pdf_rounded,
-            tooltip: 'Generar PDF',
-            color: Colors.redAccent,
-            onTap: () async {
-              String endpoint = _tabController.index == 0
-                  ? '/api/v1/ledhouse/cxc/reporte-agrupado-pdf'
-                  : '/api/v1/ledhouse/cxc/reporte-general-pdf';
-              final url = Uri.parse('$host$endpoint');
-              if (!await launchUrl(url)) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('No se pudo abrir el PDF'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                );
               }
-            },
-          ),
-          const SizedBox(width: 4),
-          _buildHeaderButton(
-            icon: Icons.refresh_rounded,
-            tooltip: 'Actualizar',
-            onTap: () =>
-                Provider.of<CxcProvider>(context, listen: false).fetchCxcs(),
-          ),
-          const SizedBox(width: 4),
-          _buildHeaderButton(
-            icon: Icons.upload_file_rounded,
-            tooltip: 'Importar CXC',
-            onTap: () =>
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const VendedorCxcSyncScreen(),
-                  ),
-                ).then((_) {
-                  Provider.of<CxcProvider>(context, listen: false).fetchCxcs();
-                }),
-            color: AppTheme.successColor,
-          ),
-          const SizedBox(width: 4),
-          _buildHeaderButton(
-            icon: Icons.add_rounded,
-            tooltip: 'Nueva CXC',
-            onTap: () => _showFormDialog(),
-            color: AppTheme.accentColor,
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderButton({
-    required IconData icon,
-    required String tooltip,
-    VoidCallback? onTap,
-    Color color = Colors.white,
-  }) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.18),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.25), width: 1),
-          ),
-          child: Icon(icon, color: color, size: 22),
+            }
+          },
         ),
-      ),
-    );
-  }
-
-  // ── Totales ────────────────────────────────────────────────────────────────
-  Widget _buildTotales(
-    double facturado,
-    double pendiente,
-    double vencido,
-    int intervenciones,
-  ) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          HoverTotalCard(
-            title: 'TOTAL FACTURADO',
-            value: currencyFormatter.format(facturado),
-            color: AppTheme.ledhouseBlue,
-            icon: Icons.receipt_long_rounded,
-          ),
-          const SizedBox(width: 12),
-          HoverTotalCard(
-            title: 'TOTAL PENDIENTE',
-            value: currencyFormatter.format(pendiente),
-            color: const Color(0xFFFB8C00),
-            icon: Icons.account_balance_wallet_rounded,
-          ),
-          const SizedBox(width: 12),
-          HoverTotalCard(
-            title: 'DEUDA VENCIDA',
-            value: currencyFormatter.format(vencido),
-            color: AppTheme.dangerColor,
-            icon: Icons.warning_amber_rounded,
-          ),
-          const SizedBox(width: 12),
-          HoverTotalCard(
-            title: 'INTERVENCIONES',
-            value: intervenciones.toString(),
-            color: Colors.purple,
-            icon: Icons.support_agent_rounded,
-          ),
-        ],
-      ),
+        HeaderButton(
+          icon: Icons.refresh_rounded,
+          tooltip: 'Actualizar',
+          onTap: () =>
+              Provider.of<CxcProvider>(context, listen: false).fetchCxcs(),
+        ),
+        HeaderButton(
+          icon: Icons.upload_file_rounded,
+          tooltip: 'Importar CXC',
+          onTap: () =>
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const VendedorCxcSyncScreen(),
+                ),
+              ).then((_) {
+                Provider.of<CxcProvider>(context, listen: false).fetchCxcs();
+              }),
+          color: AppTheme.successColor,
+        ),
+        HeaderButton(
+          icon: Icons.add_rounded,
+          tooltip: 'Nueva CXC',
+          onTap: () => _showFormDialog(),
+          color: AppTheme.accentColor,
+        ),
+      ],
     );
   }
 
@@ -1013,7 +899,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       itemCount: list.length,
       itemBuilder: (context, index) {
         return _buildCxcCard(list[index]);
@@ -1029,47 +915,47 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: () => _showFormDialog(cxc),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border(left: BorderSide(color: color, width: 4)),
+              borderRadius: BorderRadius.circular(12),
+              border: Border(left: BorderSide(color: color, width: 3)),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.08),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+                  color: color.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Icono
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     Icons.request_page_rounded,
                     color: color,
-                    size: 22,
+                    size: 18,
                   ),
                 ),
                 const SizedBox(width: 14),

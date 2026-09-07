@@ -73,6 +73,7 @@ class CxcModel {
   final String noFactura;
   final String? idClienteExterno;
   final double totalFactura;
+  final double montoPendiente;
   final ClienteModel? cliente;
   final List<EvidenciaModel> evidencias;
 
@@ -81,6 +82,7 @@ class CxcModel {
     required this.noFactura,
     this.idClienteExterno,
     required this.totalFactura,
+    required this.montoPendiente,
     this.cliente,
     this.evidencias = const [],
   });
@@ -92,8 +94,13 @@ class CxcModel {
       idClienteExterno: json['id_cliente_externo'],
       totalFactura:
           double.tryParse(
-            json['total_factura'].toString() ??
-                json['monto_factura'].toString(),
+            json['total_factura']?.toString() ??
+                json['monto_factura']?.toString() ?? '0',
+          ) ??
+          0.0,
+      montoPendiente:
+          double.tryParse(
+            json['monto_pendiente']?.toString() ?? '0',
           ) ??
           0.0,
       cliente: json['cliente'] != null
