@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('vendedor_id')
                   ->constrained('users')
                   ->onDelete('cascade');
-            $table->enum('tipo', ['pago_recibido', 'informacion', 'consulta'])->default('informacion');
+            $table->string('tipo')->default('informacion');
             $table->decimal('monto_informado', 15, 2)->nullable();
             $table->text('nota');
             $table->enum('estado_alerta', ['pendiente', 'revisada', 'procesada'])->default('pendiente');
