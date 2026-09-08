@@ -307,20 +307,24 @@ class _LedhouseClientesScreenState extends State<LedhouseClientesScreen>
     if (confirm != true) return;
 
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      // 1. Cambiamos a pickFile() y quitamos withData
+      final file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['xlsx', 'xls', 'csv'],
-        withData: true,
       );
 
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        if (file.bytes == null) throw Exception("No se pudo leer el archivo.");
-
+      // 2. Evaluamos el archivo directamente
+      if (file != null) {
         if (!mounted) return;
         setState(() => _isImporting = true);
 
-        final response = await _service.importExcel(file.bytes!, file.name);
+        // 3. Extraemos los bytes de forma asíncrona
+        final bytes = await file.readAsBytes();
+
+        if (bytes.isEmpty) throw Exception("No se pudo leer el archivo.");
+
+        // 4. Pasamos los bytes procesados al servicio
+        final response = await _service.importExcel(bytes, file.name);
 
         if (!mounted) return;
         setState(() => _isImporting = false);

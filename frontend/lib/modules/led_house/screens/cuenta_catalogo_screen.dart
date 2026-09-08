@@ -212,23 +212,27 @@ class _CuentaCatalogoScreenState extends State<CuentaCatalogoScreen>
 
   Future<void> _importarExcel() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      // 1. Usar pickFile() directamente y eliminar withData
+      final file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['xlsx', 'xls', 'csv'],
-        withData: true,
       );
 
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        if (file.bytes == null) {
-          throw Exception('No se pudo leer el archivo.');
-        }
-
+      // 2. Validar que el archivo exista
+      if (file != null) {
         if (!mounted) return;
         setState(() => _isImporting = true);
 
+        // 3. Leer los bytes usando el nuevo método asíncrono
+        final bytes = await file.readAsBytes();
+
+        if (bytes.isEmpty) {
+          throw Exception('No se pudo leer el archivo o está vacío.');
+        }
+
         final provider = context.read<CuentaCatalogoProvider>();
-        final success = await provider.importCuentas(file.bytes!, file.name);
+        // 4. Pasar los bytes extraídos
+        final success = await provider.importCuentas(bytes, file.name);
 
         if (!mounted) return;
         setState(() => _isImporting = false);
@@ -829,21 +833,19 @@ class __CuentaCatalogoFormState extends State<_CuentaCatalogoForm> {
                         hint: 'Ej: 100-01',
                         icon: Icons.tag_rounded,
                         iconColor: Colors.indigo,
-                        validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Requerido'
-                            : null,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Requerido' : null,
                       ),
                       const SizedBox(height: 16),
-                      
+
                       _buildField(
                         controller: _descripcionController,
                         label: 'Descripción',
                         hint: 'Nombre de la cuenta',
                         icon: Icons.description_rounded,
                         iconColor: Colors.indigo,
-                        validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Requerido'
-                            : null,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Requerido' : null,
                       ),
                       const SizedBox(height: 16),
 
@@ -854,10 +856,11 @@ class __CuentaCatalogoFormState extends State<_CuentaCatalogoForm> {
                         iconColor: Colors.indigo,
                         items: _origenes,
                         onChanged: (v) {
-                          if (v != null) setState(() => _origenSeleccionado = v);
+                          if (v != null)
+                            setState(() => _origenSeleccionado = v);
                         },
                       ),
-                      
+
                       const SizedBox(height: 28),
 
                       // ── Buttons ─────────────────────────────────
@@ -871,7 +874,9 @@ class __CuentaCatalogoFormState extends State<_CuentaCatalogoForm> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.grey.shade700,
                                 side: BorderSide(color: Colors.grey.shade300),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -891,7 +896,9 @@ class __CuentaCatalogoFormState extends State<_CuentaCatalogoForm> {
                                 backgroundColor: Colors.indigo,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -1059,10 +1066,7 @@ class __CuentaCatalogoFormState extends State<_CuentaCatalogoForm> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: Colors.indigo,
-                width: 1.5,
-              ),
+              borderSide: const BorderSide(color: Colors.indigo, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -1110,7 +1114,10 @@ class __CuentaCatalogoFormState extends State<_CuentaCatalogoForm> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: value,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Colors.grey,
+          ),
           decoration: InputDecoration(
             prefixIcon: Container(
               margin: const EdgeInsets.all(10),
@@ -1130,10 +1137,7 @@ class __CuentaCatalogoFormState extends State<_CuentaCatalogoForm> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: Colors.indigo,
-                width: 1.5,
-              ),
+              borderSide: const BorderSide(color: Colors.indigo, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,

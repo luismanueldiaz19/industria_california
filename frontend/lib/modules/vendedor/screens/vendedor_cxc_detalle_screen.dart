@@ -74,24 +74,33 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
   }
 
   Future<void> _subirEvidencia() async {
-    final result = await FilePicker.platform.pickFiles(
+    // 1. Usar pickFile() directamente, que ahora retorna un PlatformFile?
+    final PlatformFile? file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-      withData: true,
     );
-    if (result == null || result.files.isEmpty) return;
 
-    final file = result.files.first;
+    // 2. Validar directamente si se seleccionó un archivo
+    if (file == null) return;
+
     final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
 
     setState(() => _isSubmitting = true);
     try {
+      // 3. Leer los bytes usando el nuevo método asíncrono
+      final bytes = await file.readAsBytes();
+
+      if (bytes.isEmpty) {
+        throw Exception("No se pudo leer el archivo o está vacío.");
+      }
+
       await _service.uploadEvidencia(
         cxcId: widget.cxcData['id'],
-        fileBytes: file.bytes!,
+        fileBytes: bytes, // Usamos la nueva variable de bytes
         fileName: file.name,
         token: token,
       );
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

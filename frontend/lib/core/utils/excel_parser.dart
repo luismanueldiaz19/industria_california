@@ -6,22 +6,19 @@ import 'package:file_picker/file_picker.dart';
 class ExcelParser {
   static Future<List<Map<String, dynamic>>?> parseBudgetExcel() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      // 1. Cambiamos a pickFile() directamente
+      final file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['xlsx', 'xls'],
-        withData: true, // Need bytes for web support
       );
 
-      if (result != null) {
-        Uint8List? bytes = result.files.single.bytes;
+      if (file != null) {
+        // 2. Extraemos los bytes usando el nuevo método nativo de la v12.
+        // Esto reemplaza toda tu lógica manual de leer desde el path o usar dart:io.
+        final bytes = await file.readAsBytes();
 
-        // If not web, bytes might be null, so we read from path
-        if (bytes == null && result.files.single.path != null) {
-          bytes = await File(result.files.single.path!).readAsBytes();
-        }
-
-        if (bytes == null) {
-          throw Exception("No se pudo leer el archivo");
+        if (bytes.isEmpty) {
+          throw Exception("No se pudo leer el archivo o está vacío");
         }
 
         // Usar compute para mover el procesamiento pesado a un hilo en segundo plano (isolate)

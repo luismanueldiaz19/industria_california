@@ -54,33 +54,46 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
   }
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    // Usamos pickFile() y eliminamos withData
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['xlsx', 'xls', 'csv'],
-      withData: true,
     );
-    if (result != null && result.files.isNotEmpty) {
+
+    // Evaluamos el archivo directamente
+    if (file != null) {
       setState(() {
-        _file = result.files.first;
+        _file = file; // Asignamos el PlatformFile directamente
         _error = null;
       });
     }
   }
 
   Future<void> _runPreview() async {
-    if (_file?.bytes == null) return;
+    // 1. Ahora solo validamos que el archivo no sea nulo
+    if (_file == null) return;
+
     final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
     setState(() {
       _isLoading = true;
       _error = null;
     });
+
     try {
+      // 2. Extraemos los bytes justo en el momento que los necesitamos
+      final bytes = await _file!.readAsBytes();
+
+      if (bytes.isEmpty) {
+        throw Exception("No se pudo leer el archivo o está vacío.");
+      }
+
       final preview = await _service.syncPreview(
-        fileBytes: _file!.bytes!,
+        fileBytes: bytes, // 3. Pasamos los bytes extraídos
         fileName: _file!.name,
         token: token,
         vendedorId: _isAdmin ? _selectedVendedorId : null,
       );
+
       setState(() {
         _preview = preview;
         _step = 1;
@@ -93,19 +106,30 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
   }
 
   Future<void> _confirm() async {
-    if (_file?.bytes == null) return;
+    // 1. Validamos únicamente que el archivo exista
+    if (_file == null) return;
+
     final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
     setState(() {
       _isLoading = true;
       _error = null;
     });
+
     try {
+      // 2. Leemos los bytes del archivo usando el método de la v12
+      final bytes = await _file!.readAsBytes();
+
+      if (bytes.isEmpty) {
+        throw Exception("No se pudo leer el archivo o está vacío.");
+      }
+
       final resultado = await _service.syncConfirm(
-        fileBytes: _file!.bytes!,
+        fileBytes: bytes, // 3. Pasamos los bytes leídos de forma segura
         fileName: _file!.name,
         token: token,
         vendedorId: _isAdmin ? _selectedVendedorId : null,
       );
+
       setState(() {
         _resultado = resultado;
         _step = 2;
@@ -304,13 +328,24 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
                         textAlign: TextAlign.center,
                       ),
                       if (_file != null)
-                        Text(
-                          '${(_file!.size / 1024).toStringAsFixed(1)} KB',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
+                        // NUEVO: Usamos FutureBuilder porque file.length() es asíncrono en la v12
+                        if (_file != null)
+                          FutureBuilder<int>(
+                            future: _file!.length(),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                return Text(
+                                  '${(snapshot.data! / 1024).toStringAsFixed(1)} KB',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                );
+                              }
+                              // Mientras calcula el tamaño, no mostramos nada
+                              return const SizedBox.shrink();
+                            },
                           ),
-                        ),
                     ],
                   ),
                 ),
@@ -358,8 +393,13 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
                 DropdownButtonFormField<int>(
                   value: _selectedVendedorId,
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                   ),
@@ -378,7 +418,12 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: _file == null || _isLoading || (_isAdmin && _selectedVendedorId == null) ? null : _runPreview,
+                  onPressed:
+                      _file == null ||
+                          _isLoading ||
+                          (_isAdmin && _selectedVendedorId == null)
+                      ? null
+                      : _runPreview,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _blue,
                     foregroundColor: Colors.white,

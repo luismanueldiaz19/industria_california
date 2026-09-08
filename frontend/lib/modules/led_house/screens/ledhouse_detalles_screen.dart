@@ -538,18 +538,14 @@ class _LedhouseDetallesScreenState extends State<LedhouseDetallesScreen> {
     if (fechaResult == null) return;
 
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      // 1. Usamos pickFile() directamente y quitamos withData: true
+      final file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['xlsx', 'xls', 'csv'],
-        withData: true,
       );
 
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        if (file.bytes == null) {
-          throw Exception("No se pudieron leer los bytes del archivo.");
-        }
-
+      // 2. Evaluamos si el usuario seleccionó un archivo
+      if (file != null) {
         if (!mounted) return;
 
         // Show loading indicator
@@ -560,9 +556,20 @@ class _LedhouseDetallesScreenState extends State<LedhouseDetallesScreen> {
               const Center(child: CircularProgressIndicator()),
         );
 
+        // 3. Extraemos los bytes de forma asíncrona mientras el usuario ve el loading
+        final bytes = await file.readAsBytes();
+
+        if (bytes.isEmpty) {
+          if (!mounted) return;
+          Navigator.pop(
+            context,
+          ); // Cerramos el loading antes de lanzar la excepción
+          throw Exception("No se pudieron leer los bytes del archivo.");
+        }
+
         final provider = Provider.of<LedhouseProvider>(context, listen: false);
         final response = await provider.importRegistros(
-          file.bytes!,
+          bytes, // 4. Pasamos la nueva variable de bytes
           file.name,
           fechaResult,
         );

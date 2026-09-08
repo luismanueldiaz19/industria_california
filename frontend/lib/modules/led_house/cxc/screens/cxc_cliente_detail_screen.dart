@@ -11,6 +11,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../core/constants.dart';
 
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 class CxcClienteDetailScreen extends StatefulWidget {
   final Map<String, dynamic> clienteAgrupado;
 
@@ -239,15 +242,21 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
     if (confirm != true) return;
 
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      // 1. Usamos pickFile() en lugar de pickFiles() porque solo necesitas 1 archivo
+      // 2. Ya no existe FilePicker.platform, solo FilePicker.
+      final PlatformFile? file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['xlsx', 'xls', 'csv'],
-        withData: true,
       );
 
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        if (file.bytes == null) throw Exception("No se pudo leer el archivo.");
+      // 3. Ya no existe FilePickerResult, evaluamos el 'file' directamente
+      if (file != null) {
+        // 4. Se usa readAsBytes() nativo de la versión 12, funciona en todas las plataformas!
+        final bytes = await file.readAsBytes();
+
+        if (bytes.isEmpty) {
+          throw Exception("No se pudo leer el archivo o está vacío.");
+        }
 
         if (!mounted) return;
         setState(() => _isImporting = true);
@@ -255,7 +264,7 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
         final cxcService = CxcService();
         final response = await cxcService.importarExcel(
           _clienteId,
-          file.bytes!,
+          bytes, // Pasamos los bytes leídos directamente
           file.name,
         );
 
@@ -282,6 +291,51 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
         ),
       );
     }
+
+    // try {
+    //   FilePickerResult? result = await FilePicker.platform.pickFiles(
+    //     type: FileType.custom,
+    //     allowedExtensions: ['xlsx', 'xls', 'csv'],
+    //     withData: true,
+    //   );
+
+    //   if (result != null && result.files.isNotEmpty) {
+    //     final file = result.files.first;
+    //     if (file.bytes == null) throw Exception("No se pudo leer el archivo.");
+
+    //     if (!mounted) return;
+    //     setState(() => _isImporting = true);
+
+    //     final cxcService = CxcService();
+    //     final response = await cxcService.importarExcel(
+    //       _clienteId,
+    //       file.bytes!,
+    //       file.name,
+    //     );
+
+    //     if (!mounted) return;
+    //     setState(() => _isImporting = false);
+
+    //     ScaffoldMessenger.of(context).showSnackBar(
+    //       SnackBar(
+    //         content: Text(response['message'] ?? 'Importación exitosa'),
+    //         backgroundColor: AppTheme.successColor,
+    //       ),
+    //     );
+
+    //     // Refresh provider data
+    //     Provider.of<CxcProvider>(context, listen: false).fetchCxcs();
+    //   }
+    // } catch (e) {
+    //   if (!mounted) return;
+    //   setState(() => _isImporting = false);
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     SnackBar(
+    //       content: Text('Error al importar: $e'),
+    //       backgroundColor: AppTheme.dangerColor,
+    //     ),
+    //   );
+    // }
   }
 
   Widget _buildFormatRow(String col, String desc, {required bool isRequired}) {
