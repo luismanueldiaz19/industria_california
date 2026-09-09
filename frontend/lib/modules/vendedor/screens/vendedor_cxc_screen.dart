@@ -1,9 +1,13 @@
+import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/auth_provider.dart';
+import '../../../core/app_theme.dart';
+import '../../../../widgets/general_header.dart';
 import '../services/vendedor_cxc_service.dart';
+import 'package:intl/intl.dart';
 import 'vendedor_cxc_detalle_screen.dart';
-import 'vendedor_cxc_sync_screen.dart';
 
 class VendedorCxcScreen extends StatefulWidget {
   const VendedorCxcScreen({super.key});
@@ -15,46 +19,135 @@ class VendedorCxcScreen extends StatefulWidget {
 class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
   final _service = VendedorCxcService();
   List<dynamic> _cxcs = [];
-  bool _isLoading = true;
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  int _currentPage = 1;
+  int _totalRecords = 0;
   String _searchQuery = '';
+  bool _soloVencidos = false;
+  bool _conAlerta = false;
+
   final TextEditingController _searchController = TextEditingController();
-
-  List<dynamic> get _filteredCxcs {
-    if (_searchQuery.isEmpty) return _cxcs;
-    final q = _searchQuery.toLowerCase();
-    return _cxcs.where((cxc) {
-      final doc = (cxc['documento'] ?? '').toString().toLowerCase();
-      final cliente = (cxc['cliente']?['nombre'] ?? '')
-          .toString()
-          .toLowerCase();
-      return doc.contains(q) || cliente.contains(q);
-    }).toList();
-  }
-
-  static const _blue = Color(0xFF1565C0);
+  final ScrollController _scrollController = ScrollController();
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _load();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMore();
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        _searchQuery = query;
+        _load();
+      });
+    });
+  }
+
   Future<void> _load() async {
+    if (!mounted) return;
     final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _currentPage = 1;
+      _hasMore = true;
+      _cxcs.clear();
+    });
     try {
-      final data = await _service.getMisCxc(token);
-      setState(() => _cxcs = data);
-    } catch (_) {
-      // manejar error
+      final data = await _service.getMisCxcPaginated(
+        token: token,
+        page: _currentPage,
+        search: _searchQuery,
+        vencidos: _soloVencidos,
+        conAlerta: _conAlerta,
+      );
+      final items = data['data'] as List;
+      setState(() {
+        _cxcs = items;
+        _hasMore = data['current_page'] < data['last_page'];
+        _totalRecords = data['total'] ?? 0;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore || _isLoading) return;
+    final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
+    setState(() {
+      _isLoadingMore = true;
+      _currentPage++;
+    });
+    try {
+      final data = await _service.getMisCxcPaginated(
+        token: token,
+        page: _currentPage,
+        search: _searchQuery,
+        vencidos: _soloVencidos,
+        conAlerta: _conAlerta,
+      );
+      final items = data['data'] as List;
+      setState(() {
+        _cxcs.addAll(items);
+        _hasMore = data['current_page'] < data['last_page'];
+        _totalRecords = data['total'] ?? _totalRecords;
+      });
+    } catch (e) {
+      setState(() => _currentPage--);
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  Future<void> _openPdf() async {
+    final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Abriendo PDF...')));
+    try {
+      final urlStr = await _service.obtenerUrlPdfMisCxc(
+        token: token,
+        search: _searchQuery,
+        vencidos: _soloVencidos,
+        conAlerta: _conAlerta,
+      );
+      final url = Uri.parse(urlStr);
+      if (!await launchUrl(url)) {
+        throw Exception('No se pudo abrir el enlace');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al abrir PDF: $e')));
+      }
     }
   }
 
@@ -71,74 +164,265 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeStyle = Theme.of(context).textTheme;
+
+    double totalFacturado = 0;
+    double totalPendiente = 0;
+    double totalVencido = 0;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    for (var cxc in _cxcs) {
+      final fac = double.tryParse(cxc['monto_factura']?.toString() ?? '0') ?? 0;
+      final pend =
+          double.tryParse(cxc['monto_pendiente']?.toString() ?? '0') ?? 0;
+      totalFacturado += fac;
+      totalPendiente += pend;
+
+      final dateStr = cxc['fecha_vencimiento'];
+      if (dateStr != null && pend > 0) {
+        try {
+          final date = DateTime.parse(dateStr);
+          if (date.isBefore(today)) {
+            totalVencido += pend;
+          }
+        } catch (_) {}
+      }
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FF),
+      backgroundColor: AppTheme.bgColor,
+
       appBar: AppBar(
-        title: const Text(
-          'Mis Cuentas por Cobrar',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Column(
+          children: [
+            Text(
+              'Cuentas por Cobrar (CXC)',
+              style: themeStyle.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            if (_totalRecords > 0)
+              Text(
+                '$_totalRecords registros',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+          ],
         ),
-        backgroundColor: _blue,
+        backgroundColor: AppTheme.primaryBlue,
         foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _load),
+          HeaderButton(
+            icon: Icons.picture_as_pdf_rounded,
+            tooltip: 'Generar PDF',
+            color: Colors.redAccent,
+            onTap: _openPdf,
+          ),
+          HeaderButton(
+            icon: Icons.refresh_rounded,
+            tooltip: 'Actualizar',
+            onTap: _load,
+          ),
+          const SizedBox(width: 10),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final result = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(builder: (_) => const VendedorCxcSyncScreen()),
-          );
-          if (result == true) _load();
-        },
-        backgroundColor: _blue,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.upload_rounded),
-        label: const Text(
-          'Sincronizar Excel',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+
+      body: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    decoration: InputDecoration(
-                      hintText: 'Buscar por documento o cliente...',
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar por documento o cliente...',
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   ),
                 ),
-                Expanded(
-                  child: _filteredCxcs.isEmpty
-                      ? _buildEmpty()
-                      : RefreshIndicator(
-                          onRefresh: _load,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                            itemCount: _filteredCxcs.length,
-                            itemBuilder: (_, i) =>
-                                _buildCxcCard(_filteredCxcs[i]),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: CheckboxListTile(
+                        title: const Text(
+                          'Solo Vencidos',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
                           ),
                         ),
+                        value: _soloVencidos,
+                        onChanged: (val) {
+                          setState(() {
+                            _soloVencidos = val ?? false;
+                            _load();
+                          });
+                        },
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                        activeColor: Colors.red.shade700,
+                      ),
+                    ),
+                    Expanded(
+                      child: CheckboxListTile(
+                        title: const Text(
+                          'Con Alerta',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        value: _conAlerta,
+                        onChanged: (val) {
+                          setState(() {
+                            _conAlerta = val ?? false;
+                            _load();
+                          });
+                        },
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                        activeColor: Colors.orange.shade700,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
+          ),
+          Expanded(
+            child: _isLoading && _currentPage == 1
+                ? const Center(child: CircularProgressIndicator())
+                : _cxcs.isEmpty
+                ? _buildEmpty()
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                      itemCount: _cxcs.length + (_isLoadingMore ? 1 : 0),
+                      itemBuilder: (_, i) {
+                        if (i == _cxcs.length) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        return _buildCxcCard(_cxcs[i]);
+                      },
+                    ),
+                  ),
+          ),
+          if (_cxcs.isNotEmpty)
+            _buildTotales(totalFacturado, totalPendiente, totalVencido),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotales(double facturado, double pendiente, double vencido) {
+    final currencyFormatter = NumberFormat.currency(
+      symbol: '\$',
+      decimalDigits: 2,
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildMiniTotalCard(
+                'FACTURADO',
+                currencyFormatter.format(facturado),
+                AppTheme.primaryBlue,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildMiniTotalCard(
+                'PENDIENTE',
+                currencyFormatter.format(pendiente),
+                const Color(0xFFFB8C00),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildMiniTotalCard(
+                'VENCIDO',
+                currencyFormatter.format(vencido),
+                Colors.red.shade700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMiniTotalCard(String title, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: Colors.black87,
+              letterSpacing: -0.5,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
@@ -146,6 +430,22 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
     final estado = cxc['estado'] ?? 'pendiente';
     final color = _estadoColor(estado);
     final alertasPendientes = cxc['alertas_pendientes'] ?? 0;
+
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    bool isVencido = false;
+    if (cxc['fecha_vencimiento'] != null) {
+      try {
+        final d = DateTime.parse(cxc['fecha_vencimiento']);
+        final pend =
+            double.tryParse(cxc['monto_pendiente']?.toString() ?? '0') ?? 0;
+        if (d.isBefore(todayDate) && pend > 0 && estado != 'pagado') {
+          isVencido = true;
+        }
+      } catch (_) {}
+    }
+
+    final bgColor = isVencido ? Colors.red.shade50 : Colors.white;
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -156,57 +456,61 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
       ).then((_) => _load()),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: bgColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
+        child: Stack(
           children: [
-            // Header de color según estado
-            Container(
-              height: 5,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-              ),
+            // Barra vertical
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 5,
+              child: Container(color: color),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Text(
                           cxc['documento'] ?? '-',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            color: Colors.grey.shade800,
+                            letterSpacing: 0.2,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           if (alertasPendientes > 0)
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
+                                horizontal: 6,
+                                vertical: 2,
                               ),
-                              margin: const EdgeInsets.only(right: 8),
+                              margin: const EdgeInsets.only(right: 6),
                               decoration: BoxDecoration(
-                                color: Colors.red.shade50,
+                                color: Colors.red.shade100,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
@@ -214,14 +518,14 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                                   const Icon(
                                     Icons.notifications_active,
                                     color: Colors.red,
-                                    size: 12,
+                                    size: 10,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     '$alertasPendientes',
                                     style: const TextStyle(
                                       color: Colors.red,
-                                      fontSize: 11,
+                                      fontSize: 9,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -230,8 +534,8 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                             ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
+                              horizontal: 8,
+                              vertical: 3,
                             ),
                             decoration: BoxDecoration(
                               color: color.withValues(alpha: 0.1),
@@ -241,8 +545,9 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                               estado.toUpperCase(),
                               style: TextStyle(
                                 color: color,
-                                fontSize: 11,
+                                fontSize: 9,
                                 fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
@@ -250,21 +555,24 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.person_outline,
                         size: 14,
-                        color: Colors.grey,
+                        color: Colors.grey.shade500,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          cxc['cliente']?['nombre'] ?? 'Sin cliente',
+                          cxc['cliente']?['nombre']?.toString().toUpperCase() ??
+                              'SIN CLIENTE',
                           style: TextStyle(
                             color: Colors.grey.shade600,
-                            fontSize: 13,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.3,
                           ),
                         ),
                       ),
@@ -277,17 +585,17 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                       _buildMontoItem(
                         'Pendiente',
                         '\$${cxc['monto_pendiente'] ?? '0.00'}',
-                        Colors.orange,
+                        Colors.orange.shade700,
                       ),
                       _buildMontoItem(
                         'Factura',
                         '\$${cxc['monto_factura'] ?? '0.00'}',
-                        Colors.blue,
+                        Colors.blue.shade600,
                       ),
                       _buildMontoItem(
                         'Vence',
                         _formatDate(cxc['fecha_vencimiento']),
-                        Colors.grey,
+                        isVencido ? Colors.red.shade700 : Colors.grey.shade700,
                       ),
                     ],
                   ),
@@ -300,21 +608,27 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
     );
   }
 
-  Widget _buildMontoItem(String label, String valor, Color color) {
+  Widget _buildMontoItem(String label, String value, Color color) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade500,
+            letterSpacing: 0.5,
+          ),
         ),
         const SizedBox(height: 2),
         Text(
-          valor,
+          value,
           style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
             color: color,
+            letterSpacing: -0.3,
           ),
         ),
       ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/auth_provider.dart';
+import '../../../core/app_theme.dart';
 import '../../auth/login_screen.dart';
 
 class VendedorPerfilScreen extends StatelessWidget {
@@ -21,17 +22,21 @@ class VendedorPerfilScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final username = authProvider.username ?? 'Vendedor';
-
+    final themeStyle = Theme.of(context).textTheme;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
+
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Mi Perfil',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          style: themeStyle.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
-        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        backgroundColor: AppTheme.primaryBlue,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

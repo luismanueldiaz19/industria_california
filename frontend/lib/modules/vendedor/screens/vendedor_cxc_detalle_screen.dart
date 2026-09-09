@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../../core/auth_provider.dart';
+import '../../../core/app_theme.dart';
 import '../services/vendedor_cxc_service.dart';
 
 class VendedorCxcDetalleScreen extends StatefulWidget {
@@ -127,6 +128,8 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeStyle = Theme.of(context).textTheme;
+
     final cxc = widget.cxcData;
     final estado = cxc['estado'] ?? 'pendiente';
 
@@ -136,260 +139,291 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
         ? Colors.red
         : Colors.orange;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FF),
-      appBar: AppBar(
-        title: Text(
-          cxc['documento'] ?? 'Detalle',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: _blue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Tarjeta principal
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+    return Container(
+      color: const Color(0xFF121212), // Fondo oscuro fuera del área móvil
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: ClipRRect(
+            // Redondeamos los bordes para dar apariencia de dispositivo móvil si está en escritorio
+            borderRadius: BorderRadius.circular(
+              MediaQuery.of(context).size.width > 500 ? 20 : 0,
+            ),
+            child: Scaffold(
+              backgroundColor: AppTheme.bgColor,
+              appBar: AppBar(
+                title: Text(
+                  cxc['documento'] ?? 'Detalle',
+                  style: themeStyle.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                backgroundColor: AppTheme.primaryBlue,
+                foregroundColor: Colors.white,
+                centerTitle: true,
+                elevation: 0,
               ),
-              child: Column(
-                children: [
-                  // Barra de estado
-                  Container(
-                    decoration: BoxDecoration(
-                      color: estadoColor,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(20),
+              body: SingleChildScrollView(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Tarjeta principal
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 20,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          estado.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                      child: Column(
+                        children: [
+                          // Barra de estado
+                          Container(
+                            decoration: BoxDecoration(
+                              color: estadoColor,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(20),
+                              ),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 16,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  estado.toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.receipt_long,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const Icon(
-                          Icons.receipt_long,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ],
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                _buildInfoRow(
+                                  Icons.person_outline,
+                                  'Cliente',
+                                  cxc['cliente']?['nombre'] ?? '-',
+                                ),
+                                const Divider(height: 20),
+                                _buildInfoRow(
+                                  Icons.attach_money,
+                                  'Monto Factura',
+                                  '\$${cxc['monto_factura'] ?? '0.00'}',
+                                ),
+                                _buildInfoRow(
+                                  Icons.money_off,
+                                  'Monto Pendiente',
+                                  '\$${cxc['monto_pendiente'] ?? '0.00'}',
+                                  valueColor: Colors.orange,
+                                ),
+                                _buildInfoRow(
+                                  Icons.check_circle_outline,
+                                  'Monto Pagado',
+                                  '\$${cxc['monto_pagado'] ?? '0.00'}',
+                                  valueColor: Colors.green,
+                                ),
+                                const Divider(height: 20),
+                                _buildInfoRow(
+                                  Icons.calendar_today,
+                                  'Fecha Factura',
+                                  _formatDate(cxc['fecha_factura']),
+                                ),
+                                _buildInfoRow(
+                                  Icons.event_busy,
+                                  'Fecha Vencimiento',
+                                  _formatDate(cxc['fecha_vencimiento']),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        _buildInfoRow(
-                          Icons.person_outline,
-                          'Cliente',
-                          cxc['cliente']?['nombre'] ?? '-',
-                        ),
-                        const Divider(height: 20),
-                        _buildInfoRow(
-                          Icons.attach_money,
-                          'Monto Factura',
-                          '\$${cxc['monto_factura'] ?? '0.00'}',
-                        ),
-                        _buildInfoRow(
-                          Icons.money_off,
-                          'Monto Pendiente',
-                          '\$${cxc['monto_pendiente'] ?? '0.00'}',
-                          valueColor: Colors.orange,
-                        ),
-                        _buildInfoRow(
-                          Icons.check_circle_outline,
-                          'Monto Pagado',
-                          '\$${cxc['monto_pagado'] ?? '0.00'}',
-                          valueColor: Colors.green,
-                        ),
-                        const Divider(height: 20),
-                        _buildInfoRow(
-                          Icons.calendar_today,
-                          'Fecha Factura',
-                          _formatDate(cxc['fecha_factura']),
-                        ),
-                        _buildInfoRow(
-                          Icons.event_busy,
-                          'Fecha Vencimiento',
-                          _formatDate(cxc['fecha_vencimiento']),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-            // Sección: Agregar Alerta
-            _buildSectionTitle('📣 Enviar Alerta a Contabilidad'),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: _tipoAlerta,
-                    decoration: _inputDeco(
-                      'Tipo de alerta',
-                      Icons.label_outline,
+                    // Sección: Agregar Alerta
+                    _buildSectionTitle('📣 Enviar Alerta a Contabilidad'),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          DropdownButtonFormField<String>(
+                            value: _tipoAlerta,
+                            decoration: _inputDeco(
+                              'Tipo de alerta',
+                              Icons.label_outline,
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'pago_recibido',
+                                child: Text('💰 Pago Recibido'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'informacion',
+                                child: Text('📋 Información'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'consulta',
+                                child: Text('❓ Consulta'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'credito',
+                                child: Text('📄 Nota de Crédito'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'debito',
+                                child: Text('🧾 Nota de Débito'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'devolucion',
+                                child: Text('🔄 Devolución'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'retencion',
+                                child: Text('📑 Carta de Retención'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'diferencia',
+                                child: Text('⚖️ Diferencia de precio'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'mer_no_entregada',
+                                child: Text('📦 Mercancía no entregada'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'anular',
+                                child: Text('❌ Anular Factura'),
+                              ),
+                            ],
+                            onChanged: (v) => setState(() => _tipoAlerta = v!),
+                          ),
+                          const SizedBox(height: 12),
+                          if ([
+                            'pago_recibido',
+                            'credito',
+                            'debito',
+                            'devolucion',
+                            'retencion',
+                            'diferencia',
+                            'mer_no_entregada',
+                            'anular',
+                            'informacion',
+                          ].contains(_tipoAlerta))
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: TextFormField(
+                                controller: _montoController,
+                                keyboardType: TextInputType.number,
+                                decoration: _inputDeco(
+                                  'Monto informado por el cliente',
+                                  Icons.attach_money,
+                                ),
+                              ),
+                            ),
+                          TextFormField(
+                            controller: _notaController,
+                            maxLines: 3,
+                            decoration: _inputDeco(
+                              'Descripción / Nota',
+                              Icons.notes,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _isSubmitting ? null : _enviarAlerta,
+                              icon: const Icon(Icons.send_rounded),
+                              label: const Text(
+                                'Enviar Alerta',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange.shade700,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'pago_recibido',
-                        child: Text('💰 Pago Recibido'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'informacion',
-                        child: Text('📋 Información'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'consulta',
-                        child: Text('❓ Consulta'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'credito',
-                        child: Text('📄 Nota de Crédito'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'debito',
-                        child: Text('🧾 Nota de Débito'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'devolucion',
-                        child: Text('🔄 Devolución'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'retencion',
-                        child: Text('📑 Carta de Retención'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'diferencia',
-                        child: Text('⚖️ Diferencia de precio'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'mer_no_entregada',
-                        child: Text('📦 Mercancía no entregada'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'anular',
-                        child: Text('❌ Anular Factura'),
-                      ),
-                    ],
-                    onChanged: (v) => setState(() => _tipoAlerta = v!),
-                  ),
-                  const SizedBox(height: 12),
-                  if ([
-                    'pago_recibido',
-                    'credito',
-                    'debito',
-                    'devolucion',
-                    'retencion',
-                    'diferencia',
-                    'mer_no_entregada',
-                    'anular',
-                    'informacion',
-                  ].contains(_tipoAlerta))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: TextFormField(
-                        controller: _montoController,
-                        keyboardType: TextInputType.number,
-                        decoration: _inputDeco(
-                          'Monto informado por el cliente',
-                          Icons.attach_money,
-                        ),
-                      ),
-                    ),
-                  TextFormField(
-                    controller: _notaController,
-                    maxLines: 3,
-                    decoration: _inputDeco('Descripción / Nota', Icons.notes),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _isSubmitting ? null : _enviarAlerta,
-                      icon: const Icon(Icons.send_rounded),
-                      label: const Text(
-                        'Enviar Alerta',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange.shade700,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-            // Sección: Evidencias
-            _buildSectionTitle('📎 Adjuntar Comprobante'),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Text(
-                    'Sube un PDF o imagen del comprobante de pago.',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _isSubmitting ? null : _subirEvidencia,
-                      icon: const Icon(Icons.upload_file_rounded),
-                      label: const Text(
-                        'Seleccionar archivo',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    // Sección: Evidencias
+                    _buildSectionTitle('📎 Adjuntar Comprobante'),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _blue,
-                        side: const BorderSide(color: _blue, width: 1.5),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Sube un PDF o imagen del comprobante de pago.',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _isSubmitting ? null : _subirEvidencia,
+                              icon: const Icon(Icons.upload_file_rounded),
+                              label: const Text(
+                                'Seleccionar archivo',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: _blue,
+                                side: const BorderSide(
+                                  color: _blue,
+                                  width: 1.5,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 30),
-          ],
+          ),
         ),
       ),
     );
@@ -397,11 +431,11 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 15,
+          fontSize: 13,
           fontWeight: FontWeight.bold,
           color: Color(0xFF1A1A2E),
         ),
@@ -416,21 +450,21 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
     Color? valueColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Colors.grey.shade500),
-          const SizedBox(width: 12),
+          Icon(icon, size: 16, color: Colors.grey.shade500),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ),
           Text(
             value,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               color: valueColor ?? Colors.black87,
             ),
@@ -443,15 +477,17 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
   InputDecoration _inputDeco(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, size: 20),
+      labelStyle: const TextStyle(fontSize: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      prefixIcon: Icon(icon, size: 18),
       filled: true,
       fillColor: const Color(0xFFF9FAFB),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: Colors.grey.shade200),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: _blue, width: 1.5),
       ),
     );

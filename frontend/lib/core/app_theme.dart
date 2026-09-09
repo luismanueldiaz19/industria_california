@@ -10,11 +10,18 @@ class AppTheme {
   static const textSecondary = Color(0xFF666666);
 
   // ── Ledhouse Module Colors ─────────────────────────────────────
-  static const ledhouseBlue = Color(0xFF1A73E8);      // Google Blue
-  static const ledhouseBlueDark = Color(0xFF0D47A1);  // Google Blue Dark
-  static const successColor = Color(0xFF34A853);      // Google Green
-  static const dangerColor = Color(0xFFEA4335);       // Google Red
-  static const whatsappColor = Color(0xFF25D366);     // WhatsApp Green
+  static const ledhouseBlue = Color(0xFF1A73E8); // Google Blue
+  static const ledhouseBlueDark = Color(0xFF0D47A1); // Google Blue Dark
+  static const successColor = Color(0xFF34A853); // Google Green
+  static const dangerColor = Color(0xFFEA4335); // Google Red
+  static const whatsappColor = Color(0xFF25D366); // WhatsApp Green
+
+  // Colores del diseño
+  static const primaryBlue = Color(0xFF1E2F4C); // Azul oscuro
+  static const secondaryBlue = Color(0xFF284168); // Azul más claro para tarjeta
+  static const accentGreen = Color(0xFF2E7D32); // Verde para éxito
+  static const accentYellow = Color(0xFFF9A825); // Amarillo para proceso
+  static const bgColor = Color(0xFFF5F7FA); // Gris claro de fondo
 
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,

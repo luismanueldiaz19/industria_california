@@ -20,6 +20,108 @@ class LedhouseCxcController extends Controller
     // CRUD Básico
     // ─────────────────────────────────────────────────────────────
 
+    // ─────────────────────────────────────────────────────────────
+    // Endpoint Independiente para el Vendedor (Paginado y Filtrado)
+    // ─────────────────────────────────────────────────────────────
+
+    public function getMisCxcPaginated(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->hasRole('vendedor')) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $query = LedhouseCxc::with(['cliente'])
+            ->withCount(['alertas as alertas_pendientes' => function ($q) {
+                $q->where('estado_alerta', 'pendiente');
+            }])
+            ->where('vendedor_id', $user->id);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('documento', 'like', "%{$search}%")
+                  ->orWhereHas('cliente', function($q2) use ($search) {
+                      $q2->where('nombre', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->filled('vencidos') && $request->vencidos == '1') {
+            $query->where('monto_pendiente', '>', 0)
+                  ->where('estado', '!=', 'pagado')
+                  ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
+        }
+
+        if ($request->filled('con_alerta') && $request->con_alerta == '1') {
+            $query->whereHas('alertas');
+        }
+
+        return response()->json($query->orderBy('fecha_vencimiento', 'asc')->paginate($request->per_page ?? 20));
+    }
+
+    public function getMisCxcPdfUrl(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->hasRole('vendedor')) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'cxc.vendedor.pdf', 
+            now()->addMinutes(15), 
+            [
+                'vendedor_id' => $user->id,
+                'search' => $request->search,
+                'vencidos' => $request->vencidos,
+            ]
+        );
+
+        return response()->json(['url' => $url]);
+    }
+
+    public function exportMisCxcPdf(Request $request)
+    {
+        if (!$request->hasValidSignature()) {
+            abort(401, 'URL inválida o expirada.');
+        }
+
+        $vendedorId = $request->vendedor_id;
+        $user = \App\Models\User::findOrFail($vendedorId);
+
+        $query = LedhouseCxc::with(['cliente'])
+            ->where('vendedor_id', $user->id);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('documento', 'like', "%{$search}%")
+                  ->orWhereHas('cliente', function($q2) use ($search) {
+                      $q2->where('nombre', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $isVencidos = false;
+        if ($request->filled('vencidos') && $request->vencidos == '1') {
+            $isVencidos = true;
+            $query->where('monto_pendiente', '>', 0)
+                  ->where('estado', '!=', 'pagado')
+                  ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
+        }
+
+        $cxcs = $query->orderBy('fecha_vencimiento', 'asc')->get();
+
+        $pdf = Pdf::loadView('pdf.cxc_vendedor', [
+            'cxcs' => $cxcs,
+            'vendedor' => $user,
+            'isVencidos' => $isVencidos,
+            'search' => $request->search
+        ]);
+
+        return $pdf->stream("Reporte_Mis_CXC.pdf");
+    }
+
     public function index(Request $request)
     {
         $query = LedhouseCxc::with(['cliente', 'vendedor'])
@@ -129,15 +231,41 @@ class LedhouseCxcController extends Controller
         return $pdf->stream("Reporte_CXC_{$cliente->nombre}.pdf");
     }
 
-    public function reporteGeneralPdf()
+    public function getReporteGeneralPdfUrl(Request $request)
     {
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'cxc.general.pdf', 
+            now()->addMinutes(15)
+        );
+        return response()->json(['url' => $url]);
+    }
+
+    public function getReporteAgrupadoPdfUrl(Request $request)
+    {
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'cxc.agrupado.pdf', 
+            now()->addMinutes(15)
+        );
+        return response()->json(['url' => $url]);
+    }
+
+    public function reporteGeneralPdf(Request $request)
+    {
+        if (!$request->hasValidSignature()) {
+            abort(401, 'URL inválida o expirada.');
+        }
+
         $cxcs = LedhouseCxc::with('cliente')->orderBy('fecha_vencimiento', 'asc')->get();
         $pdf  = Pdf::loadView('pdf.cxc_general', ['cxcs' => $cxcs]);
         return $pdf->stream("Reporte_General_CXC.pdf");
     }
 
-    public function reporteAgrupadoPdf()
+    public function reporteAgrupadoPdf(Request $request)
     {
+        if (!$request->hasValidSignature()) {
+            abort(401, 'URL inválida o expirada.');
+        }
+
         $clientes = LedhouseCliente::withSum('cxcs as total_facturado', 'monto_factura')
             ->withSum('cxcs as total_pendiente', 'monto_pendiente')
             ->get()

@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/auth_provider.dart';
+import 'package:industria_california/models/company.dart';
+import 'package:provider/provider.dart';
+import '../../../core/app_theme.dart';
+import '../widgets/action_quick_vendedor.dart';
 import '../widgets/header_clipper.dart';
 import '../widgets/mini_chart_painter.dart';
 
@@ -7,17 +12,10 @@ class VendedorDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    
-    // Colores del diseño
-    const primaryBlue = Color(0xFF1E2F4C); // Azul oscuro
-    const secondaryBlue = Color(0xFF284168); // Azul más claro para tarjeta
-    const accentGreen = Color(0xFF2E7D32); // Verde para éxito
-    const accentYellow = Color(0xFFF9A825); // Amarillo para proceso
-    const bgColor = Color(0xFFF5F7FA); // Gris claro de fondo
-
+    final styleTheme = Theme.of(context).textTheme;
+    final authProvider = Provider.of<AuthProvider>(context);
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: AppTheme.bgColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -31,12 +29,12 @@ class VendedorDashboardScreen extends StatelessWidget {
                   child: Container(
                     height: 250,
                     width: double.infinity,
-                    color: primaryBlue,
+                    color: AppTheme.primaryBlue,
                   ),
                 ),
                 // Contenido del Header
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 40, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -46,13 +44,17 @@ class VendedorDashboardScreen extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.bar_chart, color: Colors.blue.shade300, size: 28),
+                              Icon(
+                                Icons.bar_chart,
+                                color: Colors.blue.shade300,
+                                size: 28,
+                              ),
                               const SizedBox(width: 8),
-                              const Text(
-                                'VENTAFLOW',
-                                style: TextStyle(
+                              Text(
+                                Company.current.name,
+                                style: styleTheme.bodySmall?.copyWith(
                                   color: Colors.white,
-                                  fontSize: 20,
+
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 1,
                                 ),
@@ -64,24 +66,30 @@ class VendedorDashboardScreen extends StatelessWidget {
                               const CircleAvatar(
                                 radius: 20,
                                 backgroundColor: Colors.white,
-                                backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'), // Placeholder
+                                child: Icon(
+                                  Icons.person,
+                                  color: AppTheme.primaryBlue,
+                                ),
+                                // backgroundImage: NetworkImage(
+                                //   'https://i.pravatar.cc/150?img=11',
+                                // ), // Placeholder
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Alejandro R.',
+                                authProvider.username ?? 'Error Logueo',
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.9),
                                   fontSize: 12,
                                 ),
                               ),
                             ],
-                          )
+                          ),
                         ],
                       ),
                       const SizedBox(height: 10),
                       // Saludo
-                      const Text(
-                        '¡Hola, Alejandro!',
+                      Text(
+                        '¡Hola, ${authProvider.username ?? 'Error'}!',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 28,
@@ -91,7 +99,7 @@ class VendedorDashboardScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 // Tarjetas de métricas (Superpuestas)
                 Positioned(
                   top: 150,
@@ -105,14 +113,16 @@ class VendedorDashboardScreen extends StatelessWidget {
                           height: 140,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: secondaryBlue,
+                            color: AppTheme.secondaryBlue,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: secondaryBlue.withValues(alpha: 0.3),
+                                color: AppTheme.secondaryBlue.withValues(
+                                  alpha: 0.3,
+                                ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 5),
-                              )
+                              ),
                             ],
                           ),
                           child: Column(
@@ -120,11 +130,14 @@ class VendedorDashboardScreen extends StatelessWidget {
                             children: [
                               Text(
                                 'Ventas Hoy',
-                                style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: 14,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               const Text(
-                                '\$4,850.20',
+                                '\$0,000.00',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 22,
@@ -133,18 +146,20 @@ class VendedorDashboardScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               const Text(
-                                '+15% hoy',
-                                style: TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                                '+0% hoy',
+                                style: TextStyle(
+                                  color: Colors.greenAccent,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const Spacer(),
                               // Mini Chart placeholder
                               SizedBox(
                                 height: 30,
                                 width: double.infinity,
-                                child: CustomPaint(
-                                  painter: MiniChartPainter(),
-                                ),
-                              )
+                                child: CustomPaint(painter: MiniChartPainter()),
+                              ),
                             ],
                           ),
                         ),
@@ -163,7 +178,7 @@ class VendedorDashboardScreen extends StatelessWidget {
                                 color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 5),
-                              )
+                              ),
                             ],
                           ),
                           child: Column(
@@ -171,7 +186,11 @@ class VendedorDashboardScreen extends StatelessWidget {
                             children: [
                               const Text(
                                 'Objetivo Mensual',
-                                style: TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 12),
                               // Circular Progress
@@ -182,10 +201,10 @@ class VendedorDashboardScreen extends StatelessWidget {
                                     width: 55,
                                     height: 55,
                                     child: CircularProgressIndicator(
-                                      value: 0.78,
+                                      value: 0.50,
                                       strokeWidth: 6,
                                       backgroundColor: Colors.grey.shade200,
-                                      color: Colors.blue.shade400,
+                                      color: AppTheme.primaryBlue,
                                     ),
                                   ),
                                   Column(
@@ -193,20 +212,31 @@ class VendedorDashboardScreen extends StatelessWidget {
                                     children: [
                                       const Text(
                                         '78%',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
                                       ),
                                       Text(
                                         'COMPLETADO',
-                                        style: TextStyle(fontSize: 5, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
+                                        style: TextStyle(
+                                          fontSize: 5,
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ],
-                                  )
+                                  ),
                                 ],
                               ),
                               const Spacer(),
                               Text(
-                                '\$19,500 / \$25,000',
-                                style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.bold),
+                                '\$00,000 / \$00,000',
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -217,37 +247,12 @@ class VendedorDashboardScreen extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             // Espaciador para compensar las tarjetas superpuestas
             const SizedBox(height: 60),
 
             // Acciones Rápidas
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Acciones Rápidas',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildActionButton(Icons.add_shopping_cart, 'Nuevo\nPedido', true),
-                      _buildActionButton(Icons.folder_outlined, 'Catálogo', false),
-                      _buildActionButton(Icons.people_outline, 'Clientes', false, showBadge: true),
-                      _buildActionButton(Icons.bar_chart_outlined, 'Reportes', false),
-                    ],
-                  )
-                ],
-              ),
-            ),
+            ActionQuickVendedor(styleTheme: styleTheme),
 
             const SizedBox(height: 30),
 
@@ -257,61 +262,60 @@ class VendedorDashboardScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Pedidos Recientes',
-                    style: TextStyle(
-                      fontSize: 18,
+                  Text(
+                    'Ventas Recientes',
+                    style: styleTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        )
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildOrderRow(
-                          id: '#VF-1092',
-                          name: 'Juan Pérez',
-                          time: 'Hoy 14:15',
-                          amount: '\$650.00',
-                          status: 'Completado',
-                          statusColor: accentGreen,
-                          icon: Icons.check_circle,
-                        ),
-                        const Divider(height: 1, indent: 16, endIndent: 16),
-                        _buildOrderRow(
-                          id: '#VF-1091',
-                          name: 'Ana Gómez',
-                          time: 'Hoy 11:30',
-                          amount: '\$1,280.00',
-                          status: 'En Proceso',
-                          statusColor: accentYellow,
-                          icon: Icons.sync,
-                        ),
-                        const Divider(height: 1, indent: 16, endIndent: 16),
-                        _buildOrderRow(
-                          id: '#VF-1090',
-                          name: 'Carlos Ruiz',
-                          time: 'Ayer',
-                          amount: '\$940.00',
-                          status: 'Completado',
-                          statusColor: accentGreen,
-                          icon: Icons.check_circle,
-                        ),
-                      ],
-                    ),
-                  )
+                  // Container(
+                  //   decoration: BoxDecoration(
+                  //     color: Colors.white,
+                  //     borderRadius: BorderRadius.circular(20),
+                  //     boxShadow: [
+                  //       BoxShadow(
+                  //         color: Colors.black.withValues(alpha: 0.03),
+                  //         blurRadius: 10,
+                  //         offset: const Offset(0, 5),
+                  //       ),
+                  //     ],
+                  //   ),
+                  //   child: Column(
+                  //     children: [
+                  //       _buildOrderRow(
+                  //         id: '#VF-1092',
+                  //         name: 'Juan Pérez',
+                  //         time: 'Hoy 14:15',
+                  //         amount: '\$650.00',
+                  //         status: 'Completado',
+                  //         statusColor: AppTheme.accentGreen,
+                  //         icon: Icons.check_circle,
+                  //       ),
+                  //       const Divider(height: 1, indent: 16, endIndent: 16),
+                  //       _buildOrderRow(
+                  //         id: '#VF-1091',
+                  //         name: 'Ana Gómez',
+                  //         time: 'Hoy 11:30',
+                  //         amount: '\$1,280.00',
+                  //         status: 'En Proceso',
+                  //         statusColor: AppTheme.accentYellow,
+                  //         icon: Icons.sync,
+                  //       ),
+                  //       const Divider(height: 1, indent: 16, endIndent: 16),
+                  //       _buildOrderRow(
+                  //         id: '#VF-1090',
+                  //         name: 'Carlos Ruiz',
+                  //         time: 'Ayer',
+                  //         amount: '\$940.00',
+                  //         status: 'Completado',
+                  //         statusColor: AppTheme.accentGreen,
+                  //         icon: Icons.check_circle,
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
                 ],
               ),
             ),
@@ -319,61 +323,6 @@ class VendedorDashboardScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildActionButton(IconData icon, String label, bool isPrimary, {bool showBadge = false}) {
-    return Column(
-      children: [
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                color: isPrimary ? Colors.blue.shade50 : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
-                ],
-              ),
-              child: Icon(
-                icon,
-                color: isPrimary ? Colors.blue.shade700 : const Color(0xFF1E2F4C),
-                size: 28,
-              ),
-            ),
-            if (showBadge)
-              Positioned(
-                bottom: 8,
-                right: 28,
-                child: Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              )
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-      ],
     );
   }
 
@@ -397,7 +346,10 @@ class VendedorDashboardScreen extends StatelessWidget {
             children: [
               Text(
                 id,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 4),
               Row(
@@ -412,7 +364,7 @@ class VendedorDashboardScreen extends StatelessWidget {
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                   ),
                 ],
-              )
+              ),
             ],
           ),
           // Right side
@@ -421,7 +373,10 @@ class VendedorDashboardScreen extends StatelessWidget {
             children: [
               Text(
                 amount,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 4),
               Row(
@@ -430,15 +385,18 @@ class VendedorDashboardScreen extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     status,
-                    style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
-              )
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
   }
 }
-

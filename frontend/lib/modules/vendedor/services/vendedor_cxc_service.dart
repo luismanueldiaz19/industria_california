@@ -65,11 +65,87 @@ class VendedorCxcService {
     throw Exception(json.decode(body)['error'] ?? 'Error al confirmar');
   }
 
-  /// Lista los CXC del vendedor autenticado
-  Future<List<dynamic>> getMisCxc(String token) async {
-    final res = await http.get(Uri.parse(_base), headers: _headers(token));
-    if (res.statusCode == 200) return json.decode(res.body) as List;
+  /// Lista los CXC del vendedor autenticado (paginado)
+  Future<Map<String, dynamic>> getMisCxcPaginated({
+    required String token,
+    int page = 1,
+    String search = '',
+    bool vencidos = false,
+    bool conAlerta = false,
+  }) async {
+    final uri = Uri.parse('$_base/vendedor/mis-cxc').replace(
+      queryParameters: {
+        'page': page.toString(),
+        if (search.isNotEmpty) 'search': search,
+        if (vencidos) 'vencidos': '1',
+        if (conAlerta) 'con_alerta': '1',
+      },
+    );
+
+    final res = await http.get(uri, headers: _headers(token));
+    if (res.statusCode == 200) {
+      return json.decode(res.body) as Map<String, dynamic>;
+    }
     throw Exception('Error al cargar CXC');
+  }
+
+  /// Obtener URL temporal del PDF de CXC del vendedor
+  Future<String> obtenerUrlPdfMisCxc({
+    required String token,
+    String search = '',
+    bool vencidos = false,
+    bool conAlerta = false,
+  }) async {
+    final uri = Uri.parse('$_base/vendedor/mis-cxc-pdf-url').replace(
+      queryParameters: {
+        if (search.isNotEmpty) 'search': search,
+        if (vencidos) 'vencidos': '1',
+        if (conAlerta) 'con_alerta': '1',
+      },
+    );
+
+    final res = await http.get(uri, headers: _headers(token));
+    if (res.statusCode == 200) {
+      return json.decode(res.body)['url'] as String;
+    }
+    throw Exception('Error al generar PDF URL');
+  }
+
+  /// Descargar PDF de CXC del vendedor como bytes
+  Future<Uint8List> descargarPdfMisCxc({
+    required String token,
+    String search = '',
+    bool vencidos = false,
+    bool conAlerta = false,
+  }) async {
+    final uri = Uri.parse('$_base/vendedor/mis-cxc-pdf').replace(
+      queryParameters: {
+        if (search.isNotEmpty) 'search': search,
+        if (vencidos) 'vencidos': '1',
+        if (conAlerta) 'con_alerta': '1',
+      },
+    );
+
+    final res = await http.get(uri, headers: _headers(token));
+    if (res.statusCode == 200) {
+      return res.bodyBytes;
+    }
+    throw Exception('Error al descargar el PDF');
+  }
+
+  /// Obtener alertas del vendedor (y opcionalmente por estado)
+  Future<List<dynamic>> getMisAlertas({
+    required String token,
+    String? estado,
+  }) async {
+    final uri = Uri.parse(
+      '$_base/alertas',
+    ).replace(queryParameters: {if (estado != null) 'estado': estado});
+    final res = await http.get(uri, headers: _headers(token));
+    if (res.statusCode == 200) {
+      return json.decode(res.body) as List;
+    }
+    throw Exception('Error al cargar alertas');
   }
 
   /// Lista los vendedores (para uso del admin)
@@ -128,18 +204,9 @@ class VendedorCxcService {
 
     final streamed = await req.send();
     final body = await streamed.stream.bytesToString();
-    if (streamed.statusCode == 201)
+    if (streamed.statusCode == 201) {
       return json.decode(body) as Map<String, dynamic>;
+    }
     throw Exception('Error al subir evidencia');
-  }
-
-  /// Lista las alertas del vendedor
-  Future<List<dynamic>> getMisAlertas(String token) async {
-    final res = await http.get(
-      Uri.parse('$_base/alertas'),
-      headers: _headers(token),
-    );
-    if (res.statusCode == 200) return json.decode(res.body) as List;
-    throw Exception('Error al cargar alertas');
   }
 }

@@ -14,6 +14,7 @@ import '../widgets/cxc_modern_totals_bar.dart';
 import 'cxc_cliente_detail_screen.dart';
 import '../../../vendedor/screens/vendedor_cxc_sync_screen.dart';
 import '../../../../widgets/general_header.dart';
+import '../../../../services/http_service.dart';
 
 class CxcScreen extends StatefulWidget {
   const CxcScreen({super.key});
@@ -622,14 +623,26 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
           color: Colors.redAccent,
           onTap: () async {
             String endpoint = _tabController.index == 0
-                ? '/api/v1/ledhouse/cxc/reporte-agrupado-pdf'
-                : '/api/v1/ledhouse/cxc/reporte-general-pdf';
-            final url = Uri.parse('$host$endpoint');
-            if (!await launchUrl(url)) {
+                ? 'ledhouse/cxc/reporte-agrupado-pdf-url'
+                : 'ledhouse/cxc/reporte-general-pdf-url';
+            try {
+              final response = await HttpService().get(endpoint);
+              final url = Uri.parse(response['url']);
+              if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('No se pudo abrir el PDF en el navegador'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            } catch (e) {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('No se pudo abrir el PDF'),
+                  SnackBar(
+                    content: Text('Error al obtener URL del PDF: $e'),
                     backgroundColor: Colors.red,
                   ),
                 );

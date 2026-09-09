@@ -25,10 +25,17 @@ Route::prefix('v1')->group(function () {
     Route::prefix('ledhouse')->group(function () {
         Route::get('/estado-resultado/matriz-pdf', [LedhouseEstadoResultadoController::class, 'generateMatrizPdf']);
         Route::get('/estado-resultado/pdf', [LedhouseEstadoResultadoController::class, 'generatePdf']);
-        Route::get('cxc/reporte-general-pdf', [LedhouseCxcController::class, 'reporteGeneralPdf']);
-        Route::get('cxc/reporte-agrupado-pdf', [LedhouseCxcController::class, 'reporteAgrupadoPdf']);
+        Route::get('cxc/reporte-general-pdf', [LedhouseCxcController::class, 'reporteGeneralPdf'])
+            ->name('cxc.general.pdf')
+            ->middleware('signed');
+        Route::get('cxc/reporte-agrupado-pdf', [LedhouseCxcController::class, 'reporteAgrupadoPdf'])
+            ->name('cxc.agrupado.pdf')
+            ->middleware('signed');
         Route::get('cxc/reporte-pdf/{cliente_id}', [LedhouseCxcController::class, 'reportePdf']);
         Route::get('cxc/alertas-pdf', [LedhouseCxcController::class, 'reporteAlertasPdf']);
+        Route::get('cxc/vendedor/mis-cxc-pdf', [LedhouseCxcController::class, 'exportMisCxcPdf'])
+            ->name('cxc.vendedor.pdf')
+            ->middleware('signed');
     });
 
     // Rutas Protegidas
@@ -60,6 +67,13 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('cxp', LedhouseCxpController::class);
 
             // CXC
+            Route::get('cxc/reporte-general-pdf-url', [LedhouseCxcController::class, 'getReporteGeneralPdfUrl']);
+            Route::get('cxc/reporte-agrupado-pdf-url', [LedhouseCxcController::class, 'getReporteAgrupadoPdfUrl']);
+
+            // Rutas para el vendedor
+            Route::get('cxc/vendedor/mis-cxc', [LedhouseCxcController::class, 'getMisCxcPaginated']);
+            Route::get('cxc/vendedor/mis-cxc-pdf-url', [LedhouseCxcController::class, 'getMisCxcPdfUrl']);
+            
             Route::get('cxc/grouped', [LedhouseCxcController::class, 'groupedByCliente']);
             Route::post('cxc/import-by-cliente/{cliente_id}', [LedhouseCxcController::class, 'importByCliente']);
             // Sync masivo (Fase 1 preview + Fase 2 confirm)

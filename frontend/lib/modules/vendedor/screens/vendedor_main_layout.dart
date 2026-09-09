@@ -3,6 +3,8 @@ import 'vendedor_dashboard_screen.dart';
 import 'vendedor_perfil_screen.dart';
 import 'vendedor_cxc_screen.dart';
 
+import 'vendedor_actividad_screen.dart';
+
 class VendedorMainLayout extends StatefulWidget {
   const VendedorMainLayout({super.key});
 
@@ -17,7 +19,7 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
     const VendedorDashboardScreen(),
     const VendedorCxcScreen(),
     const Center(child: Text('Clientes')),
-    const Center(child: Text('Actividad')),
+    const VendedorActividadScreen(),
     const VendedorPerfilScreen(),
   ];
 
@@ -31,7 +33,9 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
           constraints: const BoxConstraints(maxWidth: 500),
           child: ClipRRect(
             // Redondeamos los bordes para dar apariencia de dispositivo móvil si está en escritorio
-            borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width > 500 ? 20 : 0),
+            borderRadius: BorderRadius.circular(
+              MediaQuery.of(context).size.width > 500 ? 20 : 0,
+            ),
             child: Scaffold(
               backgroundColor: const Color(0xFFF5F7FA), // Gris claro de fondo
               body: SafeArea(child: _screens[_currentIndex]),
@@ -43,7 +47,9 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
                   });
                 },
                 type: BottomNavigationBarType.fixed,
-                selectedItemColor: const Color(0xFF1976D2), // Azul estilo VentaFlow
+                selectedItemColor: const Color(
+                  0xFF1976D2,
+                ), // Azul estilo VentaFlow
                 unselectedItemColor: Colors.grey.shade500,
                 showUnselectedLabels: true,
                 selectedLabelStyle: const TextStyle(
@@ -63,7 +69,7 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
                   BottomNavigationBarItem(
                     icon: Icon(Icons.receipt_long_outlined),
                     activeIcon: Icon(Icons.receipt_long),
-                    label: 'Pedidos',
+                    label: 'CXC',
                   ),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.people_outline),
