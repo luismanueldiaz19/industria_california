@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Pdf\PdfViewerController;
 // Modulo Ledhouse
 use App\Http\Controllers\Api\LedhouseEstadoResultadoController;
 use App\Http\Controllers\Api\LedhouseCxpController;
@@ -12,11 +13,19 @@ use App\Http\Controllers\Api\LedhouseCuentaCatalogoController;
 use App\Http\Controllers\Api\LedhouseClienteController;
 use App\Http\Controllers\Api\LedhouseProveedorController;
 
+// =========================================================
+// RUTA PÚBLICA DE DOCUMENTOS SEGUROS CON TOKEN (COMPATIBLE CON APACHE)
+// =========================================================
+Route::get('d/{token}', [PdfViewerController::class, 'ver'])->name('api.pdf.view');
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
 Route::prefix('v1')->group(function () {
+
+    // Ruta de token también bajo v1
+    Route::get('d/{token}', [PdfViewerController::class, 'ver']);
 
     // Rutas Públicas
     Route::post('login', [AuthController::class, 'login']);

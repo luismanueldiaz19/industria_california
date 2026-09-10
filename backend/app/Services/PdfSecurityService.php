@@ -29,7 +29,7 @@ class PdfSecurityService
             'expires_at' => now()->addMinutes($minutos),
         ]);
 
-        return url("/d/{$token}");
+        return url("/api/d/{$token}");
     }
 
     /**
