@@ -273,7 +273,7 @@ class _LedhouseDetallesScreenState extends State<LedhouseDetallesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Estado Financiero LED-HOUSE',
+                  'Estado Financiero',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,

@@ -43,7 +43,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
     } else if (widget.selectedIndex >= 43 && widget.selectedIndex <= 46) {
       _expandedSection = '10. REPORTES Y AUDITORÍA';
     } else if (widget.selectedIndex >= 48 && widget.selectedIndex <= 52) {
-      _expandedSection = '11. LED-HOUSE';
+      _expandedSection = '11.';
     }
   }
 
@@ -264,21 +264,46 @@ class _CustomSidebarState extends State<CustomSidebar> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       height: widget.extended ? 120 : 80,
-      padding: EdgeInsets.symmetric(vertical: widget.extended ? 20 : 10),
+      padding: EdgeInsets.symmetric(vertical: widget.extended ? 12 : 10),
       alignment: Alignment.center,
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 400),
-        transitionBuilder: (child, animation) => FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(scale: animation, child: child),
-        ),
-        child: Image.asset(
-          logoPath,
-          key: ValueKey(widget.extended),
-          color: Colors.white,
-          height: widget.extended ? 80 : 40,
-          fit: BoxFit.contain,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(scale: animation, child: child),
+            ),
+            child: Image.asset(
+              logoPath,
+              key: ValueKey(widget.extended),
+              color: Colors.white,
+              height: widget.extended ? 65 : 40,
+              fit: BoxFit.contain,
+            ),
+          ),
+          if (widget.extended && isDemoMode) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.2),
+                border: Border.all(color: Colors.amber.shade400, width: 1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'VERSIÓN DEMO',
+                style: TextStyle(
+                  color: Colors.amber,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

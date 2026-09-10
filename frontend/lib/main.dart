@@ -111,7 +111,6 @@ class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    // LED-HOUSE (0-5)
     const LedhouseDetallesScreen(), //0
     const CxcScreen(), // 1
     const CxpScreen(), // 2

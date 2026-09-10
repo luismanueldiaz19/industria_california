@@ -67,14 +67,15 @@ class LedhouseCxcController extends Controller
             return response()->json(['error' => 'No autorizado'], 403);
         }
 
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
-            'cxc.vendedor.pdf', 
-            now()->addMinutes(15), 
+        $url = \App\Services\PdfSecurityService::generarUrl(
+            'cxc_vendedor',
             [
                 'vendedor_id' => $user->id,
-                'search' => $request->search,
-                'vencidos' => $request->vencidos,
-            ]
+                'search'      => $request->search,
+                'vencidos'    => $request->vencidos,
+            ],
+            $user->id,
+            minutos: 30
         );
 
         return response()->json(['url' => $url]);
@@ -140,6 +141,27 @@ class LedhouseCxcController extends Controller
         // Filtro opcional por vendedor (para contabilidad)
         if ($request->has('vendedor_id')) {
             $query->where('vendedor_id', $request->vendedor_id);
+        }
+
+        // Búsqueda opcional
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('documento', 'like', "%{$search}%")
+                  ->orWhereHas('cliente', function($q2) use ($search) {
+                      $q2->where('nombre', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Filtro opcional por estado
+        if ($request->filled('estado') && $request->estado !== 'Todos') {
+            $query->where('estado', $request->estado);
+        }
+
+        // Paginación opcional
+        if ($request->has('page') || $request->has('paginate')) {
+            return response()->json($query->orderBy('fecha_vencimiento', 'asc')->paginate($request->per_page ?? 25));
         }
 
         return response()->json($query->orderBy('created_at', 'desc')->get());
@@ -233,18 +255,48 @@ class LedhouseCxcController extends Controller
 
     public function getReporteGeneralPdfUrl(Request $request)
     {
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
-            'cxc.general.pdf', 
-            now()->addMinutes(15)
+        $url = \App\Services\PdfSecurityService::generarUrl(
+            'cxc_general',
+            [],
+            $request->user()?->id,
+            minutos: 30
         );
         return response()->json(['url' => $url]);
     }
 
     public function getReporteAgrupadoPdfUrl(Request $request)
     {
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
-            'cxc.agrupado.pdf', 
-            now()->addMinutes(15)
+        $url = \App\Services\PdfSecurityService::generarUrl(
+            'cxc_agrupado',
+            [],
+            $request->user()?->id,
+            minutos: 30
+        );
+        return response()->json(['url' => $url]);
+    }
+
+    public function getReporteClientePdfUrl(Request $request, $cliente_id)
+    {
+        $url = \App\Services\PdfSecurityService::generarUrl(
+            'cxc_cliente',
+            ['cliente_id' => $cliente_id],
+            $request->user()?->id,
+            minutos: 30
+        );
+        return response()->json(['url' => $url]);
+    }
+
+    public function getReporteAlertasPdfUrl(Request $request)
+    {
+        $url = \App\Services\PdfSecurityService::generarUrl(
+            'cxc_alertas',
+            [
+                'estado'      => $request->estado ?? 'todas',
+                'vendedor_id' => $request->vendedor_id,
+                'cliente_id'  => $request->cliente_id,
+            ],
+            $request->user()?->id,
+            minutos: 30
         );
         return response()->json(['url' => $url]);
     }

@@ -70,13 +70,18 @@
         @endif
     </div>
     <div class="header-company-info">
-        <h1>Industria California S.R.L</h1>
-        <p>RNC: xxxxxxxx</p>
+        <h1>Industria California, SRL</h1>
+        <p>RNC: 132839935</p>
         <p>Calle 16 Agosto, #91, Moca, Rep. Dom.</p>
-        <p>Tel: +1 (809) xxx-xxxx | Cel: +1 (809) xxx-xxxx</p>
+        <p>Tel: +1 829-477-8000 | Cel: +1 (809) xxx-xxxx</p>
+        <div style="margin-top: 4px;">
+            <span style="display: inline-block; background-color: #fef3c7; color: #b45309; border: 1px solid #f59e0b; padding: 1px 7px; border-radius: 3px; font-size: 8px; font-weight: bold; letter-spacing: 0.6px;">
+                VERSIÓN DEMO — DOCUMENTO DE EVALUACIÓN
+            </span>
+        </div>
     </div>
     <div class="header-meta">
-        <div class="doc-title">{{ $title ?? 'Documento' }}</div>
+        <div class="doc-title">{{ $title ?? 'Documento' }} <span style="color: #d97706; font-size: 10px; font-weight: bold;">(DEMO)</span></div>
         @if(isset($subtitle) && $subtitle != '')
             <div class="doc-subtitle">{{ $subtitle }}</div>
         @endif

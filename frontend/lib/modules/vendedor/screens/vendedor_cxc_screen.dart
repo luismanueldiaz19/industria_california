@@ -236,76 +236,78 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
 
       body: Column(
         children: [
-          Container(
+          Material(
             color: Colors.white,
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar por documento o cliente...',
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    decoration: InputDecoration(
+                      hintText: 'Buscar por documento o cliente...',
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: CheckboxListTile(
-                        title: const Text(
-                          'Solo Vencidos',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CheckboxListTile(
+                          title: const Text(
+                            'Solo Vencidos',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
+                          value: _soloVencidos,
+                          onChanged: (val) {
+                            setState(() {
+                              _soloVencidos = val ?? false;
+                              _load();
+                            });
+                          },
+                          controlAffinity: ListTileControlAffinity.leading,
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          activeColor: Colors.red.shade700,
                         ),
-                        value: _soloVencidos,
-                        onChanged: (val) {
-                          setState(() {
-                            _soloVencidos = val ?? false;
-                            _load();
-                          });
-                        },
-                        controlAffinity: ListTileControlAffinity.leading,
-                        contentPadding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                        activeColor: Colors.red.shade700,
                       ),
-                    ),
-                    Expanded(
-                      child: CheckboxListTile(
-                        title: const Text(
-                          'Con Alerta',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                      Expanded(
+                        child: CheckboxListTile(
+                          title: const Text(
+                            'Con Alerta',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
+                          value: _conAlerta,
+                          onChanged: (val) {
+                            setState(() {
+                              _conAlerta = val ?? false;
+                              _load();
+                            });
+                          },
+                          controlAffinity: ListTileControlAffinity.leading,
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          activeColor: Colors.orange.shade700,
                         ),
-                        value: _conAlerta,
-                        onChanged: (val) {
-                          setState(() {
-                            _conAlerta = val ?? false;
-                            _load();
-                          });
-                        },
-                        controlAffinity: ListTileControlAffinity.leading,
-                        contentPadding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                        activeColor: Colors.orange.shade700,
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           Expanded(

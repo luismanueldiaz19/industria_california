@@ -41,6 +41,9 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
   bool _soloVencidos = false;
   bool _conVisita = false;
 
+  int _currentPage = 1;
+  int _rowsPerPage = 10;
+
   @override
   void initState() {
     super.initState();
@@ -63,7 +66,12 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () {
-      if (mounted) setState(() => _searchQuery = query);
+      if (mounted) {
+        setState(() {
+          _searchQuery = query;
+          _currentPage = 1;
+        });
+      }
     });
   }
 
@@ -759,7 +767,12 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
             DropdownMenuItem(value: 'cancelado', child: Text('Cancelado')),
           ],
           onChanged: (val) {
-            if (val != null) setState(() => _statusFilter = val);
+            if (val != null) {
+              setState(() {
+                _statusFilter = val;
+                _currentPage = 1;
+              });
+            }
           },
         ),
       ),
@@ -772,13 +785,19 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
         _buildCustomCheckbox(
           label: 'Solo Vencidos',
           value: _soloVencidos,
-          onChanged: (v) => setState(() => _soloVencidos = v),
+          onChanged: (v) => setState(() {
+            _soloVencidos = v;
+            _currentPage = 1;
+          }),
         ),
         const SizedBox(width: 16),
         _buildCustomCheckbox(
           label: 'Con Visita',
           value: _conVisita,
-          onChanged: (v) => setState(() => _conVisita = v),
+          onChanged: (v) => setState(() {
+            _conVisita = v;
+            _currentPage = 1;
+          }),
         ),
       ],
     );
@@ -909,418 +928,514 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
       );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      itemCount: list.length,
-      itemBuilder: (context, index) {
-        return _buildCxcCard(list[index]);
-      },
-    );
-  }
+    final totalRows = list.length;
+    final totalPages = (totalRows / _rowsPerPage).ceil();
+    if (_currentPage > totalPages && totalPages > 0) {
+      _currentPage = totalPages;
+    }
+    final startIndex = (_currentPage - 1) * _rowsPerPage;
+    final endIndex = (startIndex + _rowsPerPage > totalRows)
+        ? totalRows
+        : startIndex + _rowsPerPage;
+    final pageItems = list.sublist(startIndex, endIndex);
 
-  // ── Card ───────────────────────────────────────────────────────────────────
-  Widget _buildCxcCard(CxcModel cxc) {
-    final color = _getStatusColor(cxc.estado);
-    final pastDue = _isPastDue(cxc.fechaVencimiento, cxc.estado);
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: () => _showFormDialog(cxc),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border(left: BorderSide(color: color, width: 3)),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icono
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+    return Column(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                  child: Icon(
-                    Icons.request_page_rounded,
-                    color: color,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 14),
-
-                // Información
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header: Doc y Vencimiento
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              cxc.documento,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF1F2937),
-                              ),
-                            ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                      child: SingleChildScrollView(
+                        child: DataTable(
+                          headingRowColor: WidgetStateProperty.all(
+                            const Color(0xFFF8FAFC),
                           ),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today_rounded,
-                                size: 12,
-                                color: pastDue
-                                    ? AppTheme.dangerColor
-                                    : Colors.grey.shade500,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                cxc.fechaVencimiento,
+                          headingRowHeight: 46,
+                          dataRowMinHeight: 52,
+                          dataRowMaxHeight: 60,
+                          horizontalMargin: 16,
+                          columnSpacing: 18,
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                'DOCUMENTO',
                                 style: TextStyle(
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 12,
-                                  fontWeight: pastDue
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  color: pastDue
-                                      ? AppTheme.dangerColor
-                                      : Colors.grey.shade600,
+                                  color: Color(0xFF475569),
                                 ),
                               ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-
-                      // Cliente
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.person_rounded,
-                            size: 14,
-                            color: Colors.grey.shade400,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              cxc.cliente,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Montos
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Factura',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade500,
+                            DataColumn(
+                              label: Text(
+                                'CLIENTE',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'F. FACTURA',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'F. VENCIMIENTO',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              numeric: true,
+                              label: Text(
+                                'FACTURADO',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              numeric: true,
+                              label: Text(
+                                'PAGADO',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              numeric: true,
+                              label: Text(
+                                'PENDIENTE',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'ESTADO',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'ACCIONES',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                          ],
+                          rows: pageItems.map((cxc) {
+                            final color = _getStatusColor(cxc.estado);
+                            final pastDue = _isPastDue(cxc.fechaVencimiento, cxc.estado);
+                            return DataRow(
+                              cells: [
+                                // Documento
+                                DataCell(
+                                  InkWell(
+                                    onTap: () => _showFormDialog(cxc),
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 4),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(5),
+                                            decoration: BoxDecoration(
+                                              color: color.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Icon(
+                                              Icons.description_rounded,
+                                              size: 15,
+                                              color: color,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            cxc.documento,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13,
+                                              color: Color(0xFF1E293B),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
-                                Text(
-                                  currencyFormatter.format(cxc.montoFactura),
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF3C4043),
+                                // Cliente
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 180),
+                                    child: Tooltip(
+                                      message: cxc.cliente,
+                                      child: Text(
+                                        cxc.cliente,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF334155),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Fecha Factura
+                                DataCell(
+                                  Text(
+                                    cxc.fechaFactura ?? '-',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                ),
+                                // Fecha Vencimiento
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (pastDue)
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 4),
+                                          child: Icon(
+                                            Icons.warning_amber_rounded,
+                                            size: 14,
+                                            color: AppTheme.dangerColor,
+                                          ),
+                                        ),
+                                      Text(
+                                        cxc.fechaVencimiento,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: pastDue ? FontWeight.bold : FontWeight.normal,
+                                          color: pastDue ? AppTheme.dangerColor : Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Facturado
+                                DataCell(
+                                  Text(
+                                    currencyFormatter.format(cxc.montoFactura),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                // Pagado
+                                DataCell(
+                                  Text(
+                                    currencyFormatter.format(cxc.montoPagado),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                ),
+                                // Pendiente
+                                DataCell(
+                                  Text(
+                                    currencyFormatter.format(cxc.montoPendiente),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: cxc.montoPendiente <= 0
+                                          ? AppTheme.successColor
+                                          : (pastDue ? AppTheme.dangerColor : const Color(0xFFEA580C)),
+                                    ),
+                                  ),
+                                ),
+                                // Estado
+                                DataCell(
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: color.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: color.withOpacity(0.3)),
+                                    ),
+                                    child: Text(
+                                      cxc.estado.toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: color,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Acciones
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (cxc.clienteObj?.whatsapp != null &&
+                                          cxc.clienteObj!.whatsapp!.toString().trim().isNotEmpty)
+                                        IconButton(
+                                          icon: const FaIcon(
+                                            FontAwesomeIcons.whatsapp,
+                                            color: Colors.green,
+                                            size: 18,
+                                          ),
+                                          tooltip: 'WhatsApp',
+                                          padding: const EdgeInsets.all(4),
+                                          constraints: const BoxConstraints(),
+                                          onPressed: () => _sendWhatsApp(cxc),
+                                        ),
+                                      const SizedBox(width: 4),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.support_agent_rounded,
+                                          color: Colors.purple,
+                                          size: 19,
+                                        ),
+                                        tooltip: 'Gestión de Cobro',
+                                        padding: const EdgeInsets.all(4),
+                                        constraints: const BoxConstraints(),
+                                        onPressed: () => _showSoporteDialog(cxc),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.edit_note_rounded,
+                                          color: Color(0xFF1A73E8),
+                                          size: 22,
+                                        ),
+                                        tooltip: 'Editar / Registrar Pago',
+                                        padding: const EdgeInsets.all(4),
+                                        constraints: const BoxConstraints(),
+                                        onPressed: () => _showFormDialog(cxc),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Pendiente',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade500,
-                                  ),
-                                ),
-                                Text(
-                                  currencyFormatter.format(cxc.montoPendiente),
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: cxc.montoPendiente <= 0
-                                        ? AppTheme.successColor
-                                        : (pastDue
-                                              ? AppTheme.dangerColor
-                                              : const Color(0xFFFB8C00)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Badges inferiores
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          // Badge de Estado
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: color.withOpacity(0.3)),
-                            ),
-                            child: Text(
-                              cxc.estado.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: color,
-                              ),
-                            ),
-                          ),
-                          // Badge de Intervenciones
-                          if (cxc.totalIntervenciones > 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.purple.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.purple.withOpacity(0.3),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.support_agent_rounded,
-                                    size: 12,
-                                    color: Colors.purple,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${cxc.totalIntervenciones} intervenciones',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.purple,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          // Badge Próxima Visita
-                          if (cxc.ultimaFechaVisita != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.ledhouseBlue.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: AppTheme.ledhouseBlue.withOpacity(0.3),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.event_rounded,
-                                    size: 12,
-                                    color: AppTheme.ledhouseBlue,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Visita: ${cxc.ultimaFechaVisita}',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.ledhouseBlue,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Menú de acciones y WhatsApp
-                Column(
-                  children: [
-                    PopupMenuButton<String>(
-                      icon: Icon(
-                        Icons.more_vert_rounded,
-                        color: Colors.grey.shade400,
-                        size: 20,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 8,
-                      onSelected: (val) {
-                        if (val == 'support') _showSoporteDialog(cxc);
-                        if (val == 'edit') _showFormDialog(cxc);
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'support',
-                          child: Row(
-                            children: const [
-                              Icon(
-                                Icons.support_agent_rounded,
-                                size: 18,
-                                color: Colors.purple,
-                              ),
-                              SizedBox(width: 10),
-                              Text(
-                                'Gestión de Cobro',
-                                style: TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
+                            );
+                          }).toList(),
                         ),
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: const [
-                              Icon(
-                                Icons.edit_rounded,
-                                size: 18,
-                                color: Color(0xFF1A73E8),
-                              ),
-                              SizedBox(width: 10),
-                              Text(
-                                'Editar / Pagar',
-                                style: TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    if (cxc.clienteObj?.whatsapp != null &&
-                        cxc.clienteObj!.whatsapp!.toString().trim().isNotEmpty)
-                      IconButton(
-                        icon: const FaIcon(
-                          FontAwesomeIcons.whatsapp,
-                          color: Colors.green,
-                          size: 24,
-                        ),
-                        tooltip: 'Enviar WhatsApp',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () async {
-                          int diasAtraso = 0;
-                          try {
-                            final date = DateTime.parse(cxc.fechaVencimiento);
-                            final todayDate = DateTime(
-                              DateTime.now().year,
-                              DateTime.now().month,
-                              DateTime.now().day,
-                            );
-                            final diff = todayDate.difference(date).inDays;
-                            if (diff > 0) diasAtraso = diff;
-                          } catch (e) {}
-
-                          String mensaje =
-                              'Hola *${cxc.cliente}*,\n\nLe recordamos que tiene un saldo pendiente con *Ledhouse*.\n\n';
-                          mensaje += '*Doc:* ${cxc.documento}\n';
-                          mensaje += '*Vencimiento:* ${cxc.fechaVencimiento}\n';
-                          if (diasAtraso > 0) {
-                            mensaje += '*Días de atraso:* $diasAtraso días\n';
-                          }
-                          mensaje +=
-                              '*Monto:* ${currencyFormatter.format(cxc.montoPendiente)}\n\n';
-                          mensaje +=
-                              'Por favor, contáctenos para coordinar el pago. Gracias.';
-
-                          String phone = cxc.clienteObj!.whatsapp!
-                              .toString()
-                              .replaceAll(RegExp(r'\D'), '');
-                          if (!phone.startsWith('1') && phone.length == 10) {
-                            phone = '1$phone';
-                          }
-
-                          if (phone.isNotEmpty) {
-                            final url = Uri.parse(
-                              'https://wa.me/$phone?text=${Uri.encodeComponent(mensaje)}',
-                            );
-                            if (!await launchUrl(url)) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'No se pudo abrir WhatsApp',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          }
-                        },
-                      ),
-                  ],
-                ),
-              ],
+                  );
+                },
+              ),
             ),
           ),
         ),
+        _buildPaginationBar(totalRows, totalPages, startIndex, endIndex),
+      ],
+    );
+  }
+
+  // ── Paginación ─────────────────────────────────────────────────────────────
+  Widget _buildPaginationBar(
+    int totalRows,
+    int totalPages,
+    int startIndex,
+    int endIndex,
+  ) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              Text(
+                totalRows > 0
+                    ? 'Mostrando ${startIndex + 1} - $endIndex de $totalRows registros'
+                    : '0 registros',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Por pág:',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(width: 6),
+                  DropdownButton<int>(
+                    value: _rowsPerPage,
+                    isDense: true,
+                    underline: const SizedBox(),
+                    items: const [
+                      DropdownMenuItem(value: 10, child: Text('10', style: TextStyle(fontSize: 12))),
+                      DropdownMenuItem(value: 25, child: Text('25', style: TextStyle(fontSize: 12))),
+                      DropdownMenuItem(value: 50, child: Text('50', style: TextStyle(fontSize: 12))),
+                      DropdownMenuItem(value: 100, child: Text('100', style: TextStyle(fontSize: 12))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _rowsPerPage = val;
+                          _currentPage = 1;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    icon: const Icon(Icons.first_page_rounded),
+                    iconSize: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                    tooltip: 'Primera página',
+                    onPressed: _currentPage > 1 ? () => setState(() => _currentPage = 1) : null,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left_rounded),
+                    iconSize: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                    tooltip: 'Página anterior',
+                    onPressed: _currentPage > 1 ? () => setState(() => _currentPage--) : null,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      '$_currentPage / ${totalPages == 0 ? 1 : totalPages}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right_rounded),
+                    iconSize: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                    tooltip: 'Página siguiente',
+                    onPressed: _currentPage < totalPages ? () => setState(() => _currentPage++) : null,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.last_page_rounded),
+                    iconSize: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                    tooltip: 'Última página',
+                    onPressed: _currentPage < totalPages ? () => setState(() => _currentPage = totalPages) : null,
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  // ── Enviar WhatsApp ────────────────────────────────────────────────────────
+  Future<void> _sendWhatsApp(CxcModel cxc) async {
+    int diasAtraso = 0;
+    try {
+      final date = DateTime.parse(cxc.fechaVencimiento);
+      final todayDate = DateTime(
+        DateTime.now().year,
+        DateTime.now().month,
+        DateTime.now().day,
+      );
+      final diff = todayDate.difference(date).inDays;
+      if (diff > 0) diasAtraso = diff;
+    } catch (e) {}
+
+    String mensaje =
+        'Hola *${cxc.cliente}*,\n\nLe recordamos que tiene un saldo pendiente con *Industria California*.\n\n';
+    mensaje += '*Doc:* ${cxc.documento}\n';
+    mensaje += '*Vencimiento:* ${cxc.fechaVencimiento}\n';
+    if (diasAtraso > 0) {
+      mensaje += '*Días de atraso:* $diasAtraso días\n';
+    }
+    mensaje +=
+        '*Monto:* ${currencyFormatter.format(cxc.montoPendiente)}\n\n';
+    mensaje +=
+        'Por favor, contáctenos para coordinar el pago. Gracias.';
+
+    String phone = (cxc.clienteObj?.whatsapp ?? '')
+        .toString()
+        .replaceAll(RegExp(r'\D'), '');
+    if (!phone.startsWith('1') && phone.length == 10) {
+      phone = '1$phone';
+    }
+
+    if (phone.isNotEmpty) {
+      final url = Uri.parse(
+        'https://wa.me/$phone?text=${Uri.encodeComponent(mensaje)}',
+      );
+      if (!await launchUrl(url)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No se pudo abrir WhatsApp',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 }

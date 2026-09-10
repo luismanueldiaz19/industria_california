@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Estado de Resultados - LED-HOUSE</title>
+    <title>Estado de Resultados - Industria California</title>
     <style>
         @page {
             margin: 40px 40px 120px 40px;
@@ -201,7 +201,7 @@
         </div>
         <div class="header-center">
             <div class="top-text">EMPRESA</div>
-            <div class="main-title">LED-HOUSE</div>
+            <div class="main-title">Industria California <span style="font-size: 10px; color: #b45309; background-color: #fef3c7; border: 1px solid #f59e0b; padding: 1px 6px; border-radius: 3px; vertical-align: middle; margin-left: 6px;">DEMO</span></div>
         </div>
         <div class="header-right">
             <div class="report-label">Reporte</div>

@@ -7,7 +7,7 @@ class LedhouseCuentasPagarScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Text(
-        'Cuentas por Pagar - LED-HOUSE\n(En desarrollo)',
+        'Cuentas por Pagar -\n(En desarrollo)',
         textAlign: TextAlign.center,
         style: TextStyle(fontSize: 20, color: Colors.grey),
       ),

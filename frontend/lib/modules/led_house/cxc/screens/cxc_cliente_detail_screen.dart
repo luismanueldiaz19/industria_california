@@ -10,6 +10,7 @@ import '../../componentes/dialog_confimacion_delete.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../core/constants.dart';
+import '../../../../services/http_service.dart';
 
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -429,7 +430,37 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text(cliente['nombre'] ?? 'Detalle Cliente'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                cliente['nombre'] ?? 'Detalle Cliente',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isDemoMode) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  border: Border.all(color: Colors.amber.shade700, width: 1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'DEMO',
+                  style: TextStyle(
+                    color: Colors.amber.shade900,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 1,
@@ -441,14 +472,32 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
             ),
             tooltip: 'Generar PDF',
             onPressed: () async {
-              final url = Uri.parse(
-                '$host/api/v1/ledhouse/cxc/reporte-pdf/$_clienteId',
-              );
-              if (!await launchUrl(url)) {
+              try {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Generando PDF, por favor espera...'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                final res = await HttpService().get(
+                  'ledhouse/cxc/reporte-pdf-url/$_clienteId',
+                );
+                final url = Uri.parse(res['url']);
+                if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No se pudo abrir el PDF'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('No se pudo abrir el PDF'),
+                    SnackBar(
+                      content: Text('Error al generar PDF: $e'),
                       backgroundColor: Colors.red,
                     ),
                   );

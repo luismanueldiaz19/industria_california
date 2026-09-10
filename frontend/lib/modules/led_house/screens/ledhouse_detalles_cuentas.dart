@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/app_theme.dart';
 import '../../../core/constants.dart';
+import '../../../services/http_service.dart';
 import '../providers/ledhouse_provider.dart';
 import '../componentes/add_registro_dialog_widget.dart';
 import '../componentes/dialog_confimacion_delete.dart';
@@ -111,18 +112,37 @@ class _LedhouseDetallesCuentasState extends State<LedhouseDetallesCuentas> {
 
     final ids = filteredRegistros.map((r) => r.id).join(',');
     final queryParams = <String>['ids=$ids'];
-
     final queryString = '?${queryParams.join('&')}';
-    final urlStr = '$host/api/v1/ledhouse/estado-resultado/pdf$queryString';
-    final url = Uri.parse(urlStr);
 
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No se pudo abrir el PDF.')));
+    try {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Generando reporte PDF, por favor espera...'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      final res = await HttpService().get('ledhouse/estado-resultado/pdf-url$queryString');
+      final url = Uri.parse(res['url']);
+
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo abrir el PDF.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al generar PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -130,7 +150,32 @@ class _LedhouseDetallesCuentasState extends State<LedhouseDetallesCuentas> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalles de Cuentas'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Detalles de Cuentas'),
+            if (isDemoMode) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  border: Border.all(color: Colors.amber.shade700, width: 1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'DEMO',
+                  style: TextStyle(
+                    color: Colors.amber.shade900,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 1,

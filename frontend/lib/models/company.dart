@@ -5,6 +5,7 @@ class Company {
   final String phone;
   final String mobile;
   final String logo;
+  final String developer;
 
   const Company({
     required this.name,
@@ -13,17 +14,19 @@ class Company {
     required this.phone,
     required this.mobile,
     required this.logo,
+    this.developer = '',
   });
 
   // Instancia con los datos reales para usar en la aplicación
   static const Company current = Company(
     name: 'Industria California S.R.L',
-    rnc: 'xxxxxxxx',
+    rnc: '132839935',
     address:
         'Calle 16 Agosto , # 91, Moca, Dom R Moca 09 56000 Dominican Republic.',
-    phone: '+1 (809) xxx-xxxx',
+    phone: '829-477-8000',
     mobile: '+1 (809) xxx-xxxx',
     logo: 'assets/logos/logo_california.png',
+    developer: 'Lwader Soft',
   );
 
   // Puedes agregar factory de JSON si en el futuro los datos vienen del backend
@@ -35,6 +38,7 @@ class Company {
       phone: json['phone'] ?? '',
       mobile: json['mobile'] ?? '',
       logo: json['logo'] ?? 'assets/logos/logo_california.png',
+      developer: json['developer'] ?? 'Lwader Soft',
     );
   }
 

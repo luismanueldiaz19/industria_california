@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants.dart';
+import '../../../services/http_service.dart';
 import '../screens/ledhouse_detalles_cuentas.dart';
 
 class ReportePorCuentasWidget extends StatefulWidget {
@@ -45,29 +46,43 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
   ];
 
   Future<void> _downloadMatrizPdf() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Generando PDF, por favor espera...')),
-    );
+    try {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Generando PDF, por favor espera...')),
+        );
+      }
 
-    String urlStr =
-        '$host/api/v1/ledhouse/estado-resultado/matriz-pdf?year=${widget.selectedYear}';
-    
-    if (_selectedModulo != null) {
-      urlStr += '&modulo=$_selectedModulo';
-    }
-    if (_selectedMonths.isNotEmpty) {
-      urlStr += '&meses=${_selectedMonths.join(",")}';
-    }
+      Map<String, String> params = {'year': widget.selectedYear.toString()};
+      if (_selectedModulo != null) {
+        params['modulo'] = _selectedModulo!;
+      }
+      if (_selectedMonths.isNotEmpty) {
+        params['meses'] = _selectedMonths.join(',');
+      }
 
-    final url = Uri.parse(urlStr);
+      final queryStr = Uri(queryParameters: params).query;
+      final endpoint = 'ledhouse/estado-resultado/matriz-pdf-url?$queryStr';
 
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No se pudo abrir el PDF.')));
+      final res = await HttpService().get(endpoint);
+      final url = Uri.parse(res['url']);
+
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo abrir el PDF.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al generar PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

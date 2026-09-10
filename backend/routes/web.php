@@ -1,6 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Pdf\PdfViewerController;
+
+// =========================================================
+// RUTA SEGURA DE VISUALIZACIÓN DE DOCUMENTOS (TOKEN OPACO)
+// =========================================================
+Route::get('/d/{token}', [PdfViewerController::class, 'ver'])->name('pdf.view');
+
 // =========================================================
 // RUTA PARA EL FRONTEND (FLUTTER WEB)
 // =========================================================

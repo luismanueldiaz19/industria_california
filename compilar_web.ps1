@@ -2,8 +2,24 @@ Write-Host "Iniciando compilacion de Flutter Web..." -ForegroundColor Cyan
 #comando para hacer la compilacion y hacer el push
 # powershell -ExecutionPolicy Bypass -File .\compilar_web.ps1
 
-# 1. Navegar y compilar Flutter Web
+# 1. Navegar, limpiar y compilar Flutter Web
 Push-Location "$PSScriptRoot\frontend"
+
+Write-Host "Ejecutando flutter clean..." -ForegroundColor Yellow
+flutter clean
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Advertencia al ejecutar flutter clean, continuando..." -ForegroundColor DarkYellow
+}
+
+Write-Host "Ejecutando flutter pub get..." -ForegroundColor Yellow
+flutter pub get
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Error al obtener dependencias de Flutter." -ForegroundColor Red
+    Pop-Location
+    exit 1
+}
+
+Write-Host "Compilando Flutter Web en modo Release..." -ForegroundColor Cyan
 flutter build web --release
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Error en la compilacion de Flutter Web." -ForegroundColor Red

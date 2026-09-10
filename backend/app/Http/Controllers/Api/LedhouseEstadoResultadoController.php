@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LedhouseEstadoResultado;
+use App\Services\PdfSecurityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -260,6 +261,34 @@ class LedhouseEstadoResultadoController extends Controller
         ));
 
         return $pdf->stream("Estado_Resultado_LEDHOUSE.pdf");
+    }
+
+    /**
+     * Devuelve la URL segura de un solo uso / temporal para la Matriz
+     */
+    public function getMatrizPdfUrl(Request $request)
+    {
+        $url = PdfSecurityService::generarUrl(
+            'matriz',
+            $request->all(),
+            $request->user()?->id
+        );
+
+        return response()->json(['url' => $url]);
+    }
+
+    /**
+     * Devuelve la URL segura de un solo uso / temporal para el Estado de Resultado
+     */
+    public function getEstadoResultadoPdfUrl(Request $request)
+    {
+        $url = PdfSecurityService::generarUrl(
+            'estado_resultado',
+            $request->all(),
+            $request->user()?->id
+        );
+
+        return response()->json(['url' => $url]);
     }
 
     /**

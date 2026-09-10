@@ -209,6 +209,6 @@ class VendedorCxcService {
     if (streamed.statusCode == 201) {
       return json.decode(body) as Map<String, dynamic>;
     }
-    throw Exception('Error al subir evidencia');
+    throw Exception('Error al subir evidencia (${streamed.statusCode}): $body');
   }
 }

@@ -9,6 +9,7 @@ import '../../../../widgets/general_header.dart';
 import '../../../../widgets/zoom_dialog.dart';
 import 'package:provider/provider.dart';
 import '../cxc/providers/cxc_provider.dart';
+import '../../../../services/http_service.dart';
 
 class LedhouseAlertasScreen extends StatefulWidget {
   const LedhouseAlertasScreen({super.key});
@@ -141,25 +142,50 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
   }
 
   Future<void> _generarPdf() async {
-    String estado = _tabController.index == 0 ? "pendiente" : "procesada";
-    String urlStr = '$host/api/v1/ledhouse/cxc/alertas-pdf?estado=$estado';
-
-    if (_filtroVendedor != 'Todos') {
-      urlStr += '&vendedor_id=${_mapaVendedores[_filtroVendedor]}';
-    }
-    if (_filtroCliente != 'Todos') {
-      urlStr += '&cliente_id=${_mapaClientes[_filtroCliente]}';
-    }
-    if (_filtroTipo != 'Todos') {
-      urlStr += '&tipo=${_mapaTipos[_filtroTipo]}';
-    }
-
-    final url = Uri.parse(urlStr);
-    if (!await launchUrl(url)) {
+    try {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('No se pudo generar el PDF'),
+            content: Text('Generando reporte PDF...'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      String estado = _tabController.index == 0 ? "pendiente" : "procesada";
+      Map<String, String> params = {'estado': estado};
+
+      if (_filtroVendedor != 'Todos' && _mapaVendedores[_filtroVendedor] != null) {
+        params['vendedor_id'] = _mapaVendedores[_filtroVendedor].toString();
+      }
+      if (_filtroCliente != 'Todos' && _mapaClientes[_filtroCliente] != null) {
+        params['cliente_id'] = _mapaClientes[_filtroCliente].toString();
+      }
+      if (_filtroTipo != 'Todos' && _mapaTipos[_filtroTipo] != null) {
+        params['tipo'] = _mapaTipos[_filtroTipo].toString();
+      }
+
+      final queryStr = Uri(queryParameters: params).query;
+      final endpoint = 'ledhouse/cxc/alertas-pdf-url?$queryStr';
+
+      final res = await HttpService().get(endpoint);
+      final url = Uri.parse(res['url']);
+
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se pudo abrir el PDF'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al generar PDF: $e'),
             backgroundColor: Colors.red,
           ),
         );

@@ -50,7 +50,7 @@
 </head>
 <body>
 
-    <x-pdf-header title="Reporte Completo de CXC" subtitle="Demostración de URLs temporales con imágenes S3 locales" />
+    <x-pdf-header title="Reporte Completo de CXC" subtitle="Demo" />
 
     <!-- ========================================== -->
     <!-- TABLA DE DATOS (CXC)                       -->

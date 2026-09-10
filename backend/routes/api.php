@@ -21,22 +21,29 @@ Route::prefix('v1')->group(function () {
     // Rutas Públicas
     Route::post('login', [AuthController::class, 'login']);
 
-    // Rutas Públicas (Módulo Ledhouse - PDFs)
-    Route::prefix('ledhouse')->group(function () {
-        Route::get('/estado-resultado/matriz-pdf', [LedhouseEstadoResultadoController::class, 'generateMatrizPdf']);
-        Route::get('/estado-resultado/pdf', [LedhouseEstadoResultadoController::class, 'generatePdf']);
-        Route::get('cxc/reporte-general-pdf', [LedhouseCxcController::class, 'reporteGeneralPdf'])
-            ->name('cxc.general.pdf')
-            ->middleware('signed');
-        Route::get('cxc/reporte-agrupado-pdf', [LedhouseCxcController::class, 'reporteAgrupadoPdf'])
-            ->name('cxc.agrupado.pdf')
-            ->middleware('signed');
-        Route::get('cxc/reporte-pdf/{cliente_id}', [LedhouseCxcController::class, 'reportePdf']);
-        Route::get('cxc/alertas-pdf', [LedhouseCxcController::class, 'reporteAlertasPdf']);
-        Route::get('cxc/vendedor/mis-cxc-pdf', [LedhouseCxcController::class, 'exportMisCxcPdf'])
-            ->name('cxc.vendedor.pdf')
-            ->middleware('signed');
-    });
+    // Rutas Públicas (Módulo Ledhouse / Industria California - PDFs)
+    foreach (['industria-california', 'ledhouse'] as $prefix) {
+        Route::prefix($prefix)->group(function () use ($prefix) {
+            Route::get('/estado-resultado/matriz-pdf', [LedhouseEstadoResultadoController::class, 'generateMatrizPdf']);
+            Route::get('/estado-resultado/pdf', [LedhouseEstadoResultadoController::class, 'generatePdf']);
+            
+            $genPdf = Route::get('cxc/reporte-general-pdf', [LedhouseCxcController::class, 'reporteGeneralPdf'])->middleware('signed');
+            $agrPdf = Route::get('cxc/reporte-agrupado-pdf', [LedhouseCxcController::class, 'reporteAgrupadoPdf'])->middleware('signed');
+            Route::get('cxc/reporte-pdf/{cliente_id}', [LedhouseCxcController::class, 'reportePdf']);
+            Route::get('cxc/alertas-pdf', [LedhouseCxcController::class, 'reporteAlertasPdf']);
+            $venPdf = Route::get('cxc/vendedor/mis-cxc-pdf', [LedhouseCxcController::class, 'exportMisCxcPdf'])->middleware('signed');
+
+            if ($prefix === 'industria-california') {
+                $genPdf->name('cxc.general.pdf');
+                $agrPdf->name('cxc.agrupado.pdf');
+                $venPdf->name('cxc.vendedor.pdf');
+            } else {
+                $genPdf->name('cxc.general.pdf.legacy');
+                $agrPdf->name('cxc.agrupado.pdf.legacy');
+                $venPdf->name('cxc.vendedor.pdf.legacy');
+            }
+        });
+    }
 
     // Rutas Protegidas
     Route::middleware('auth:sanctum')->group(function () {
@@ -54,54 +61,60 @@ Route::prefix('v1')->group(function () {
             return response()->file($fullPath);
         });
 
-        // ── MÓDULO LED-HOUSE ───────────────────────────────────────────────
-        Route::prefix('ledhouse')->group(function () {
-            Route::get('/estado-resultado/matriz', [LedhouseEstadoResultadoController::class, 'matriz']);
-            Route::get('/estado-resultado', [LedhouseEstadoResultadoController::class, 'index']);
-            Route::get('/estado-resultado/summary', [LedhouseEstadoResultadoController::class, 'summary']);
-            Route::post('/estado-resultado', [LedhouseEstadoResultadoController::class, 'store']);
-            Route::put('/estado-resultado/{id}', [LedhouseEstadoResultadoController::class, 'update']);
-            Route::delete('/estado-resultado/{id}', [LedhouseEstadoResultadoController::class, 'destroy']);
-            Route::post('/estado-resultado/import', [LedhouseEstadoResultadoController::class, 'import']);
+        // ── MÓDULO INDUSTRIA CALIFORNIA ───────────────────────
+        foreach (['industria-california', 'ledhouse'] as $prefix) {
+            Route::prefix($prefix)->group(function () {
+                Route::get('/estado-resultado/matriz', [LedhouseEstadoResultadoController::class, 'matriz']);
+                Route::get('/estado-resultado/matriz-pdf-url', [LedhouseEstadoResultadoController::class, 'getMatrizPdfUrl']);
+                Route::get('/estado-resultado/pdf-url', [LedhouseEstadoResultadoController::class, 'getEstadoResultadoPdfUrl']);
+                Route::get('/estado-resultado', [LedhouseEstadoResultadoController::class, 'index']);
+                Route::get('/estado-resultado/summary', [LedhouseEstadoResultadoController::class, 'summary']);
+                Route::post('/estado-resultado', [LedhouseEstadoResultadoController::class, 'store']);
+                Route::put('/estado-resultado/{id}', [LedhouseEstadoResultadoController::class, 'update']);
+                Route::delete('/estado-resultado/{id}', [LedhouseEstadoResultadoController::class, 'destroy']);
+                Route::post('/estado-resultado/import', [LedhouseEstadoResultadoController::class, 'import']);
 
-            // CXP
-            Route::apiResource('cxp', LedhouseCxpController::class);
+                // CXP
+                Route::apiResource('cxp', LedhouseCxpController::class);
 
-            // CXC
-            Route::get('cxc/reporte-general-pdf-url', [LedhouseCxcController::class, 'getReporteGeneralPdfUrl']);
-            Route::get('cxc/reporte-agrupado-pdf-url', [LedhouseCxcController::class, 'getReporteAgrupadoPdfUrl']);
+                // CXC
+                Route::get('cxc/reporte-general-pdf-url', [LedhouseCxcController::class, 'getReporteGeneralPdfUrl']);
+                Route::get('cxc/reporte-agrupado-pdf-url', [LedhouseCxcController::class, 'getReporteAgrupadoPdfUrl']);
+                Route::get('cxc/reporte-pdf-url/{cliente_id}', [LedhouseCxcController::class, 'getReporteClientePdfUrl']);
+                Route::get('cxc/alertas-pdf-url', [LedhouseCxcController::class, 'getReporteAlertasPdfUrl']);
 
-            // Rutas para el vendedor
-            Route::get('cxc/vendedor/mis-cxc', [LedhouseCxcController::class, 'getMisCxcPaginated']);
-            Route::get('cxc/vendedor/mis-cxc-pdf-url', [LedhouseCxcController::class, 'getMisCxcPdfUrl']);
-            
-            Route::get('cxc/grouped', [LedhouseCxcController::class, 'groupedByCliente']);
-            Route::post('cxc/import-by-cliente/{cliente_id}', [LedhouseCxcController::class, 'importByCliente']);
-            // Sync masivo (Fase 1 preview + Fase 2 confirm)
-            Route::post('cxc/sync-preview', [LedhouseCxcController::class, 'syncPreview']);
-            Route::post('cxc/sync-confirm', [LedhouseCxcController::class, 'syncConfirm']);
-            // Alertas del Vendedor
-            Route::get('cxc/alertas', [LedhouseCxcController::class, 'getAlertas']);
-            Route::post('cxc/{cxc}/alerta', [LedhouseCxcController::class, 'addAlerta']);
-            Route::patch('cxc/alertas/{alerta}/resolver', [LedhouseCxcController::class, 'resolverAlerta']);
-            Route::delete('cxc/alertas/{alerta}', [LedhouseCxcController::class, 'destroyAlerta']);
-            // Evidencias (archivos PDF/JPG)
-            Route::post('cxc/{cxc}/evidencia', [LedhouseCxcController::class, 'uploadEvidencia']);
-            Route::get('cxc/{cxc}/evidencias', [LedhouseCxcController::class, 'getEvidencias']);
-            Route::apiResource('cxc', LedhouseCxcController::class);
-            Route::post('cxc/{cxc}/soporte', [LedhouseCxcController::class, 'addSoporte']);
-            Route::get('cxc/{cxc}/soporte', [LedhouseCxcController::class, 'getSoportes']);
+                // Rutas para el vendedor
+                Route::get('cxc/vendedor/mis-cxc', [LedhouseCxcController::class, 'getMisCxcPaginated']);
+                Route::get('cxc/vendedor/mis-cxc-pdf-url', [LedhouseCxcController::class, 'getMisCxcPdfUrl']);
+                
+                Route::get('cxc/grouped', [LedhouseCxcController::class, 'groupedByCliente']);
+                Route::post('cxc/import-by-cliente/{cliente_id}', [LedhouseCxcController::class, 'importByCliente']);
+                // Sync masivo (Fase 1 preview + Fase 2 confirm)
+                Route::post('cxc/sync-preview', [LedhouseCxcController::class, 'syncPreview']);
+                Route::post('cxc/sync-confirm', [LedhouseCxcController::class, 'syncConfirm']);
+                // Alertas del Vendedor
+                Route::get('cxc/alertas', [LedhouseCxcController::class, 'getAlertas']);
+                Route::post('cxc/{cxc}/alerta', [LedhouseCxcController::class, 'addAlerta']);
+                Route::patch('cxc/alertas/{alerta}/resolver', [LedhouseCxcController::class, 'resolverAlerta']);
+                Route::delete('cxc/alertas/{alerta}', [LedhouseCxcController::class, 'destroyAlerta']);
+                // Evidencias (archivos PDF/JPG)
+                Route::post('cxc/{cxc}/evidencia', [LedhouseCxcController::class, 'uploadEvidencia']);
+                Route::get('cxc/{cxc}/evidencias', [LedhouseCxcController::class, 'getEvidencias']);
+                Route::apiResource('cxc', LedhouseCxcController::class);
+                Route::post('cxc/{cxc}/soporte', [LedhouseCxcController::class, 'addSoporte']);
+                Route::get('cxc/{cxc}/soporte', [LedhouseCxcController::class, 'getSoportes']);
 
-            // Cuentas de Catalogo
-            Route::post('cuentas-catalogo/import', [LedhouseCuentaCatalogoController::class, 'import']);
-            Route::apiResource('cuentas-catalogo', LedhouseCuentaCatalogoController::class);
+                // Cuentas de Catalogo
+                Route::post('cuentas-catalogo/import', [LedhouseCuentaCatalogoController::class, 'import']);
+                Route::apiResource('cuentas-catalogo', LedhouseCuentaCatalogoController::class);
 
-            // Clientes
-            Route::post('clientes/import', [LedhouseClienteController::class, 'import']);
-            Route::apiResource('clientes', LedhouseClienteController::class);
+                // Clientes
+                Route::post('clientes/import', [LedhouseClienteController::class, 'import']);
+                Route::apiResource('clientes', LedhouseClienteController::class);
 
-            // Proveedores
-            Route::apiResource('proveedores', LedhouseProveedorController::class);
-        });
+                // Proveedores
+                Route::apiResource('proveedores', LedhouseProveedorController::class);
+            });
+        }
     });
 });

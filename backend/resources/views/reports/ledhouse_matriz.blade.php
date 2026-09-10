@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Reporte de Cuentas - LED-HOUSE</title>
+    <title>Reporte de Cuentas - Industria California</title>
     <style>
         @page {
             margin: 40px 40px 120px 40px;
@@ -251,7 +251,7 @@
         </div>
         <div class="header-center">
             <div class="top-text">EMPRESA</div>
-            <div class="main-title">LED-HOUSE</div>
+            <div class="main-title">Industria California</div>
         </div>
         <div class="header-right">
             <div class="report-label">Año: {{ $year }}</div>
