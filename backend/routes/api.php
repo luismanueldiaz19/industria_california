@@ -40,9 +40,10 @@ Route::prefix('v1')->group(function () {
 
     // Rutas Protegidas
     Route::middleware('auth:sanctum')->group(function () {
-        
+
         Route::post('register', [AuthController::class, 'register']);
         Route::post('logout', [AuthController::class, 'logout']);
+        Route::post('perfil/actualizar', [AuthController::class, 'updateProfile']);
         Route::apiResource('users', UserController::class);
 
         Route::get('/file', function (Request $request) {

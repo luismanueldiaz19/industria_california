@@ -8,7 +8,9 @@ import '../widgets/header_clipper.dart';
 import '../widgets/mini_chart_painter.dart';
 
 class VendedorDashboardScreen extends StatelessWidget {
-  const VendedorDashboardScreen({super.key});
+  final VoidCallback? onProfileTap;
+
+  const VendedorDashboardScreen({super.key, this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
@@ -61,28 +63,36 @@ class VendedorDashboardScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          Column(
-                            children: [
-                              const CircleAvatar(
-                                radius: 20,
-                                backgroundColor: Colors.white,
-                                child: Icon(
-                                  Icons.person,
-                                  color: AppTheme.primaryBlue,
+                          GestureDetector(
+                            onTap: onProfileTap,
+                            child: Column(
+                              children: [
+                                CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: Colors.white,
+                                  backgroundImage:
+                                      authProvider.profilePhotoUrl != null
+                                      ? NetworkImage(
+                                          authProvider.profilePhotoUrl!,
+                                        )
+                                      : null,
+                                  child: authProvider.profilePhotoUrl == null
+                                      ? const Icon(
+                                          Icons.person,
+                                          color: AppTheme.primaryBlue,
+                                        )
+                                      : null,
                                 ),
-                                // backgroundImage: NetworkImage(
-                                //   'https://i.pravatar.cc/150?img=11',
-                                // ), // Placeholder
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                authProvider.username ?? 'Error Logueo',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  fontSize: 12,
+                                const SizedBox(height: 4),
+                                Text(
+                                  authProvider.username ?? 'Error Logueo',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 12,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ],
                       ),

@@ -6,6 +6,8 @@ import '../../../../core/app_theme.dart';
 import '../models/cxc_model.dart';
 import '../providers/cxc_provider.dart';
 import '../../providers/ledhouse_cliente_provider.dart';
+import '../../../../core/auth_provider.dart';
+import '../../../vendedor/services/vendedor_cxc_service.dart';
 
 class CxcFormDialog extends StatefulWidget {
   final CxcModel? cxc;
@@ -29,6 +31,10 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
   String _estado = 'pendiente';
   bool _isSaving = false;
 
+  bool _isAdmin = false;
+  List<dynamic> _vendedores = [];
+  int? _selectedVendedorId;
+
   bool get _isEditing => widget.cxc != null;
 
   @override
@@ -37,6 +43,7 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
     if (widget.cxc != null) {
       _documentoController.text = widget.cxc!.documento;
       _selectedClienteId = widget.cxc!.clienteId;
+      _selectedVendedorId = widget.cxc!.vendedorId;
       _montoFacturaController.text = widget.cxc!.montoFactura.toString();
       _montoPagadoController.text = widget.cxc!.montoPagado.toString();
       _estado = widget.cxc!.estado;
@@ -56,7 +63,21 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
         context,
         listen: false,
       ).fetchClientes();
+      _initAdmin();
     });
+  }
+
+  Future<void> _initAdmin() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.isAdmin) {
+      setState(() => _isAdmin = true);
+      try {
+        final vends = await VendedorCxcService().getVendedores(auth.token ?? '');
+        setState(() => _vendedores = vends);
+      } catch (e) {
+        debugPrint('Error loading vendors: $e');
+      }
+    }
   }
 
   @override
@@ -114,6 +135,7 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
     final data = {
       'documento': _documentoController.text.trim(),
       'cliente_id': _selectedClienteId,
+      if (_selectedVendedorId != null) 'vendedor_id': _selectedVendedorId,
       'monto_factura': double.parse(_montoFacturaController.text.trim()),
       'monto_pagado': _montoPagadoController.text.isEmpty
           ? 0
@@ -414,6 +436,63 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                         ],
                       ),
                       
+                      if (_isAdmin) ...[
+                        const SizedBox(height: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Asignar a Vendedor',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF374151),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<int>(
+                              value: _selectedVendedorId,
+                              decoration: InputDecoration(
+                                prefixIcon: Container(
+                                  margin: const EdgeInsets.all(10),
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.successColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.person_pin_rounded, color: AppTheme.successColor, size: 18),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF9FAFB),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(color: Colors.grey.shade200),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: const BorderSide(
+                                    color: AppTheme.successColor,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                              ),
+                              hint: const Text('Selecciona el vendedor...'),
+                              items: _vendedores.map((v) {
+                                return DropdownMenuItem<int>(
+                                  value: v['id'],
+                                  child: Text('${v['name']} (@${v['username']})'),
+                                );
+                              }).toList(),
+                              onChanged: (val) => setState(() => _selectedVendedorId = val),
+                            ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

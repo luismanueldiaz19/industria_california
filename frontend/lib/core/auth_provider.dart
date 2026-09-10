@@ -6,12 +6,16 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   String? _username;
+  String? _name;
+  String? _profilePhotoUrl;
   List<String> _roles = [];
 
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String? get username => _username;
+  String? get name => _name;
+  String? get profilePhotoUrl => _profilePhotoUrl;
   List<String> get roles => _roles;
   
   String? get token => HttpService.token;
@@ -46,6 +50,8 @@ class AuthProvider extends ChangeNotifier {
         HttpService.token = response['token'];
         _isAuthenticated = true;
         _username = response['user']['username'] ?? trimmedUsername;
+        _name = response['user']['name'];
+        _profilePhotoUrl = response['user']['profile_photo_url'];
         if (response['user']['roles'] != null) {
           _roles = List<String>.from(response['user']['roles']);
         }
@@ -108,9 +114,17 @@ class AuthProvider extends ChangeNotifier {
       HttpService.token = null;
       _isAuthenticated = false;
       _username = null;
+      _name = null;
+      _profilePhotoUrl = null;
       _roles = [];
       notifyListeners();
     }
+  }
+
+  void updateProfileData({String? newName, String? newPhotoUrl}) {
+    if (newName != null) _name = newName;
+    if (newPhotoUrl != null) _profilePhotoUrl = newPhotoUrl;
+    notifyListeners();
   }
 
   Future<bool> sendResetCode(String email) async {

@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../core/app_theme.dart';
-import '../../../../core/constants.dart';
 import '../models/cxc_model.dart';
 import '../providers/cxc_provider.dart';
 import '../widgets/cxc_form_dialog.dart';

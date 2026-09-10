@@ -40,6 +40,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'username' => $user->username,
+                'profile_photo_url' => $user->profile_photo_path ? url('storage/' . $user->profile_photo_path) : null,
                 'roles' => $user->getRoleNames(),
             ]
         ], 201);
@@ -71,6 +72,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'username' => $user->username,
+                'profile_photo_url' => $user->profile_photo_path ? url('storage/' . $user->profile_photo_path) : null,
                 'roles' => $user->getRoleNames(),
             ]
         ], 200);
@@ -85,6 +87,54 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Sesión cerrada con éxito.'
+        ], 200);
+    }
+
+    /**
+     * Actualizar perfil del usuario (nombre, foto, contraseña).
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'current_password' => 'required_with:new_password|string',
+            'new_password' => 'nullable|string|min:6',
+            'profile_photo' => 'nullable|image|max:5120',
+        ]);
+
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+
+        if ($request->filled('new_password')) {
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json(['error' => 'La contraseña actual es incorrecta.'], 403);
+            }
+            $user->password = Hash::make($request->new_password);
+        }
+
+        if ($request->hasFile('profile_photo')) {
+            // Eliminar foto anterior si existe
+            if ($user->profile_photo_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->profile_photo_path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->profile_photo_path);
+            }
+            $path = $request->file('profile_photo')->store('profile-photos', 'public');
+            $user->profile_photo_path = $path;
+        }
+
+        $user->save();
+
+        return response()->json([
+            'message' => 'Perfil actualizado correctamente.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'profile_photo_url' => $user->profile_photo_path ? url('storage/' . $user->profile_photo_path) : null,
+                'roles' => $user->getRoleNames(),
+            ]
         ], 200);
     }
 }

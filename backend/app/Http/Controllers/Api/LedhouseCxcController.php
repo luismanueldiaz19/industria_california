@@ -486,7 +486,8 @@ class LedhouseCxcController extends Controller
 
         $user = $request->user();
         if ($user && $user->hasRole('vendedor')) {
-            $query->where('vendedor_id', $user->id);
+            $query->where('vendedor_id', $user->id)
+                  ->where('estado_alerta', '!=', 'procesada');
         }
 
         if ($request->has('estado')) {
@@ -638,9 +639,25 @@ class LedhouseCxcController extends Controller
             return response()->json(['error' => 'No tienes permiso para eliminar esta alerta.'], 403);
         }
 
+        // Buscar evidencias asociadas directamente a la alerta, 
+        // o asociadas al documento CXC pero sin alerta_id
+        $evidencias = \App\Models\LedhouseCxcEvidencia::where('alerta_id', $alerta->id)
+            ->orWhere(function($query) use ($alerta) {
+                $query->where('ledhouse_cxc_id', $alerta->ledhouse_cxc_id)
+                      ->whereNull('alerta_id');
+            })->get();
+
+        // Eliminar archivos físicos del disco 'public'
+        foreach ($evidencias as $ev) {
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($ev->ruta_archivo)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($ev->ruta_archivo);
+            }
+            $ev->delete();
+        }
+
         $alerta->delete();
 
-        return response()->json(['message' => 'Alerta eliminada exitosamente.']);
+        return response()->json(['message' => 'Alerta y documentos eliminados exitosamente.']);
     }
 
     // ─────────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import '../models/vendedor_alerta_model.dart';
 import '../../../../core/constants.dart';
 
 class VendedorCxcService {
@@ -134,7 +135,7 @@ class VendedorCxcService {
   }
 
   /// Obtener alertas del vendedor (y opcionalmente por estado)
-  Future<List<dynamic>> getMisAlertas({
+  Future<List<VendedorAlertaModel>> getMisAlertas({
     required String token,
     String? estado,
   }) async {
@@ -143,7 +144,8 @@ class VendedorCxcService {
     ).replace(queryParameters: {if (estado != null) 'estado': estado});
     final res = await http.get(uri, headers: _headers(token));
     if (res.statusCode == 200) {
-      return json.decode(res.body) as List;
+      final List data = json.decode(res.body);
+      return data.map((e) => VendedorAlertaModel.fromJson(e)).toList();
     }
     throw Exception('Error al cargar alertas');
   }

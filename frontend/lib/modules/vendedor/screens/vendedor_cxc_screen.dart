@@ -195,6 +195,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
 
       appBar: AppBar(
         title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Cuentas por Cobrar (CXC)',
@@ -216,7 +217,6 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
         ),
         backgroundColor: AppTheme.primaryBlue,
         foregroundColor: Colors.white,
-        centerTitle: true,
         elevation: 0,
         actions: [
           HeaderButton(
