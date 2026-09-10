@@ -7,7 +7,7 @@ import '../vendedor/screens/vendedor_main_layout.dart';
 import 'forgot_password_screen.dart';
 import 'widgets/auth_text_field.dart';
 import 'widgets/auth_submit_button.dart';
-import 'widgets/auth_quick_credential_card.dart';
+// import 'widgets/auth_quick_credential_card.dart';
 import 'widgets/login_branding_panel.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -84,6 +84,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  /*
   void _autofillCredentials() {
     FocusScope.of(context).unfocus();
     setState(() {
@@ -99,6 +100,7 @@ class _LoginScreenState extends State<LoginScreen>
       _passwordController.text = "123456";
     });
   }
+  */
 
   @override
   Widget build(BuildContext context) {
@@ -419,9 +421,9 @@ class _LoginScreenState extends State<LoginScreen>
                 backgroundColor: accentColor,
                 height: 40,
               ),
+              // Modular Quick Credential Buttons (Desactivado para producción)
+              /*
               const SizedBox(height: 18),
-
-              // Modular Quick Credential Buttons
               Row(
                 children: [
                   AuthQuickCredentialCard(
@@ -435,6 +437,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ],
               ),
+              */
             ],
           ),
         ),
