@@ -44,6 +44,10 @@ class _CustomSidebarState extends State<CustomSidebar> {
       _expandedSection = '10. REPORTES Y AUDITORÍA';
     } else if (widget.selectedIndex >= 48 && widget.selectedIndex <= 52) {
       _expandedSection = '11.';
+    } else if (widget.selectedIndex == 8 || widget.selectedIndex == 9) {
+      _expandedSection = '3. INVENTARIO';
+    } else if (widget.selectedIndex == 10 || widget.selectedIndex == 11) {
+      _expandedSection = '4. LOGÍSTICA Y PEDIDOS';
     }
   }
 
@@ -124,7 +128,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
                       4,
                       Icons.people_outline,
                       Icons.people,
-                      'Clientes',
+                      'Clientes Ledhouse',
                       accentColor,
                     ),
                     _buildMenuItem(
@@ -154,6 +158,48 @@ class _CustomSidebarState extends State<CustomSidebar> {
                       Icons.manage_accounts_outlined,
                       Icons.manage_accounts,
                       'Usuarios',
+                      accentColor,
+                    ),
+                  ],
+                ),
+
+                _buildExpansionSection(
+                  '3. INVENTARIO',
+                  Icons.inventory_2_outlined,
+                  [
+                    _buildMenuItem(
+                      8,
+                      Icons.grid_view_outlined,
+                      Icons.grid_view_rounded,
+                      'Inventario',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
+                      9,
+                      Icons.swap_vert_outlined,
+                      Icons.swap_vert_rounded,
+                      'Movimientos',
+                      accentColor,
+                    ),
+                  ],
+                ),
+
+                _buildExpansionSection(
+                  '4. LOGÍSTICA Y PEDIDOS',
+                  Icons.local_shipping_outlined,
+                  [
+                    _buildMenuItem(
+                      10,
+                      Icons.shopping_cart_outlined,
+                      Icons.shopping_cart_rounded,
+                      'Pedidos',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
+                      11,
+                      Icons.map_outlined,
+                      Icons.map_rounded,
+                      'Rutas',
                       accentColor,
                     ),
                   ],

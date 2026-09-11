@@ -304,7 +304,7 @@ class _CuentaCatalogoScreenState extends State<CuentaCatalogoScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Catálogo de Cuentas',
+                  'Catálogo Ledhouse',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,

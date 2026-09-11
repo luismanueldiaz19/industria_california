@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'vendedor_dashboard_screen.dart';
 import 'vendedor_perfil_screen.dart';
 import 'vendedor_cxc_screen.dart';
-
 import 'vendedor_actividad_screen.dart';
+import 'vendedor_pedidos_screen.dart';
 
 class VendedorMainLayout extends StatefulWidget {
   const VendedorMainLayout({super.key});
@@ -18,16 +18,13 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
   List<Widget> _getScreens() {
     return [
       VendedorDashboardScreen(
-        onProfileTap: () {
-          setState(() {
-            _currentIndex = 4;
-          });
-        },
+        onProfileTap: () => setState(() => _currentIndex = 5),
       ),
-      const VendedorCxcScreen(),
-      const Center(child: Text('Clientes')),
-      const VendedorActividadScreen(),
-      const VendedorPerfilScreen(),
+      const VendedorPedidosScreen(), // index 1
+      const VendedorCxcScreen(), // index 2
+      const Center(child: Text('Clientes')), // index 3
+      const VendedorActividadScreen(), // index 4
+      const VendedorPerfilScreen(), // index 5
     ];
   }
 
@@ -74,6 +71,11 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
                       icon: Icon(Icons.home_outlined),
                       activeIcon: Icon(Icons.home),
                       label: 'Inicio',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.shopping_cart_outlined),
+                      activeIcon: Icon(Icons.shopping_cart),
+                      label: 'Pedidos',
                     ),
                     BottomNavigationBarItem(
                       icon: Icon(Icons.receipt_long_outlined),

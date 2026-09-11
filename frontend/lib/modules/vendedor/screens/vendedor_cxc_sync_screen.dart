@@ -181,7 +181,7 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppTheme.ledhouseBlue.withValues(alpha: 0.2),
+              color: AppTheme.ledhouseBlue.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(

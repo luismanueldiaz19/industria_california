@@ -133,7 +133,11 @@ class _LoginScreenState extends State<LoginScreen>
                 constraints: BoxConstraints(minHeight: size.height),
                 alignment: Alignment.center,
                 child: Container(
-                  constraints: BoxConstraints(maxWidth: isDesktop ? 740 : 380),
+                  constraints: BoxConstraints(
+                    maxWidth: isDesktop ? 740 : 380,
+                    maxHeight: 450,
+                    minHeight: 400,
+                  ),
                   margin: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 20,

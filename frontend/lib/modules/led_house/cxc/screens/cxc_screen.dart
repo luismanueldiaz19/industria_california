@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../core/app_theme.dart';
-import '../../../../models/company.dart';
 import '../models/cxc_model.dart';
 import '../providers/cxc_provider.dart';
 import '../widgets/cxc_form_dialog.dart';
@@ -502,7 +501,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                       }
 
                                       String mensaje =
-                                          'Hola *${cliente['nombre']}*,\n\nLe recordamos que tiene facturas pendientes con *${Company.current.name}*:\n\n';
+                                          'Hola *${cliente['nombre']}*,\n\nLe recordamos que tiene facturas pendientes con *Ledhouse*:\n\n';
                                       for (var cxc in cxcsCliente) {
                                         int diasAtraso = 0;
                                         try {
@@ -964,9 +963,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                   return SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minWidth: constraints.maxWidth,
-                      ),
+                      constraints: BoxConstraints(minWidth: constraints.maxWidth),
                       child: SingleChildScrollView(
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(
@@ -1074,10 +1071,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                           ],
                           rows: pageItems.map((cxc) {
                             final color = _getStatusColor(cxc.estado);
-                            final pastDue = _isPastDue(
-                              cxc.fechaVencimiento,
-                              cxc.estado,
-                            );
+                            final pastDue = _isPastDue(cxc.fechaVencimiento, cxc.estado);
                             return DataRow(
                               cells: [
                                 // Documento
@@ -1086,9 +1080,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                     onTap: () => _showFormDialog(cxc),
                                     borderRadius: BorderRadius.circular(6),
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 4,
-                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 4),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -1096,8 +1088,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                             padding: const EdgeInsets.all(5),
                                             decoration: BoxDecoration(
                                               color: color.withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
+                                              borderRadius: BorderRadius.circular(6),
                                             ),
                                             child: Icon(
                                               Icons.description_rounded,
@@ -1122,9 +1113,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                 // Cliente
                                 DataCell(
                                   ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 180,
-                                    ),
+                                    constraints: const BoxConstraints(maxWidth: 180),
                                     child: Tooltip(
                                       message: cxc.cliente,
                                       child: Text(
@@ -1156,9 +1145,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                     children: [
                                       if (pastDue)
                                         Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 4,
-                                          ),
+                                          padding: const EdgeInsets.only(right: 4),
                                           child: Icon(
                                             Icons.warning_amber_rounded,
                                             size: 14,
@@ -1169,12 +1156,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                         cxc.fechaVencimiento,
                                         style: TextStyle(
                                           fontSize: 12,
-                                          fontWeight: pastDue
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                          color: pastDue
-                                              ? AppTheme.dangerColor
-                                              : Colors.grey.shade700,
+                                          fontWeight: pastDue ? FontWeight.bold : FontWeight.normal,
+                                          color: pastDue ? AppTheme.dangerColor : Colors.grey.shade700,
                                         ),
                                       ),
                                     ],
@@ -1203,33 +1186,24 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                 // Pendiente
                                 DataCell(
                                   Text(
-                                    currencyFormatter.format(
-                                      cxc.montoPendiente,
-                                    ),
+                                    currencyFormatter.format(cxc.montoPendiente),
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
                                       color: cxc.montoPendiente <= 0
                                           ? AppTheme.successColor
-                                          : (pastDue
-                                                ? AppTheme.dangerColor
-                                                : const Color(0xFFEA580C)),
+                                          : (pastDue ? AppTheme.dangerColor : const Color(0xFFEA580C)),
                                     ),
                                   ),
                                 ),
                                 // Estado
                                 DataCell(
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
                                       color: color.withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: color.withOpacity(0.3),
-                                      ),
+                                      border: Border.all(color: color.withOpacity(0.3)),
                                     ),
                                     child: Text(
                                       cxc.estado.toUpperCase(),
@@ -1247,10 +1221,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       if (cxc.clienteObj?.whatsapp != null &&
-                                          cxc.clienteObj!.whatsapp!
-                                              .toString()
-                                              .trim()
-                                              .isNotEmpty)
+                                          cxc.clienteObj!.whatsapp!.toString().trim().isNotEmpty)
                                         IconButton(
                                           icon: const FaIcon(
                                             FontAwesomeIcons.whatsapp,
@@ -1272,8 +1243,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                         tooltip: 'Gestión de Cobro',
                                         padding: const EdgeInsets.all(4),
                                         constraints: const BoxConstraints(),
-                                        onPressed: () =>
-                                            _showSoporteDialog(cxc),
+                                        onPressed: () => _showSoporteDialog(cxc),
                                       ),
                                       const SizedBox(width: 4),
                                       IconButton(
@@ -1353,22 +1323,10 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                     isDense: true,
                     underline: const SizedBox(),
                     items: const [
-                      DropdownMenuItem(
-                        value: 10,
-                        child: Text('10', style: TextStyle(fontSize: 12)),
-                      ),
-                      DropdownMenuItem(
-                        value: 25,
-                        child: Text('25', style: TextStyle(fontSize: 12)),
-                      ),
-                      DropdownMenuItem(
-                        value: 50,
-                        child: Text('50', style: TextStyle(fontSize: 12)),
-                      ),
-                      DropdownMenuItem(
-                        value: 100,
-                        child: Text('100', style: TextStyle(fontSize: 12)),
-                      ),
+                      DropdownMenuItem(value: 10, child: Text('10', style: TextStyle(fontSize: 12))),
+                      DropdownMenuItem(value: 25, child: Text('25', style: TextStyle(fontSize: 12))),
+                      DropdownMenuItem(value: 50, child: Text('50', style: TextStyle(fontSize: 12))),
+                      DropdownMenuItem(value: 100, child: Text('100', style: TextStyle(fontSize: 12))),
                     ],
                     onChanged: (val) {
                       if (val != null) {
@@ -1384,63 +1342,40 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                     icon: const Icon(Icons.first_page_rounded),
                     iconSize: 20,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 26,
-                      minHeight: 26,
-                    ),
+                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
                     tooltip: 'Primera página',
-                    onPressed: _currentPage > 1
-                        ? () => setState(() => _currentPage = 1)
-                        : null,
+                    onPressed: _currentPage > 1 ? () => setState(() => _currentPage = 1) : null,
                   ),
                   IconButton(
                     icon: const Icon(Icons.chevron_left_rounded),
                     iconSize: 20,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 26,
-                      minHeight: 26,
-                    ),
+                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
                     tooltip: 'Página anterior',
-                    onPressed: _currentPage > 1
-                        ? () => setState(() => _currentPage--)
-                        : null,
+                    onPressed: _currentPage > 1 ? () => setState(() => _currentPage--) : null,
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
                       '$_currentPage / ${totalPages == 0 ? 1 : totalPages}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.chevron_right_rounded),
                     iconSize: 20,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 26,
-                      minHeight: 26,
-                    ),
+                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
                     tooltip: 'Página siguiente',
-                    onPressed: _currentPage < totalPages
-                        ? () => setState(() => _currentPage++)
-                        : null,
+                    onPressed: _currentPage < totalPages ? () => setState(() => _currentPage++) : null,
                   ),
                   IconButton(
                     icon: const Icon(Icons.last_page_rounded),
                     iconSize: 20,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 26,
-                      minHeight: 26,
-                    ),
+                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
                     tooltip: 'Última página',
-                    onPressed: _currentPage < totalPages
-                        ? () => setState(() => _currentPage = totalPages)
-                        : null,
+                    onPressed: _currentPage < totalPages ? () => setState(() => _currentPage = totalPages) : null,
                   ),
                 ],
               ),
@@ -1472,13 +1407,14 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
     if (diasAtraso > 0) {
       mensaje += '*Días de atraso:* $diasAtraso días\n';
     }
-    mensaje += '*Monto:* ${currencyFormatter.format(cxc.montoPendiente)}\n\n';
-    mensaje += 'Por favor, contáctenos para coordinar el pago. Gracias.';
+    mensaje +=
+        '*Monto:* ${currencyFormatter.format(cxc.montoPendiente)}\n\n';
+    mensaje +=
+        'Por favor, contáctenos para coordinar el pago. Gracias.';
 
-    String phone = (cxc.clienteObj?.whatsapp ?? '').toString().replaceAll(
-      RegExp(r'\D'),
-      '',
-    );
+    String phone = (cxc.clienteObj?.whatsapp ?? '')
+        .toString()
+        .replaceAll(RegExp(r'\D'), '');
     if (!phone.startsWith('1') && phone.length == 10) {
       phone = '1$phone';
     }

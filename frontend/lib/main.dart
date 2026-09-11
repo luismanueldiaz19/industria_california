@@ -27,6 +27,17 @@ import 'modules/led_house/screens/clientes/ledhouse_clientes_screen.dart';
 import 'modules/led_house/screens/ledhouse_alertas_screen.dart';
 import 'modules/led_house/providers/ledhouse_proveedor_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
+// Módulo Inventario
+import 'modules/inventario/providers/inventario_categoria_provider.dart';
+import 'modules/inventario/providers/inventario_producto_provider.dart';
+import 'modules/inventario/providers/inventario_movimiento_provider.dart';
+import 'modules/inventario/screens/inventario_productos_screen.dart';
+import 'modules/inventario/screens/inventario_movimientos_screen.dart';
+// Módulo Logística
+import 'modules/logistica/providers/ruta_provider.dart';
+import 'modules/logistica/providers/pedido_provider.dart';
+import 'modules/logistica/screens/pedidos_screen.dart';
+import 'modules/logistica/screens/rutas_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +54,13 @@ void main() async {
         ChangeNotifierProvider(create: (_) => CuentaCatalogoProvider()),
         ChangeNotifierProvider(create: (_) => LedhouseClienteProvider()),
         ChangeNotifierProvider(create: (_) => LedhouseProveedorProvider()),
+        // Módulo Inventario
+        ChangeNotifierProvider(create: (_) => InventarioCategoriaProvider()),
+        ChangeNotifierProvider(create: (_) => InventarioProductoProvider()),
+        ChangeNotifierProvider(create: (_) => InventarioMovimientoProvider()),
+        // Módulo Logística
+        ChangeNotifierProvider(create: (_) => RutaProvider()),
+        ChangeNotifierProvider(create: (_) => PedidoProvider()),
       ],
       child: const ConstruccionERP(),
     ),
@@ -117,9 +135,15 @@ class _MainLayoutState extends State<MainLayout> {
     const CuentaCatalogoScreen(), // 3
     const LedhouseClientesScreen(), // 4
     const LedhouseAlertasScreen(), // 5 — Alertas de Vendedores
-    // Configuración (6-11)
-    const RolesScreen(), // 7
-    const UsersScreen(),
+    // Configuración (6-7)
+    const RolesScreen(), // 6
+    const UsersScreen(), // 7
+    // Módulo Inventario (8-9)
+    const InventarioProductosScreen(), // 8
+    const InventarioMovimientosScreen(), // 9
+    // Módulo Logística y Pedidos (10-11)
+    const PedidosScreen(), // 10
+    const RutasScreen(), // 11
   ];
 
   @override

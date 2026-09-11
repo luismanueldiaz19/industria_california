@@ -124,9 +124,7 @@ class _LedhouseDetallesCuentasState extends State<LedhouseDetallesCuentas> {
         );
       }
 
-      final res = await HttpService().get(
-        'ledhouse/estado-resultado/pdf-url$queryString',
-      );
+      final res = await HttpService().get('ledhouse/estado-resultado/pdf-url$queryString');
       final url = Uri.parse(res['url']);
 
       if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {

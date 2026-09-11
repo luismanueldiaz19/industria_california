@@ -12,6 +12,13 @@ use App\Http\Controllers\Api\LedhouseCxcController;
 use App\Http\Controllers\Api\LedhouseCuentaCatalogoController;
 use App\Http\Controllers\Api\LedhouseClienteController;
 use App\Http\Controllers\Api\LedhouseProveedorController;
+// Módulo Inventario
+use App\Http\Controllers\Api\InventarioCategoriaController;
+use App\Http\Controllers\Api\InventarioProductoController;
+use App\Http\Controllers\Api\InventarioMovimientoController;
+// Módulo Logística/Ventas
+use App\Http\Controllers\Api\RutaController;
+use App\Http\Controllers\Api\PedidoController;
 
 // =========================================================
 // RUTA PÚBLICA DE DOCUMENTOS SEGUROS CON TOKEN (COMPATIBLE CON APACHE)
@@ -123,6 +130,26 @@ Route::prefix('v1')->group(function () {
 
                 // Proveedores
                 Route::apiResource('proveedores', LedhouseProveedorController::class);
+
+                // ── MÓDULO INVENTARIO ─────────────────────────────────
+                // Categorías
+                Route::apiResource('inventario/categorias', InventarioCategoriaController::class)->except(['show']);
+
+                // Productos
+                Route::get('inventario/productos-pdf-url', [InventarioProductoController::class, 'getInventarioPdfUrl']);
+                Route::post('inventario/productos/import', [InventarioProductoController::class, 'import']);
+                Route::post('inventario/productos/{id}/imagen', [InventarioProductoController::class, 'uploadImagen']);
+                Route::delete('inventario/productos/{id}/imagen', [InventarioProductoController::class, 'deleteImagen']);
+                Route::apiResource('inventario/productos', InventarioProductoController::class);
+
+                // Movimientos de inventario
+                Route::get('inventario/movimientos-pdf-url', [InventarioMovimientoController::class, 'getMovimientoPdfUrl']);
+                Route::apiResource('inventario/movimientos', InventarioMovimientoController::class)->only(['index', 'store']);
+
+                // ── MÓDULO LOGÍSTICA / PEDIDOS ────────────────────────
+                Route::apiResource('rutas', RutaController::class)->except(['show']);
+                Route::patch('pedidos/{pedido}/estado', [PedidoController::class, 'changeStatus']);
+                Route::apiResource('pedidos', PedidoController::class)->except(['show', 'destroy']);
             });
         }
     });

@@ -7,6 +7,8 @@ use App\Models\LedhouseCxc;
 use App\Models\LedhouseCliente;
 use App\Models\LedhouseCxcAlerta;
 use App\Models\LedhouseEstadoResultado;
+use App\Models\InventarioProducto;
+use App\Models\InventarioMovimiento;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
@@ -207,6 +209,64 @@ class PdfSecurityService
                     'request'   => $fakeReq,
                 ]);
                 $filename = 'Estado_Resultado.pdf';
+                break;
+
+            case 'inventario_productos':
+                $query = InventarioProducto::with('categoria')->where('activo', true);
+                if (!empty($params['search'])) {
+                    $s = strtoupper($params['search']);
+                    $query->where(fn($q) => $q->where('codigo', 'LIKE', "%{$s}%")->orWhere('nombre', 'LIKE', "%{$s}%"));
+                }
+                if (!empty($params['categoria_id'])) {
+                    $query->where('categoria_id', $params['categoria_id']);
+                }
+                if (!empty($params['estado_stock'])) {
+                    match($params['estado_stock']) {
+                        'disponible' => $query->where('stock', '>', 0),
+                        'agotado'    => $query->where('stock', '=', 0),
+                        'negativo'   => $query->where('stock', '<', 0),
+                        'alerta'     => $query->whereColumn('stock', '<=', 'stock_minimo')->where('stock', '>', 0),
+                        default      => null,
+                    };
+                }
+                if (!empty($params['solo_negativos'])) {
+                    $query->where('stock', '<', 0);
+                }
+                $orderBy  = in_array($params['order_by'] ?? '', ['nombre','codigo','stock','costo','venta']) ? $params['order_by'] : 'nombre';
+                $orderDir = ($params['order_dir'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+                $productos = $query->orderBy($orderBy, $orderDir)->get();
+                $pdf = Pdf::loadView('pdf.inventario_productos', ['productos' => $productos]);
+                $filename = 'Inventario_Productos_' . date('Ymd') . '.pdf';
+                break;
+
+            case 'inventario_movimientos':
+                $query = InventarioMovimiento::with(['producto:id,codigo,nombre,unidad', 'user:id,name,username']);
+                if (!empty($params['producto_id'])) {
+                    $query->where('producto_id', $params['producto_id']);
+                }
+                if (!empty($params['tipo'])) {
+                    $query->where('tipo', strtoupper($params['tipo']));
+                }
+                if (!empty($params['start_date'])) {
+                    $query->whereDate('created_at', '>=', $params['start_date']);
+                }
+                if (!empty($params['end_date'])) {
+                    $query->whereDate('created_at', '<=', $params['end_date']);
+                }
+                if (!empty($params['user_id'])) {
+                    $query->where('user_id', $params['user_id']);
+                }
+                $resumenQuery = clone $query;
+                $resumen = $resumenQuery->select('tipo', \Illuminate\Support\Facades\DB::raw('SUM(cantidad) as total_cantidad'))
+                    ->groupBy('tipo')
+                    ->pluck('total_cantidad', 'tipo');
+
+                $movimientos = $query->orderBy('created_at', 'desc')->get();
+                $pdf = Pdf::loadView('pdf.inventario_movimientos', [
+                    'movimientos' => $movimientos,
+                    'resumen' => $resumen
+                ])->setPaper('a4', 'landscape');
+                $filename = 'Movimientos_Inventario_' . date('Ymd') . '.pdf';
                 break;
 
             default:
