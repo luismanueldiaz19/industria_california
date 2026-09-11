@@ -124,7 +124,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
                       4,
                       Icons.people_outline,
                       Icons.people,
-                      'Clientes Ledhouse',
+                      'Clientes',
                       accentColor,
                     ),
                     _buildMenuItem(

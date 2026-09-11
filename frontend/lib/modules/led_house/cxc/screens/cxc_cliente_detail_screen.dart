@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../../core/app_theme.dart';
+import '../../../../models/company.dart';
 import '../providers/cxc_provider.dart';
 import '../services/cxc_service.dart';
 import '../widgets/cxc_form_dialog.dart';
@@ -483,7 +484,10 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
                   'ledhouse/cxc/reporte-pdf-url/$_clienteId',
                 );
                 final url = Uri.parse(res['url']);
-                if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                if (!await launchUrl(
+                  url,
+                  mode: LaunchMode.externalApplication,
+                )) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -874,7 +878,7 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
                                               } catch (e) {}
 
                                               String mensaje =
-                                                  'Hola *${widget.clienteAgrupado['nombre']}*,\n\nLe recordamos que tiene un saldo pendiente con *Ledhouse*.\n\n';
+                                                  'Hola *${widget.clienteAgrupado['nombre']}*,\n\nLe recordamos que tiene un saldo pendiente con *${Company.current.name}*.\n\n';
                                               mensaje +=
                                                   '*Doc:* ${cxc.documento}\n';
                                               mensaje +=
