@@ -5,8 +5,14 @@ import '../models/cxc_soporte_model.dart';
 class CxcService {
   final HttpService _http = HttpService();
 
-  Future<List<CxcModel>> getCxc() async {
-    final response = await _http.get('ledhouse/cxc');
+  Future<List<CxcModel>> getCxc({int? vendedorId, bool? vencidos}) async {
+    String query = '';
+    if (vendedorId != null || (vencidos ?? false)) {
+      query = '?';
+      if (vendedorId != null) query += 'vendedor_id=$vendedorId&';
+      if (vencidos == true) query += 'vencidos=1&';
+    }
+    final response = await _http.get('ledhouse/cxc$query');
     return (response as List).map((item) => CxcModel.fromJson(item)).toList();
   }
 
@@ -39,8 +45,14 @@ class CxcService {
     return CxcSoporteModel.fromJson(response);
   }
 
-  Future<List<Map<String, dynamic>>> getGroupedByCliente() async {
-    final response = await _http.get('ledhouse/cxc/grouped');
+  Future<List<Map<String, dynamic>>> getGroupedByCliente({int? vendedorId, bool? vencidos}) async {
+    String query = '';
+    if (vendedorId != null || (vencidos ?? false)) {
+      query = '?';
+      if (vendedorId != null) query += 'vendedor_id=$vendedorId&';
+      if (vencidos == true) query += 'vencidos=1&';
+    }
+    final response = await _http.get('ledhouse/cxc/grouped$query');
     return List<Map<String, dynamic>>.from(response);
   }
 

@@ -33,7 +33,6 @@ class _VendedorPedidoCatalogoScreenState
 
   String _searchQuery = '';
   String _selectedCategoria = 'Todas';
-  bool _cartPanelOpen = false;
 
   List<String> get _categorias {
     final prods = context.read<InventarioProductoProvider>().productos;
@@ -65,21 +64,11 @@ class _VendedorPedidoCatalogoScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        // Panel lateral animado del carrito (Izquierda)
-        _buildCartSidePanel(),
-
-        // Área principal (Catálogo)
-        Expanded(
-          child: Column(
-            children: [
-              _buildTopBar(),
-              Expanded(child: _buildGrid()),
-              _buildBottomBar(),
-            ],
-          ),
-        ),
+        _buildTopBar(),
+        Expanded(child: _buildGrid()),
+        _buildBottomBar(),
       ],
     );
   }
@@ -90,38 +79,37 @@ class _VendedorPedidoCatalogoScreenState
       color: Colors.white,
       child: Row(
         children: [
-          // Botón para togglear carrito con Badge en Stack
+          // Botón para carrito con Badge en Stack
           Stack(
             clipBehavior: Clip.none,
             children: [
               IconButton(
-                icon: Icon(_cartPanelOpen ? Icons.menu_open : Icons.shopping_cart),
+                icon: const Icon(Icons.shopping_cart),
                 color: _primaryBlue,
-                onPressed: () => setState(() => _cartPanelOpen = !_cartPanelOpen),
+                onPressed: _mostrarCarritoBottomSheet,
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(),
               ),
-              if (!_cartPanelOpen)
-                Consumer<PedidoFormProvider>(
-                  builder: (ctx, prov, _) => prov.itemCount > 0
-                      ? Positioned(
-                          right: -4,
-                          top: -4,
-                          child: CircleAvatar(
-                            radius: 9,
-                            backgroundColor: Colors.red,
-                            child: Text(
-                              '${prov.itemCount}',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+              Consumer<PedidoFormProvider>(
+                builder: (ctx, prov, _) => prov.itemCount > 0
+                    ? Positioned(
+                        right: -4,
+                        top: -4,
+                        child: CircleAvatar(
+                          radius: 9,
+                          backgroundColor: Colors.red,
+                          child: Text(
+                            '${prov.itemCount}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
             ],
           ),
 
@@ -131,16 +119,18 @@ class _VendedorPedidoCatalogoScreenState
           Expanded(
             flex: 3,
             child: SizedBox(
-              height: 40,
+              height: 32,
               child: TextField(
                 onChanged: (v) => setState(() => _searchQuery = v),
-                style: const TextStyle(fontSize: 13),
+                style: const TextStyle(fontSize: 12),
                 decoration: InputDecoration(
                   hintText: 'Buscar...',
-                  prefixIcon: const Icon(Icons.search, size: 18),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  hintStyle: const TextStyle(fontSize: 12),
+                  prefixIcon: const Icon(Icons.search, size: 16),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                   filled: true,
                   fillColor: Colors.grey.shade100,
+                  isDense: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
@@ -156,14 +146,15 @@ class _VendedorPedidoCatalogoScreenState
           Expanded(
             flex: 2,
             child: SizedBox(
-              height: 40,
+              height: 32,
               child: DropdownButtonFormField<String>(
                 value: _selectedCategoria,
                 isExpanded: true,
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                style: const TextStyle(fontSize: 12, color: Colors.black87),
                 decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                   filled: true,
+                  isDense: true,
                   fillColor: Colors.grey.shade100,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -211,12 +202,12 @@ class _VendedorPedidoCatalogoScreenState
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 220, // Más pequeñas para caber más en móvil
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.70, // Ajuste para que el texto encaje mejor
+        maxCrossAxisExtent: 180, // Más pequeñas para caber más en móvil
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 0.72, // Ajuste para que el texto encaje mejor
       ),
       itemCount: filtrados.length,
       itemBuilder: (ctx, i) => _buildProductoCard(filtrados[i]),
@@ -272,7 +263,8 @@ class _VendedorPedidoCatalogoScreenState
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
+                            letterSpacing: 1,
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -283,20 +275,20 @@ class _VendedorPedidoCatalogoScreenState
                     right: 6,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
+                        horizontal: 4,
+                        vertical: 2,
                       ),
                       decoration: BoxDecoration(
                         color: hasStock
                             ? Colors.green.shade600
                             : Colors.red.shade600,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         'Stock: ${producto.stock % 1 == 0 ? producto.stock.toInt() : producto.stock.toStringAsFixed(2)}',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 10,
+                          fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -309,16 +301,21 @@ class _VendedorPedidoCatalogoScreenState
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       producto.codigo,
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 9,
                         color: Colors.grey.shade600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Expanded(
@@ -326,7 +323,7 @@ class _VendedorPedidoCatalogoScreenState
                         producto.nombre,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 12, // Letra un poco más chica
+                          fontSize: 11, // Letra más chica
                           height: 1.1,
                         ),
                         maxLines: 2,
@@ -342,11 +339,11 @@ class _VendedorPedidoCatalogoScreenState
                           style: const TextStyle(
                             color: _accentBlue,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 12,
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.all(4),
+                          padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
                             color: _accentBlue.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
@@ -354,7 +351,7 @@ class _VendedorPedidoCatalogoScreenState
                           child: const Icon(
                             Icons.add,
                             color: _accentBlue,
-                            size: 16,
+                            size: 14,
                           ),
                         ),
                       ],
@@ -372,171 +369,207 @@ class _VendedorPedidoCatalogoScreenState
   void _mostrarDialogoAgregar(InventarioProducto producto) {
     showDialog(
       context: context,
-      builder: (_) => _AddProductDialog(
-        producto: producto,
-        onConfirm: (cant, precio) {
-          context.read<PedidoFormProvider>().agregarProducto(
-            producto,
-            cant,
-            precio,
-          );
-          // Al agregar, abrir el panel automáticamente si estaba cerrado
-          if (!_cartPanelOpen) setState(() => _cartPanelOpen = true);
-        },
+      builder: (_) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: _AddProductDialog(
+            producto: producto,
+            onConfirm: (cant, precio) {
+              context.read<PedidoFormProvider>().agregarProducto(
+                producto,
+                cant,
+                precio,
+              );
+            },
+          ),
+        ),
       ),
     );
   }
 
-  // ─── CART SIDE PANEL ────────────────────────────────────────────────────────
+  // ─── CART BOTTOM SHEET ──────────────────────────────────────────────────────
 
-  Widget _buildCartSidePanel() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      width: _cartPanelOpen ? 320 : 0,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(right: BorderSide(color: Colors.grey.shade300)),
-        boxShadow: _cartPanelOpen
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(4, 0),
-                ),
-              ]
-            : [],
-      ),
-      child: ClipRect(
-        child: Consumer<PedidoFormProvider>(
-          builder: (ctx, provider, _) {
-            return Column(
-              children: [
-                // Header del carrito
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  color: _primaryBlue,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.shopping_cart,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Mi Pedido (${provider.itemCount})',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          color: Colors.white70,
-                          size: 20,
-                        ),
-                        onPressed: () => setState(() => _cartPanelOpen = false),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Lista de ítems
-                Expanded(
-                  child: provider.carrito.isEmpty
-                      ? Center(
-                          child: Text(
-                            'El carrito está vacío',
-                            style: TextStyle(color: Colors.grey.shade500),
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: provider.carrito.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (ctx, i) {
-                            final item = provider.carrito[i];
-                            return _buildCartItemTile(item, provider);
-                          },
-                        ),
-                ),
-
-                // Footer (Total y botón Next)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'TOTAL',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          Text(
-                            _currencyFmt.format(provider.total),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                              color: _primaryBlue,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: provider.esValidoPaso2
-                              ? widget.onNext
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _accentBlue,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: const Text(
-                            'Revisar Pedido →',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
+  void _mostrarCarritoBottomSheet() {
+    final provider = context.read<PedidoFormProvider>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: ChangeNotifierProvider<PedidoFormProvider>.value(
+            value: provider,
+            child: _buildCartBottomSheetContent(),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCartBottomSheetContent() {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      builder: (_, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Consumer<PedidoFormProvider>(
+            builder: (ctx, provider, _) {
+              return Column(
+                children: [
+                  // Grabber
+                  Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  // Header del carrito
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.shopping_cart,
+                              color: _primaryBlue,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Mi Pedido (${provider.itemCount})',
+                              style: const TextStyle(
+                                color: _primaryBlue,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.grey,
+                            size: 24,
+                          ),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+
+                  // Lista de ítems
+                  Expanded(
+                    child: provider.carrito.isEmpty
+                        ? Center(
+                            child: Text(
+                              'El carrito está vacío',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 16,
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            controller: scrollController,
+                            padding: const EdgeInsets.all(16),
+                            itemCount: provider.carrito.length,
+                            separatorBuilder: (_, __) =>
+                                const Divider(height: 24),
+                            itemBuilder: (context, i) {
+                              final item = provider.carrito[i];
+                              return _buildCartItemTile(item, provider);
+                            },
+                          ),
+                  ),
+
+                  // Footer (Total y botón Next)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'TOTAL',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Text(
+                              _currencyFmt.format(provider.total),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 24,
+                                color: _primaryBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: provider.esValidoPaso2
+                                ? () {
+                                    Navigator.pop(ctx);
+                                    widget.onNext();
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _accentBlue,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Revisar Pedido →',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -622,23 +655,22 @@ class _VendedorPedidoCatalogoScreenState
             icon: const Icon(Icons.arrow_back, size: 18),
             label: const Text('Atrás', style: TextStyle(fontSize: 13)),
           ),
-          if (!_cartPanelOpen)
-            Consumer<PedidoFormProvider>(
-              builder: (ctx, prov, _) => ElevatedButton(
-                onPressed: prov.esValidoPaso2 ? widget.onNext : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _accentBlue,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                ),
-                child: const Text(
-                  'Revisar →',
-                  style: TextStyle(color: Colors.white, fontSize: 13),
+          Consumer<PedidoFormProvider>(
+            builder: (ctx, prov, _) => ElevatedButton(
+              onPressed: prov.esValidoPaso2 ? widget.onNext : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accentBlue,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
                 ),
               ),
+              child: const Text(
+                'Revisar →',
+                style: TextStyle(color: Colors.white, fontSize: 13),
+              ),
             ),
+          ),
         ],
       ),
     );
@@ -807,7 +839,10 @@ class _AddProductDialogState extends State<_AddProductDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancelar', style: TextStyle(fontSize: 13)),
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(fontSize: 13),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(

@@ -52,24 +52,29 @@ class _PedidoClienteSelectorState extends State<PedidoClienteSelector> {
       decoration: _containerShadow(),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
           leading: CircleAvatar(
             backgroundColor: _accentBlue.withValues(alpha: 0.1),
-            child: const Icon(Icons.person, color: _accentBlue, size: 20),
+            radius: 16,
+            child: const Icon(Icons.person, color: _accentBlue, size: 18),
           ),
           title: Text(
             cliente.nombre,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
           subtitle: Text(
             cliente.documento ?? '—',
-            style: const TextStyle(fontSize: 12),
+            style: const TextStyle(fontSize: 11),
           ),
           trailing: IconButton(
-            icon: const Icon(Icons.close, size: 18),
+            icon: const Icon(Icons.close, size: 16),
             onPressed: () => widget.onChanged(null),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
         ),
       ),
@@ -81,24 +86,27 @@ class _PedidoClienteSelectorState extends State<PedidoClienteSelector> {
       decoration: _containerShadow(),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
             TextField(
               onChanged: (v) => setState(() => _search = v),
+              style: const TextStyle(fontSize: 12),
               decoration: InputDecoration(
                 hintText: 'Buscar cliente...',
-                prefixIcon: const Icon(Icons.search, size: 20),
+                hintStyle: const TextStyle(fontSize: 12),
+                prefixIcon: const Icon(Icons.search, size: 18),
                 filled: true,
                 fillColor: Colors.white,
+                isDense: true,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: 12,
+                  vertical: 10,
                 ),
               ),
             ),
@@ -123,19 +131,20 @@ class _PedidoClienteSelectorState extends State<PedidoClienteSelector> {
                     final c = filtrados[i];
                     return ListTile(
                       dense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                       leading: const Icon(
                         Icons.person_outline,
-                        size: 18,
+                        size: 16,
                         color: _accentBlue,
                       ),
                       title: Text(
                         c.nombre,
-                        style: const TextStyle(fontSize: 13),
+                        style: const TextStyle(fontSize: 12),
                       ),
                       subtitle: c.documento != null
                           ? Text(
                               c.documento!,
-                              style: const TextStyle(fontSize: 11),
+                              style: const TextStyle(fontSize: 10),
                             )
                           : null,
                       onTap: () {
@@ -155,7 +164,7 @@ class _PedidoClienteSelectorState extends State<PedidoClienteSelector> {
 
   BoxDecoration _containerShadow() {
     return BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(alpha: 0.04),

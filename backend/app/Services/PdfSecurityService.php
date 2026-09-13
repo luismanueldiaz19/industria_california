@@ -9,6 +9,7 @@ use App\Models\LedhouseCxcAlerta;
 use App\Models\LedhouseEstadoResultado;
 use App\Models\InventarioProducto;
 use App\Models\InventarioMovimiento;
+use App\Models\Pedido;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
@@ -267,6 +268,52 @@ class PdfSecurityService
                     'resumen' => $resumen
                 ])->setPaper('a4', 'landscape');
                 $filename = 'Movimientos_Inventario_' . date('Ymd') . '.pdf';
+                break;
+
+            case 'pedidos_general':
+                $query = Pedido::with([
+                    'cliente:id,nombre',
+                    'vendedor:id,name',
+                ]);
+                
+                if (!empty($params['cliente_id'])) {
+                    $query->where('cliente_id', $params['cliente_id']);
+                }
+                if (!empty($params['ruta_id'])) {
+                    $query->where('ruta_id', $params['ruta_id']);
+                }
+                if (!empty($params['estado'])) {
+                    $query->where('estado', $params['estado']);
+                }
+                if (!empty($params['start_date'])) {
+                    $query->whereDate('created_at', '>=', $params['start_date']);
+                }
+                if (!empty($params['end_date'])) {
+                    $query->whereDate('created_at', '<=', $params['end_date']);
+                }
+                if (!empty($params['vendedor_id'])) {
+                    $query->where('vendedor_id', $params['vendedor_id']);
+                }
+
+                $pedidos = $query->orderBy('created_at', 'desc')->get();
+                $pdf = Pdf::loadView('pdf.pedidos_general', [
+                    'pedidos' => $pedidos,
+                    'fechaInicio' => $params['start_date'] ?? null,
+                    'fechaFin' => $params['end_date'] ?? null,
+                ]);
+                $filename = 'Reporte_General_Pedidos_' . date('Ymd_His') . '.pdf';
+                break;
+
+            case 'pedido':
+                $id = $params['id'] ?? null;
+                $pedido = Pedido::with([
+                    'cliente:id,nombre,direccion,telefono,rnc', 
+                    'ruta:id,nombre', 
+                    'vendedor:id,name', 
+                    'detalles.producto:id,codigo,nombre,unidad'
+                ])->findOrFail($id);
+                $pdf = Pdf::loadView('pdf.pedido_factura', compact('pedido'));
+                $filename = "pedido_{$pedido->id}.pdf";
                 break;
 
             default:

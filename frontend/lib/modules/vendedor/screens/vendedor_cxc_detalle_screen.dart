@@ -198,7 +198,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                   elevation: 0,
                 ),
                 body: SingleChildScrollView(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -206,7 +206,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
                           children: [
@@ -215,12 +215,12 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                               decoration: BoxDecoration(
                                 color: estadoColor,
                                 borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(20),
+                                  top: Radius.circular(12),
                                 ),
                               ),
                               padding: const EdgeInsets.symmetric(
-                                vertical: 8,
-                                horizontal: 16,
+                                vertical: 6,
+                                horizontal: 12,
                               ),
                               child: Row(
                                 mainAxisAlignment:
@@ -230,20 +230,20 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                                     estado.toUpperCase(),
                                     style: const TextStyle(
                                       color: Colors.white,
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const Icon(
                                     Icons.receipt_long,
                                     color: Colors.white,
-                                    size: 16,
+                                    size: 14,
                                   ),
                                 ],
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(12),
                               child: Column(
                                 children: [
                                   _buildInfoRow(
@@ -251,7 +251,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                                     'Cliente',
                                     cxc['cliente']?['nombre'] ?? '-',
                                   ),
-                                  const Divider(height: 20),
+                                  const Divider(height: 16),
                                   _buildInfoRow(
                                     Icons.attach_money,
                                     'Monto Factura',
@@ -269,7 +269,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                                     '\$${cxc['monto_pagado'] ?? '0.00'}',
                                     valueColor: Colors.green,
                                   ),
-                                  const Divider(height: 20),
+                                  const Divider(height: 16),
                                   _buildInfoRow(
                                     Icons.calendar_today,
                                     'Fecha Factura',
@@ -286,20 +286,21 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
                       // Sección: Agregar Alerta
                       _buildSectionTitle('📣 Enviar Alerta a Contabilidad'),
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             DropdownButtonFormField<String>(
+                              isExpanded: true,
                               value: _tipoAlerta,
                               decoration: _inputDeco(
                                 'Tipo de alerta',
@@ -308,43 +309,43 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                               items: const [
                                 DropdownMenuItem(
                                   value: 'pago_recibido',
-                                  child: Text('💰 Pago Recibido'),
+                                  child: Text('💰 Pago Recibido', overflow: TextOverflow.ellipsis),
                                 ),
                                 DropdownMenuItem(
                                   value: 'informacion',
-                                  child: Text('📋 Información'),
+                                  child: Text('📋 Información', overflow: TextOverflow.ellipsis),
                                 ),
                                 DropdownMenuItem(
                                   value: 'consulta',
-                                  child: Text('❓ Consulta'),
+                                  child: Text('❓ Consulta', overflow: TextOverflow.ellipsis),
                                 ),
                                 DropdownMenuItem(
                                   value: 'credito',
-                                  child: Text('📄 Nota de Crédito'),
+                                  child: Text('📄 Nota de Crédito', overflow: TextOverflow.ellipsis),
                                 ),
                                 DropdownMenuItem(
                                   value: 'debito',
-                                  child: Text('🧾 Nota de Débito'),
+                                  child: Text('🧾 Nota de Débito', overflow: TextOverflow.ellipsis),
                                 ),
                                 DropdownMenuItem(
                                   value: 'devolucion',
-                                  child: Text('🔄 Devolución'),
+                                  child: Text('🔄 Devolución', overflow: TextOverflow.ellipsis),
                                 ),
                                 DropdownMenuItem(
                                   value: 'retencion',
-                                  child: Text('📑 Carta de Retención'),
+                                  child: Text('📑 Carta de Retención', overflow: TextOverflow.ellipsis),
                                 ),
                                 DropdownMenuItem(
                                   value: 'diferencia',
-                                  child: Text('⚖️ Diferencia de precio'),
+                                  child: Text('⚖️ Diferencia de precio', overflow: TextOverflow.ellipsis),
                                 ),
                                 DropdownMenuItem(
                                   value: 'mer_no_entregada',
-                                  child: Text('📦 Mercancía no entregada'),
+                                  child: Text('📦 Mercancía no entregada', overflow: TextOverflow.ellipsis),
                                 ),
                                 DropdownMenuItem(
                                   value: 'anular',
-                                  child: Text('❌ Anular Factura'),
+                                  child: Text('❌ Anular Factura', overflow: TextOverflow.ellipsis),
                                 ),
                               ],
                               onChanged: (v) =>
@@ -367,6 +368,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                                 child: TextFormField(
                                   controller: _montoController,
                                   keyboardType: TextInputType.number,
+                                  style: const TextStyle(fontSize: 12),
                                   decoration: _inputDeco(
                                     'Monto informado por el cliente',
                                     Icons.attach_money,
@@ -376,12 +378,13 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                             TextFormField(
                               controller: _notaController,
                               maxLines: 3,
+                              style: const TextStyle(fontSize: 12),
                               decoration: _inputDeco(
                                 'Descripción / Nota',
                                 Icons.notes,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton.icon(
@@ -395,10 +398,10 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                                   backgroundColor: Colors.orange.shade700,
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
+                                    vertical: 12,
                                   ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
                               ),
@@ -406,26 +409,26 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
                       // Sección: Evidencias
                       _buildSectionTitle('📎 Adjuntar Comprobante'),
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(12),
                         child: Column(
                           children: [
                             Text(
                               'Sube un PDF o imagen del comprobante de pago.',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
-                                fontSize: 13,
+                                fontSize: 11,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
@@ -472,27 +475,27 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
   }) {
     return Material(
       color: _blue.withValues(alpha: 0.05),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
-          width: 80,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          width: 70,
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             border: Border.all(color: _blue.withValues(alpha: 0.3)),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
             children: [
-              Icon(icon, color: _blue, size: 28),
-              const SizedBox(height: 8),
+              Icon(icon, color: _blue, size: 22),
+              const SizedBox(height: 6),
               Text(
                 label,
                 style: const TextStyle(
                   color: _blue,
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
             ],
@@ -504,11 +507,11 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: FontWeight.bold,
           color: Color(0xFF1A1A2E),
         ),
@@ -523,21 +526,21 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
     Color? valueColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.grey.shade500),
-          const SizedBox(width: 8),
+          Icon(icon, size: 14, color: Colors.grey.shade500),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
             ),
           ),
           Text(
             value,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.bold,
               color: valueColor ?? Colors.black87,
             ),
@@ -550,17 +553,18 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
   InputDecoration _inputDeco(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(fontSize: 12),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      prefixIcon: Icon(icon, size: 18),
+      labelStyle: const TextStyle(fontSize: 11),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      prefixIcon: Icon(icon, size: 16),
       filled: true,
       fillColor: const Color(0xFFF9FAFB),
+      isDense: true,
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(color: Colors.grey.shade200),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: _blue, width: 1.5),
       ),
     );

@@ -29,14 +29,14 @@ class VendedorDashboardScreen extends StatelessWidget {
                 ClipPath(
                   clipper: HeaderClipper(),
                   child: Container(
-                    height: 250,
+                    height: 210,
                     width: double.infinity,
                     color: AppTheme.primaryBlue,
                   ),
                 ),
                 // Contenido del Header
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -68,7 +68,7 @@ class VendedorDashboardScreen extends StatelessWidget {
                             child: Column(
                               children: [
                                 CircleAvatar(
-                                  radius: 20,
+                                  radius: 16,
                                   backgroundColor: Colors.white,
                                   backgroundImage:
                                       authProvider.profilePhotoUrl != null
@@ -80,6 +80,7 @@ class VendedorDashboardScreen extends StatelessWidget {
                                       ? const Icon(
                                           Icons.person,
                                           color: AppTheme.primaryBlue,
+                                          size: 20,
                                         )
                                       : null,
                                 ),
@@ -88,7 +89,7 @@ class VendedorDashboardScreen extends StatelessWidget {
                                   authProvider.username ?? 'Error Logueo',
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.9),
-                                    fontSize: 12,
+                                    fontSize: 10,
                                   ),
                                 ),
                               ],
@@ -100,9 +101,9 @@ class VendedorDashboardScreen extends StatelessWidget {
                       // Saludo
                       Text(
                         '¡Hola, ${authProvider.username ?? 'Error'}!',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 28,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -112,19 +113,19 @@ class VendedorDashboardScreen extends StatelessWidget {
 
                 // Tarjetas de métricas (Superpuestas)
                 Positioned(
-                  top: 150,
-                  left: 20,
-                  right: 20,
+                  top: 120,
+                  left: 16,
+                  right: 16,
                   child: Row(
                     children: [
                       // Tarjeta Ventas Hoy (Azul)
                       Expanded(
                         child: Container(
-                          height: 140,
-                          padding: const EdgeInsets.all(16),
+                          height: 110,
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: AppTheme.secondaryBlue,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
                                 color: AppTheme.secondaryBlue.withValues(
@@ -142,31 +143,31 @@ class VendedorDashboardScreen extends StatelessWidget {
                                 'Ventas Hoy',
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.8),
-                                  fontSize: 14,
+                                  fontSize: 12,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
                               const Text(
                                 '\$0,000.00',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 22,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
                               const Text(
                                 '+0% hoy',
                                 style: TextStyle(
                                   color: Colors.greenAccent,
-                                  fontSize: 12,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const Spacer(),
                               // Mini Chart placeholder
                               SizedBox(
-                                height: 30,
+                                height: 20,
                                 width: double.infinity,
                                 child: CustomPaint(painter: MiniChartPainter()),
                               ),
@@ -178,11 +179,11 @@ class VendedorDashboardScreen extends StatelessWidget {
                       // Tarjeta Objetivo (Blanco)
                       Expanded(
                         child: Container(
-                          height: 140,
-                          padding: const EdgeInsets.all(16),
+                          height: 110,
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.05),
@@ -198,21 +199,21 @@ class VendedorDashboardScreen extends StatelessWidget {
                                 'Objetivo Mensual',
                                 style: TextStyle(
                                   color: Colors.black87,
-                                  fontSize: 13,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 8),
                               // Circular Progress
                               Stack(
                                 alignment: Alignment.center,
                                 children: [
                                   SizedBox(
-                                    width: 55,
-                                    height: 55,
+                                    width: 40,
+                                    height: 40,
                                     child: CircularProgressIndicator(
                                       value: 0.50,
-                                      strokeWidth: 6,
+                                      strokeWidth: 4,
                                       backgroundColor: Colors.grey.shade200,
                                       color: AppTheme.primaryBlue,
                                     ),
@@ -224,13 +225,13 @@ class VendedorDashboardScreen extends StatelessWidget {
                                         '78%',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 14,
+                                          fontSize: 12,
                                         ),
                                       ),
                                       Text(
                                         'COMPLETADO',
                                         style: TextStyle(
-                                          fontSize: 5,
+                                          fontSize: 6,
                                           color: Colors.grey.shade600,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -244,7 +245,7 @@ class VendedorDashboardScreen extends StatelessWidget {
                                 '\$00,000 / \$00,000',
                                 style: TextStyle(
                                   color: Colors.grey.shade700,
-                                  fontSize: 11,
+                                  fontSize: 9,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -259,16 +260,16 @@ class VendedorDashboardScreen extends StatelessWidget {
             ),
 
             // Espaciador para compensar las tarjetas superpuestas
-            const SizedBox(height: 60),
+            const SizedBox(height: 40),
 
             // Acciones Rápidas
             ActionQuickVendedor(styleTheme: styleTheme),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
             // Pedidos Recientes
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -277,9 +278,10 @@ class VendedorDashboardScreen extends StatelessWidget {
                     style: styleTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
+                      fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   // Container(
                   //   decoration: BoxDecoration(
                   //     color: Colors.white,

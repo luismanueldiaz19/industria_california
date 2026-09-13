@@ -4,7 +4,7 @@ import '../services/pedido_service.dart';
 
 class PedidoProvider extends ChangeNotifier {
   final PedidoService _service = PedidoService();
-  
+
   List<Pedido> _pedidos = [];
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -16,6 +16,7 @@ class PedidoProvider extends ChangeNotifier {
 
   int? _clienteId;
   int? _rutaId;
+  int? _vendedorId;
   String? _estado;
   String? _startDate;
   String? _endDate;
@@ -26,16 +27,20 @@ class PedidoProvider extends ChangeNotifier {
   String? get error => _error;
   bool get hasMore => _currentPage < _lastPage;
   int get total => _total;
+  int get currentPage => _currentPage;
+  int get lastPage => _lastPage;
 
   void setFiltros({
     int? clienteId,
     int? rutaId,
+    int? vendedorId,
     String? estado,
     String? startDate,
     String? endDate,
   }) {
     _clienteId = clienteId;
     _rutaId = rutaId;
+    _vendedorId = vendedorId;
     _estado = estado;
     _startDate = startDate;
     _endDate = endDate;
@@ -51,10 +56,40 @@ class PedidoProvider extends ChangeNotifier {
       final result = await _service.getPedidos(
         clienteId: _clienteId,
         rutaId: _rutaId,
+        vendedorId: _vendedorId,
         estado: _estado,
         startDate: _startDate,
         endDate: _endDate,
         page: _currentPage,
+      );
+      _pedidos = result['data'];
+      _currentPage = result['current_page'];
+      _lastPage = result['last_page'];
+      _total = result['total'];
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchPage(int page) async {
+    if (page < 1 || (page > _lastPage && _lastPage > 0)) return;
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final result = await _service.getPedidos(
+        clienteId: _clienteId,
+        rutaId: _rutaId,
+        vendedorId: _vendedorId,
+        estado: _estado,
+        startDate: _startDate,
+        endDate: _endDate,
+        page: page,
       );
       _pedidos = result['data'];
       _currentPage = result['current_page'];
@@ -78,6 +113,7 @@ class PedidoProvider extends ChangeNotifier {
       final result = await _service.getPedidos(
         clienteId: _clienteId,
         rutaId: _rutaId,
+        vendedorId: _vendedorId,
         estado: _estado,
         startDate: _startDate,
         endDate: _endDate,
@@ -129,5 +165,44 @@ class PedidoProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> deletePedido(int id) async {
+    try {
+      await _service.deletePedido(id);
+      await fetchPedidos();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> assignRuta(List<int> pedidoIds, int rutaId) async {
+    try {
+      await _service.assignRuta(pedidoIds, rutaId);
+      await fetchPedidos();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<String> getPdfUrl(int id) async {
+    return await _service.getPdfUrl(id);
+  }
+
+  Future<String> getGeneralPdfUrl() async {
+    return await _service.getGeneralPdfUrl(
+      clienteId: _clienteId,
+      rutaId: _rutaId,
+      vendedorId: _vendedorId,
+      estado: _estado,
+      startDate: _startDate,
+      endDate: _endDate,
+    );
   }
 }

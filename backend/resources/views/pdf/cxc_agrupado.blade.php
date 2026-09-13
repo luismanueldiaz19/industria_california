@@ -16,6 +16,18 @@
 </head>
 <body>
     <x-pdf-header title="Estado de Cuentas (CXC)" subtitle="Reporte: Agrupado por Cliente" />
+    
+    <div style="margin-bottom: 15px; font-size: 12px; color: #555;">
+        @if(isset($vendedorNombre) && $vendedorNombre)
+            <span><strong>Vendedor:</strong> {{ $vendedorNombre }}</span> &nbsp;|&nbsp;
+        @endif
+        @if(isset($search) && $search)
+            <span><strong>Búsqueda:</strong> {{ $search }}</span> &nbsp;|&nbsp;
+        @endif
+        @if(isset($isVencidos) && $isVencidos)
+            <span><strong>Filtro:</strong> Solo Vencidos</span>
+        @endif
+    </div>
 
     <table>
         <thead>

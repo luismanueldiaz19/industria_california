@@ -22,16 +22,16 @@ class BuildActionButton extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             Container(
-              width: 70,
-              height: 70,
+              width: 55,
+              height: 55,
               decoration: BoxDecoration(
                 color: isPrimary ? Colors.blue.shade50 : Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
@@ -40,16 +40,16 @@ class BuildActionButton extends StatelessWidget {
                 color: isPrimary
                     ? Colors.blue.shade700
                     : const Color(0xFF1E2F4C),
-                size: 28,
+                size: 22,
               ),
             ),
             if (showBadge)
               Positioned(
-                bottom: 8,
-                right: 28,
+                bottom: 6,
+                right: 22,
                 child: Container(
-                  width: 6,
-                  height: 6,
+                  width: 5,
+                  height: 5,
                   decoration: const BoxDecoration(
                     color: Colors.red,
                     shape: BoxShape.circle,
@@ -63,7 +63,7 @@ class BuildActionButton extends StatelessWidget {
           label,
           textAlign: TextAlign.center,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: FontWeight.w600,
             color: Colors.black87,
           ),

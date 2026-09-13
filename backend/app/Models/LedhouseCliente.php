@@ -17,7 +17,9 @@ class LedhouseCliente extends Model
         'tipo_documento',
         'documento',
         'limite_credito',
-        'dias_credito'
+        'dias_credito',
+        'latitud',
+        'longitud'
     ];
 
     public function cxcs()

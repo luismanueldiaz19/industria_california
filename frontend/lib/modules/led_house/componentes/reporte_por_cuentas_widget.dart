@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../../../core/constants.dart';
 import '../../../services/http_service.dart';
 import '../screens/ledhouse_detalles_cuentas.dart';
 
@@ -199,8 +197,11 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
             alignment: Alignment.centerLeft,
           ),
           ...mesesARenderizar.map(
-            (mesIndex) =>
-                _buildCell(_meses[mesIndex - 1].toUpperCase(), width: 110, isHeader: true),
+            (mesIndex) => _buildCell(
+              _meses[mesIndex - 1].toUpperCase(),
+              width: 110,
+              isHeader: true,
+            ),
           ),
           _buildCell('TOTAL ANUAL', width: 120, isHeader: true, isLast: true),
         ],
@@ -217,7 +218,8 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
       return [];
     }
 
-    if (_selectedModulo != null && moduloNombre.toUpperCase() != _selectedModulo) {
+    if (_selectedModulo != null &&
+        moduloNombre.toUpperCase() != _selectedModulo) {
       return [];
     }
 
@@ -563,9 +565,11 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
               ],
             ),
           ),
-          
+
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0).copyWith(bottom: 20),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+            ).copyWith(bottom: 20),
             child: Row(
               children: [
                 // Filter Modulo
@@ -573,10 +577,14 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
                   height: 36,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: _selectedModulo != null ? Colors.blue.shade50 : Colors.white,
+                    color: _selectedModulo != null
+                        ? Colors.blue.shade50
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: _selectedModulo != null ? Colors.blue.shade200 : Colors.grey.shade300,
+                      color: _selectedModulo != null
+                          ? Colors.blue.shade200
+                          : Colors.grey.shade300,
                     ),
                   ),
                   child: DropdownButtonHideUnderline(
@@ -586,30 +594,58 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
                       hint: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.filter_list, size: 16, color: Colors.grey.shade600),
+                          Icon(
+                            Icons.filter_list,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
                           const SizedBox(width: 6),
-                          const Text('Todos los módulos', style: TextStyle(fontSize: 13, color: Colors.black87)),
+                          const Text(
+                            'Todos los módulos',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.black87,
+                            ),
+                          ),
                         ],
                       ),
                       value: _selectedModulo,
                       icon: Padding(
                         padding: const EdgeInsets.only(left: 4.0),
                         child: Icon(
-                          Icons.keyboard_arrow_down, 
-                          color: _selectedModulo != null ? Colors.blue.shade700 : Colors.grey.shade600, 
-                          size: 18
+                          Icons.keyboard_arrow_down,
+                          color: _selectedModulo != null
+                              ? Colors.blue.shade700
+                              : Colors.grey.shade600,
+                          size: 18,
                         ),
                       ),
                       style: TextStyle(
-                        fontSize: 13, 
-                        color: _selectedModulo != null ? Colors.blue.shade700 : Colors.black87,
-                        fontWeight: _selectedModulo != null ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 13,
+                        color: _selectedModulo != null
+                            ? Colors.blue.shade700
+                            : Colors.black87,
+                        fontWeight: _selectedModulo != null
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                       items: const [
-                        DropdownMenuItem(value: null, child: Text('Todos los módulos')),
-                        DropdownMenuItem(value: 'VENTAS', child: Text('Ventas')),
-                        DropdownMenuItem(value: 'COSTOS', child: Text('Costos')),
-                        DropdownMenuItem(value: 'GASTOS', child: Text('Gastos')),
+                        DropdownMenuItem(
+                          value: null,
+                          child: Text('Todos los módulos'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'VENTAS',
+                          child: Text('Ventas'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'COSTOS',
+                          child: Text('Costos'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'GASTOS',
+                          child: Text('Gastos'),
+                        ),
                       ],
                       onChanged: (val) {
                         setState(() => _selectedModulo = val);
@@ -622,10 +658,14 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
                 Container(
                   height: 36,
                   decoration: BoxDecoration(
-                    color: _selectedMonths.isNotEmpty ? Colors.blue.shade50 : Colors.white,
+                    color: _selectedMonths.isNotEmpty
+                        ? Colors.blue.shade50
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: _selectedMonths.isNotEmpty ? Colors.blue.shade200 : Colors.grey.shade300,
+                      color: _selectedMonths.isNotEmpty
+                          ? Colors.blue.shade200
+                          : Colors.grey.shade300,
                     ),
                   ),
                   child: InkWell(
@@ -638,24 +678,34 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.calendar_today_outlined, 
-                            color: _selectedMonths.isNotEmpty ? Colors.blue.shade700 : Colors.grey.shade600, 
-                            size: 16
+                            Icons.calendar_today_outlined,
+                            color: _selectedMonths.isNotEmpty
+                                ? Colors.blue.shade700
+                                : Colors.grey.shade600,
+                            size: 16,
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            _selectedMonths.isEmpty 
-                                ? 'Todos los meses' 
+                            _selectedMonths.isEmpty
+                                ? 'Todos los meses'
                                 : '${_selectedMonths.length} meses',
                             style: TextStyle(
-                              fontSize: 13, 
-                              color: _selectedMonths.isNotEmpty ? Colors.blue.shade700 : Colors.black87,
-                              fontWeight: _selectedMonths.isNotEmpty ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 13,
+                              color: _selectedMonths.isNotEmpty
+                                  ? Colors.blue.shade700
+                                  : Colors.black87,
+                              fontWeight: _selectedMonths.isNotEmpty
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                           if (_selectedMonths.isNotEmpty) ...[
                             const SizedBox(width: 6),
-                            Icon(Icons.check_circle, color: Colors.blue.shade700, size: 16),
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.blue.shade700,
+                              size: 16,
+                            ),
                           ],
                         ],
                       ),
@@ -673,11 +723,16 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
                       });
                     },
                     icon: const Icon(Icons.clear, size: 16),
-                    label: const Text('Limpiar filtros', style: TextStyle(fontSize: 13)),
+                    label: const Text(
+                      'Limpiar filtros',
+                      style: TextStyle(fontSize: 13),
+                    ),
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.grey.shade600,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                     ),
                   ),
               ],
@@ -691,7 +746,9 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 int mesesVisibles = _getMesesVisibles(widget.matrizData);
-                int numMesesARenderizar = _selectedMonths.isNotEmpty ? _selectedMonths.length : mesesVisibles;
+                int numMesesARenderizar = _selectedMonths.isNotEmpty
+                    ? _selectedMonths.length
+                    : mesesVisibles;
                 // Width of CODIGO(70) + MESES(110*numMesesARenderizar) + TOTAL(120) = 190 + (110*numMesesARenderizar)
                 double fixedWidths = 70 + (110 * numMesesARenderizar) + 120.0;
                 // Subtract 40 for padding inside SingleChildScrollView and 2 for border width

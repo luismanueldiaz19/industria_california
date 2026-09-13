@@ -22,8 +22,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final f = NumberFormat.currency(symbol: '\$');
-
     return Consumer<DashboardProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
@@ -33,8 +31,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (provider.error != null) {
           return Center(child: Text('Error: ${provider.error}'));
         }
-
-        final kpis = provider.data?['kpis'];
 
         return Padding(
           padding: const EdgeInsets.all(24.0),

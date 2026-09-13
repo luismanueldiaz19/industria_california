@@ -84,23 +84,77 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  /*
-  void _autofillCredentials() {
+  // --- INICIO: AUTOLLENADO RÁPIDO PARA DESARROLLO ---
+  // Comentar o eliminar esta sección en producción
+  void _autofillCredentials(String role) {
     FocusScope.of(context).unfocus();
     setState(() {
-      _usernameController.text = "ludeveloper";
-      _passwordController.text = "199512";
+      if (role == 'admin') {
+        _usernameController.text = "ludeveloper";
+        _passwordController.text = "199512";
+      } else if (role == 'gerente') {
+        _usernameController.text =
+            "gerente"; // Placeholder (agregalo en seeder si necesitas)
+        _passwordController.text = "123456";
+      } else if (role == 'vendedor') {
+        _usernameController.text = "wagner";
+        _passwordController.text = "123456";
+      }
     });
   }
 
-  void _autofillCredentialsVendedor() {
-    FocusScope.of(context).unfocus();
-    setState(() {
-      _usernameController.text = "wagner";
-      _passwordController.text = "123456";
-    });
+  Widget _buildQuickLoginRoles() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        const Text(
+          'Autollenado Rápido (Desarrollo):',
+          style: TextStyle(color: Colors.white54, fontSize: 11),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _roleOption('admin', 'Admin', const Color(0xFFE31E24)),
+            _roleOption('gerente', 'Gerente', const Color(0xFF4CAF50)),
+            _roleOption('vendedor', 'Vendedor', const Color(0xFF2196F3)),
+          ],
+        ),
+      ],
+    );
   }
-  */
+
+  Widget _roleOption(String role, String label, Color color) {
+    return InkWell(
+      onTap: () => _autofillCredentials(role),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_outline, color: color, size: 14),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  // --- FIN: AUTOLLENADO RÁPIDO PARA DESARROLLO ---
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +189,6 @@ class _LoginScreenState extends State<LoginScreen>
                 child: Container(
                   constraints: BoxConstraints(
                     maxWidth: isDesktop ? 740 : 380,
-                    maxHeight: 450,
                     minHeight: 400,
                   ),
                   margin: const EdgeInsets.symmetric(
@@ -425,23 +478,9 @@ class _LoginScreenState extends State<LoginScreen>
                 backgroundColor: accentColor,
                 height: 40,
               ),
-              // Modular Quick Credential Buttons (Desactivado para producción)
-              /*
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  AuthQuickCredentialCard(
-                    title: 'Desarrollador',
-                    onTap: _autofillCredentials,
-                  ),
-                  const SizedBox(width: 8),
-                  AuthQuickCredentialCard(
-                    title: 'Vendedor',
-                    onTap: _autofillCredentialsVendedor,
-                  ),
-                ],
-              ),
-              */
+
+              // Comentar esto en producción para ocultar los botones de prueba
+              _buildQuickLoginRoles(),
             ],
           ),
         ),

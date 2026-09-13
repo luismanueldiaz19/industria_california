@@ -48,15 +48,20 @@ Route::prefix('v1')->group(function () {
             Route::get('cxc/reporte-pdf/{cliente_id}', [LedhouseCxcController::class, 'reportePdf']);
             Route::get('cxc/alertas-pdf', [LedhouseCxcController::class, 'reporteAlertasPdf']);
             $venPdf = Route::get('cxc/vendedor/mis-cxc-pdf', [LedhouseCxcController::class, 'exportMisCxcPdf'])->middleware('signed');
+            
+            // Ruta pública para generar PDF del Pedido
+            $pedidoPdf = Route::get('pedidos/pdf/{id}', [PedidoController::class, 'generatePdf'])->middleware('signed');
 
             if ($prefix === 'industria-california') {
                 $genPdf->name('cxc.general.pdf');
                 $agrPdf->name('cxc.agrupado.pdf');
                 $venPdf->name('cxc.vendedor.pdf');
+                $pedidoPdf->name('pedido.pdf');
             } else {
                 $genPdf->name('cxc.general.pdf.legacy');
                 $agrPdf->name('cxc.agrupado.pdf.legacy');
                 $venPdf->name('cxc.vendedor.pdf.legacy');
+                $pedidoPdf->name('pedido.pdf.legacy');
             }
         });
     }
@@ -148,8 +153,12 @@ Route::prefix('v1')->group(function () {
 
                 // ── MÓDULO LOGÍSTICA / PEDIDOS ────────────────────────
                 Route::apiResource('rutas', RutaController::class)->except(['show']);
+                Route::post('pedidos/assign-ruta', [PedidoController::class, 'assignRuta']);
+                Route::post('pedidos/optimize-route', [PedidoController::class, 'optimizeDayRoute']);
                 Route::patch('pedidos/{pedido}/estado', [PedidoController::class, 'changeStatus']);
-                Route::apiResource('pedidos', PedidoController::class)->except(['show', 'destroy']);
+                Route::get('pedidos-pdf-url', [PedidoController::class, 'getGeneralPdfUrl']);
+                Route::get('pedidos/{id}/pdf-url', [PedidoController::class, 'getPdfUrl']);
+                Route::apiResource('pedidos', PedidoController::class)->except(['show']);
             });
         }
     });

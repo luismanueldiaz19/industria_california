@@ -81,7 +81,8 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
         vencidos: _soloVencidos,
         conAlerta: _conAlerta,
       );
-      final items = data['data'] as List;
+      final rawItems = data['data'] as List;
+      final items = rawItems.where((c) => c['estado'] != 'pagado').toList();
       setState(() {
         _cxcs = items;
         _hasMore = data['current_page'] < data['last_page'];
@@ -113,7 +114,8 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
         vencidos: _soloVencidos,
         conAlerta: _conAlerta,
       );
-      final items = data['data'] as List;
+      final rawItems = data['data'] as List;
+      final items = rawItems.where((c) => c['estado'] != 'pagado').toList();
       setState(() {
         _cxcs.addAll(items);
         _hasMore = data['current_page'] < data['last_page'];
@@ -239,25 +241,31 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
           Material(
             color: Colors.white,
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(12.0),
               child: Column(
                 children: [
-                  TextField(
-                    controller: _searchController,
-                    onChanged: _onSearchChanged,
-                    decoration: InputDecoration(
-                      hintText: 'Buscar por documento o cliente...',
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                  SizedBox(
+                    height: 40,
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                      style: const TextStyle(fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'Buscar documento o cliente...',
+                        hintStyle: const TextStyle(fontSize: 13),
+                        prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Expanded(
@@ -266,7 +274,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                             'Solo Vencidos',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                              fontSize: 12,
                             ),
                           ),
                           value: _soloVencidos,
@@ -288,7 +296,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                             'Con Alerta',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                              fontSize: 12,
                             ),
                           ),
                           value: _conAlerta,
@@ -320,12 +328,12 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                     child: ListView.builder(
                       controller: _scrollController,
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
                       itemCount: _cxcs.length + (_isLoadingMore ? 1 : 0),
                       itemBuilder: (_, i) {
                         if (i == _cxcs.length) {
                           return const Padding(
-                            padding: EdgeInsets.all(16.0),
+                            padding: EdgeInsets.all(12.0),
                             child: Center(child: CircularProgressIndicator()),
                           );
                         }
@@ -347,7 +355,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
       decimalDigits: 2,
     );
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -392,10 +400,10 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
 
   Widget _buildMiniTotalCard(String title, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
@@ -403,18 +411,18 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
           Text(
             title,
             style: TextStyle(
-              fontSize: 9,
+              fontSize: 8,
               fontWeight: FontWeight.bold,
               color: color,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.w800,
               color: Colors.black87,
               letterSpacing: -0.5,
@@ -457,11 +465,11 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
         ),
       ).then((_) => _load()),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 8),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -477,11 +485,11 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
               left: 0,
               top: 0,
               bottom: 0,
-              width: 5,
+              width: 4,
               child: Container(color: color),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+              padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -494,9 +502,9 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                           cxc['documento'] ?? '-',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            fontSize: 14,
+                            fontSize: 13,
                             color: Colors.grey.shade800,
-                            letterSpacing: 0.2,
+                            letterSpacing: 0.1,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -535,34 +543,34 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                               ),
                             ),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              estado.toUpperCase(),
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
                               ),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                estado.toUpperCase(),
+                                style: TextStyle(
+                                  color: color,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.2,
+                                ),
                             ),
                           ),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(
                         Icons.person_outline,
-                        size: 14,
+                        size: 12,
                         color: Colors.grey.shade500,
                       ),
                       const SizedBox(width: 4),
@@ -572,15 +580,15 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                               'SIN CLIENTE',
                           style: TextStyle(
                             color: Colors.grey.shade600,
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w500,
-                            letterSpacing: 0.3,
+                            letterSpacing: 0.1,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -617,17 +625,17 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
         Text(
           label.toUpperCase(),
           style: TextStyle(
-            fontSize: 9,
+            fontSize: 8,
             fontWeight: FontWeight.w600,
             color: Colors.grey.shade500,
-            letterSpacing: 0.5,
+            letterSpacing: 0.2,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 1),
         Text(
           value,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w800,
             color: color,
             letterSpacing: -0.3,

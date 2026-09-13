@@ -14,6 +14,7 @@ import 'cxc_cliente_detail_screen.dart';
 import '../../../vendedor/screens/vendedor_cxc_sync_screen.dart';
 import '../../../../widgets/general_header.dart';
 import '../../../../services/http_service.dart';
+import '../../../users/providers/users_provider.dart';
 
 class CxcScreen extends StatefulWidget {
   const CxcScreen({super.key});
@@ -36,13 +37,16 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
   Timer? _debounce;
 
   String _searchQuery = '';
-  String _searchGroupedQuery = '';
   String _statusFilter = 'Todos';
+  int? _selectedVendedorId;
   bool _soloVencidos = false;
   bool _conVisita = false;
 
   int _currentPage = 1;
   int _rowsPerPage = 10;
+
+  static const _darkBg = AppTheme.darkBgColor;
+  static const _cardDark = AppTheme.darkCardColor;
 
   @override
   void initState() {
@@ -50,6 +54,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<CxcProvider>(context, listen: false).fetchCxcs();
+      Provider.of<UsersProvider>(context, listen: false).fetchUsers();
     });
   }
 
@@ -72,13 +77,6 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
           _currentPage = 1;
         });
       }
-    });
-  }
-
-  void _onSearchGroupedChanged(String query) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () {
-      if (mounted) setState(() => _searchGroupedQuery = query);
     });
   }
 
@@ -139,6 +137,11 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
           cxc.estado.toLowerCase() == _statusFilter.toLowerCase();
       if (!matchesStatus) return false;
 
+      if (_selectedVendedorId != null &&
+          cxc.vendedorId != _selectedVendedorId) {
+        return false;
+      }
+
       if (_soloVencidos && !_isPastDue(cxc.fechaVencimiento, cxc.estado)) {
         return false;
       }
@@ -168,8 +171,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
           final totalPendiente = double.tryParse(totalPendienteStr) ?? 0.0;
           if (totalPendiente <= 0) return false;
 
-          if (_searchGroupedQuery.isEmpty) return true;
-          final normalizedQuery = _normalizeText(_searchGroupedQuery);
+          if (_searchQuery.isEmpty) return true;
+          final normalizedQuery = _normalizeText(_searchQuery);
           final normalizedName = _normalizeText(c['nombre'] ?? '');
           return normalizedName.contains(normalizedQuery);
         }).toList();
@@ -189,7 +192,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
         }
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF8F9FA),
+          backgroundColor: _darkBg,
           bottomNavigationBar: ModernTotalsBar(
             facturado: totalFactura,
             pendiente: totalPendiente,
@@ -200,13 +203,14 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(filteredCxcs.length, provider.isLoading),
+              _buildGlobalFiltersBar(),
               Container(
-                color: Colors.white,
+                color: _cardDark,
                 child: TabBar(
                   controller: _tabController,
                   indicatorColor: AppTheme.ledhouseBlue,
-                  labelColor: AppTheme.ledhouseBlue,
-                  unselectedLabelColor: Colors.grey.shade600,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.grey.shade500,
                   tabs: const [
                     Tab(text: 'Agrupado por Cliente'),
                     Tab(text: 'Todos los Documentos'),
@@ -220,27 +224,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                     // Tab 1: Agrupado por Cliente
                     _buildGroupedView(provider, groupedClients),
                     // Tab 2: Todos los Documentos
-                    Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(child: _buildSearchBar()),
-                                  const SizedBox(width: 8),
-                                  _buildFilterDropdown(),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              _buildCheckboxes(),
-                            ],
-                          ),
-                        ),
-                        Expanded(child: _buildContent(provider, filteredCxcs)),
-                      ],
-                    ),
+                    _buildContent(provider, filteredCxcs),
                   ],
                 ),
               ),
@@ -290,326 +274,278 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextField(
-              controller: _searchGroupedController,
-              onChanged: _onSearchGroupedChanged,
-              style: const TextStyle(fontSize: 14),
-              decoration: InputDecoration(
-                hintText: 'Buscar cliente...',
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: Colors.grey.shade400,
-                  size: 20,
-                ),
-                suffixIcon: _searchGroupedController.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: Colors.grey.shade400,
-                          size: 18,
-                        ),
-                        onPressed: () {
-                          _searchGroupedController.clear();
-                          setState(() => _searchGroupedQuery = '');
-                        },
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
+        if (groupedClients.isEmpty)
+          const Expanded(
+            child: Center(
+              child: Text(
+                'No hay clientes coincidentes.',
+                style: TextStyle(color: Colors.white),
               ),
             ),
-          ),
-        ),
-        Expanded(
-          child: groupedClients.isEmpty
-              ? const Center(child: Text('No hay clientes coincidentes.'))
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  itemCount: groupedClients.length,
-                  itemBuilder: (context, index) {
-                    final cliente = groupedClients[index];
-                    final totalPendiente =
-                        double.tryParse(
-                          cliente['total_pendiente']?.toString() ?? '0',
-                        ) ??
-                        0;
+          )
+        else
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: groupedClients.length,
+              itemBuilder: (context, index) {
+                final cliente = groupedClients[index];
+                final totalPendiente =
+                    double.tryParse(
+                      cliente['total_pendiente']?.toString() ?? '0',
+                    ) ??
+                    0;
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.grey.shade200,
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.015),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: _cardDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade800, width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.015),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
-                      child: Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CxcClienteDetailScreen(
-                                  clienteAgrupado: cliente,
-                                ),
-                              ),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                // Avatar Premium
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        _avatarColor(cliente['nombre'] ?? ''),
-                                        _avatarColor(
-                                          cliente['nombre'] ?? '',
-                                        ).withOpacity(0.7),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(14),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: _avatarColor(
-                                          cliente['nombre'] ?? '',
-                                        ).withOpacity(0.3),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    _initials(cliente['nombre'] ?? ''),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        cliente['nombre'] ?? 'Sin Nombre',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 15,
-                                          color: Color(0xFF1F2937),
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.phone_rounded,
-                                            size: 14,
-                                            color: Colors.grey.shade500,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            cliente['whatsapp'] ?? 'N/A',
-                                            style: TextStyle(
-                                              color: Colors.grey.shade600,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (cliente['whatsapp'] != null &&
-                                    cliente['whatsapp']
-                                        .toString()
-                                        .trim()
-                                        .isNotEmpty &&
-                                    totalPendiente > 0)
-                                  IconButton(
-                                    icon: const FaIcon(
-                                      FontAwesomeIcons.whatsapp,
-                                      color: Colors.green,
-                                    ),
-                                    tooltip: 'Enviar WhatsApp',
-                                    onPressed: () async {
-                                      final cxcsCliente = provider.cxcs
-                                          .where(
-                                            (c) =>
-                                                c.clienteId == cliente['id'] &&
-                                                c.montoPendiente > 0,
-                                          )
-                                          .toList();
-                                      if (cxcsCliente.isEmpty) {
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'El cliente no tiene deudas pendientes',
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                        return;
-                                      }
-
-                                      String mensaje =
-                                          'Hola *${cliente['nombre']}*,\n\nLe recordamos que tiene facturas pendientes con *Ledhouse*:\n\n';
-                                      for (var cxc in cxcsCliente) {
-                                        int diasAtraso = 0;
-                                        try {
-                                          final date = DateTime.parse(
-                                            cxc.fechaVencimiento,
-                                          );
-                                          final todayDate = DateTime(
-                                            DateTime.now().year,
-                                            DateTime.now().month,
-                                            DateTime.now().day,
-                                          );
-                                          final diff = todayDate
-                                              .difference(date)
-                                              .inDays;
-                                          if (diff > 0) diasAtraso = diff;
-                                        } catch (e) {}
-
-                                        mensaje +=
-                                            '*Doc:* ${cxc.documento} | *Vence:* ${cxc.fechaVencimiento}';
-                                        if (diasAtraso > 0) {
-                                          mensaje +=
-                                              ' (*$diasAtraso días de atraso*)';
-                                        }
-                                        mensaje +=
-                                            ' | *Pendiente:* ${currencyFormatter.format(cxc.montoPendiente)}\n';
-                                      }
-                                      mensaje +=
-                                          '\n*Total Pendiente:* ${currencyFormatter.format(totalPendiente)}\n\nPor favor, contáctenos para coordinar el pago. Gracias.';
-
-                                      String phone = cliente['whatsapp']
-                                          .toString()
-                                          .replaceAll(RegExp(r'\D'), '');
-                                      if (!phone.startsWith('1') &&
-                                          phone.length == 10) {
-                                        phone = '1$phone';
-                                      }
-
-                                      if (phone.isNotEmpty) {
-                                        final url = Uri.parse(
-                                          'https://wa.me/$phone?text=${Uri.encodeComponent(mensaje)}',
-                                        );
-                                        if (!await launchUrl(url)) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'No se pudo abrir WhatsApp',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                                backgroundColor: Colors.red,
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      }
-                                    },
-                                  ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      currencyFormatter.format(totalPendiente),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        color: totalPendiente > 0
-                                            ? AppTheme.dangerColor
-                                            : Colors.grey.shade400,
-                                        letterSpacing: -0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Deuda Total',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade500,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CxcClienteDetailScreen(
+                              clienteAgrupado: cliente,
+                            ),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            // Avatar Premium
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    _avatarColor(cliente['nombre'] ?? ''),
+                                    _avatarColor(
+                                      cliente['nombre'] ?? '',
+                                    ).withOpacity(0.7),
                                   ],
                                 ),
-                                const SizedBox(width: 12),
-                                Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _avatarColor(
+                                      cliente['nombre'] ?? '',
+                                    ).withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
                                   ),
-                                  child: Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: Colors.grey.shade400,
-                                    size: 20,
+                                ],
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                _initials(cliente['nombre'] ?? ''),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    cliente['nombre'] ?? 'Sin Nombre',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                      color: Colors.white,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.phone_rounded,
+                                        size: 14,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        cliente['whatsapp'] ?? 'N/A',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (cliente['whatsapp'] != null &&
+                                cliente['whatsapp']
+                                    .toString()
+                                    .trim()
+                                    .isNotEmpty &&
+                                totalPendiente > 0)
+                              IconButton(
+                                icon: const FaIcon(
+                                  FontAwesomeIcons.whatsapp,
+                                  color: Colors.green,
+                                ),
+                                tooltip: 'Enviar WhatsApp',
+                                onPressed: () async {
+                                  final cxcsCliente = provider.cxcs
+                                      .where(
+                                        (c) =>
+                                            c.clienteId == cliente['id'] &&
+                                            c.montoPendiente > 0,
+                                      )
+                                      .toList();
+                                  if (cxcsCliente.isEmpty) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'El cliente no tiene deudas pendientes',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return;
+                                  }
+
+                                  String mensaje =
+                                      'Hola *${cliente['nombre']}*,\n\nLe recordamos que tiene facturas pendientes con *Ledhouse*:\n\n';
+                                  for (var cxc in cxcsCliente) {
+                                    int diasAtraso = 0;
+                                    try {
+                                      final date = DateTime.parse(
+                                        cxc.fechaVencimiento,
+                                      );
+                                      final todayDate = DateTime(
+                                        DateTime.now().year,
+                                        DateTime.now().month,
+                                        DateTime.now().day,
+                                      );
+                                      final diff = todayDate
+                                          .difference(date)
+                                          .inDays;
+                                      if (diff > 0) diasAtraso = diff;
+                                    } catch (e) {}
+
+                                    mensaje +=
+                                        '*Doc:* ${cxc.documento} | *Vence:* ${cxc.fechaVencimiento}';
+                                    if (diasAtraso > 0) {
+                                      mensaje +=
+                                          ' (*$diasAtraso días de atraso*)';
+                                    }
+                                    mensaje +=
+                                        ' | *Pendiente:* ${currencyFormatter.format(cxc.montoPendiente)}\n';
+                                  }
+                                  mensaje +=
+                                      '\n*Total Pendiente:* ${currencyFormatter.format(totalPendiente)}\n\nPor favor, contáctenos para coordinar el pago. Gracias.';
+
+                                  String phone = cliente['whatsapp']
+                                      .toString()
+                                      .replaceAll(RegExp(r'\D'), '');
+                                  if (!phone.startsWith('1') &&
+                                      phone.length == 10) {
+                                    phone = '1$phone';
+                                  }
+
+                                  if (phone.isNotEmpty) {
+                                    final url = Uri.parse(
+                                      'https://wa.me/$phone?text=${Uri.encodeComponent(mensaje)}',
+                                    );
+                                    if (!await launchUrl(url)) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'No se pudo abrir WhatsApp',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                },
+                              ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  currencyFormatter.format(totalPendiente),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: totalPendiente > 0
+                                        ? AppTheme.dangerColor
+                                        : Colors.grey.shade400,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Deuda Total',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade800,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.grey.shade400,
+                                size: 20,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  },
-                ),
-        ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
       ],
     );
   }
@@ -632,6 +568,27 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
             String endpoint = _tabController.index == 0
                 ? 'ledhouse/cxc/reporte-agrupado-pdf-url'
                 : 'ledhouse/cxc/reporte-general-pdf-url';
+
+            final queryParams = <String>[];
+            if (_searchQuery.isNotEmpty) {
+              queryParams.add('search=${Uri.encodeComponent(_searchQuery)}');
+            }
+            if (_selectedVendedorId != null) {
+              queryParams.add('vendedor_id=$_selectedVendedorId');
+            }
+            if (_soloVencidos) queryParams.add('vencidos=1');
+
+            if (_tabController.index == 1) {
+              if (_conVisita) queryParams.add('con_visita=1');
+              if (_statusFilter != 'Todos') {
+                queryParams.add('estado=${Uri.encodeComponent(_statusFilter)}');
+              }
+            }
+
+            if (queryParams.isNotEmpty) {
+              endpoint += '?${queryParams.join('&')}';
+            }
+
             try {
               final response = await HttpService().get(endpoint);
               final url = Uri.parse(response['url']);
@@ -687,38 +644,131 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ── Filtros ────────────────────────────────────────────────────────────────
-  Widget _buildSearchBar() {
+  // ── Filtros Globales ────────────────────────────────────────────────────────
+  Widget _buildGlobalFiltersBar() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+      color: _cardDark,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: _buildSearchBar()),
+              const SizedBox(width: 8),
+              _buildFilterDropdown(),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildVendedorDropdown(),
+              const SizedBox(width: 12),
+              Expanded(child: _buildCheckboxes()),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildVendedorDropdown() {
+    final usuariosProvider = Provider.of<UsersProvider>(context);
+    final users = usuariosProvider.users;
+    final vendedores = users.where((u) {
+      final roles = u['roles'] as List<dynamic>? ?? [];
+      return roles.any((r) => r['name'] == 'vendedor');
+    }).toList();
+
+    return Expanded(
+      child: Container(
+        height: 36,
+        decoration: BoxDecoration(
+          color: AppTheme.darkInputColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade800),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<int?>(
+            value: _selectedVendedorId,
+            isExpanded: true,
+            isDense: true,
+            dropdownColor: AppTheme.darkInputColor,
+            hint: Text(
+              'Todos los Vendedores',
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+            ),
+            icon: Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Colors.grey.shade500,
+              size: 18,
+            ),
+            style: const TextStyle(fontSize: 13, color: Colors.white),
+            items: [
+              const DropdownMenuItem(
+                value: null,
+                child: Text('Todos los Vendedores'),
+              ),
+              ...vendedores.map(
+                (u) => DropdownMenuItem(
+                  value: u['id'] as int,
+                  child: Text(u['name'] ?? 'Sin Nombre'),
+                ),
+              ),
+            ],
+            onChanged: (val) {
+              setState(() {
+                _selectedVendedorId = val;
+                _currentPage = 1;
+              });
+              Provider.of<CxcProvider>(context, listen: false).fetchCxcs(
+                vendedorId: _selectedVendedorId,
+                vencidos: _soloVencidos,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Filtros Individuales Tab 2 ──────────────────────────────────────────────
+  Widget _buildSearchBar() {
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        color: AppTheme.darkInputColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade800),
       ),
       child: TextField(
         controller: _searchController,
         onChanged: _onSearchChanged,
-        style: const TextStyle(fontSize: 14),
+        style: const TextStyle(fontSize: 13, color: Colors.white),
         decoration: InputDecoration(
+          isDense: true,
           hintText: 'Buscar cliente o doc...',
-          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
           prefixIcon: Icon(
             Icons.search_rounded,
             color: Colors.grey.shade400,
-            size: 20,
+            size: 18,
+          ),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 36,
+            minHeight: 36,
           ),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     Icons.close_rounded,
                     color: Colors.grey.shade400,
-                    size: 18,
+                    size: 16,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
                   ),
                   onPressed: () {
                     _searchController.clear();
@@ -728,8 +778,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
               : null,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
+            horizontal: 12,
+            vertical: 10,
           ),
         ),
       ),
@@ -738,30 +788,28 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
 
   Widget _buildFilterDropdown() {
     return Container(
-      width: 150,
+      width: 135,
+      height: 36,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppTheme.darkInputColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade800),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _statusFilter,
           isExpanded: true,
+          isDense: true,
+          dropdownColor: AppTheme.darkInputColor,
           icon: Icon(
             Icons.keyboard_arrow_down_rounded,
             color: Colors.grey.shade500,
+            size: 18,
           ),
-          style: const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
+          style: const TextStyle(fontSize: 13, color: Colors.white),
           items: const [
-            DropdownMenuItem(value: 'Todos', child: Text('Todos')),
+            DropdownMenuItem(value: 'Todos', child: Text('Todos los Estados')),
             DropdownMenuItem(value: 'pendiente', child: Text('Pendiente')),
             DropdownMenuItem(value: 'pagado', child: Text('Pagado')),
             DropdownMenuItem(value: 'cancelado', child: Text('Cancelado')),
@@ -780,26 +828,36 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildCheckboxes() {
-    return Row(
-      children: [
-        _buildCustomCheckbox(
-          label: 'Solo Vencidos',
-          value: _soloVencidos,
-          onChanged: (v) => setState(() {
-            _soloVencidos = v;
-            _currentPage = 1;
-          }),
-        ),
-        const SizedBox(width: 16),
-        _buildCustomCheckbox(
-          label: 'Con Visita',
-          value: _conVisita,
-          onChanged: (v) => setState(() {
-            _conVisita = v;
-            _currentPage = 1;
-          }),
-        ),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildCustomCheckbox(
+            label: 'Solo Vencidos',
+            value: _soloVencidos,
+            onChanged: (v) {
+              setState(() {
+                _soloVencidos = v;
+                _currentPage = 1;
+              });
+              Provider.of<CxcProvider>(context, listen: false).fetchCxcs(
+                vendedorId: _selectedVendedorId,
+                vencidos: _soloVencidos,
+              );
+            },
+          ),
+          const SizedBox(width: 12),
+          _buildCustomCheckbox(
+            label: 'Con Visita',
+            value: _conVisita,
+            onChanged: (v) => setState(() {
+              _conVisita = v;
+              _currentPage = 1;
+            }),
+          ),
+        ],
+      ),
     );
   }
 
@@ -817,12 +875,12 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 18,
-              height: 18,
+              width: 16,
+              height: 16,
               decoration: BoxDecoration(
                 color: value ? AppTheme.ledhouseBlue : Colors.transparent,
                 border: Border.all(
-                  color: value ? AppTheme.ledhouseBlue : Colors.grey.shade400,
+                  color: value ? AppTheme.ledhouseBlue : Colors.grey.shade600,
                   width: 1.5,
                 ),
                 borderRadius: BorderRadius.circular(4),
@@ -830,7 +888,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
               child: value
                   ? const Icon(
                       Icons.check_rounded,
-                      size: 14,
+                      size: 12,
                       color: Colors.white,
                     )
                   : null,
@@ -839,9 +897,9 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
             Text(
               label,
               style: TextStyle(
+                color: Colors.grey.shade300,
                 fontSize: 13,
-                color: value ? Colors.black87 : Colors.grey.shade600,
-                fontWeight: value ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -946,12 +1004,12 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFF24262A),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: Colors.grey.shade800),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
+                    color: Colors.black.withOpacity(0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -963,11 +1021,13 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                   return SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                      constraints: BoxConstraints(
+                        minWidth: constraints.maxWidth,
+                      ),
                       child: SingleChildScrollView(
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(
-                            const Color(0xFFF8FAFC),
+                            const Color(0xFF1E2024),
                           ),
                           headingRowHeight: 46,
                           dataRowMinHeight: 52,
@@ -1071,7 +1131,25 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                           ],
                           rows: pageItems.map((cxc) {
                             final color = _getStatusColor(cxc.estado);
-                            final pastDue = _isPastDue(cxc.fechaVencimiento, cxc.estado);
+                            final pastDue = _isPastDue(
+                              cxc.fechaVencimiento,
+                              cxc.estado,
+                            );
+                            int diffDays = 0;
+                            if (pastDue) {
+                              try {
+                                final date = DateTime.parse(
+                                  cxc.fechaVencimiento,
+                                );
+                                final today = DateTime.now();
+                                final todayDate = DateTime(
+                                  today.year,
+                                  today.month,
+                                  today.day,
+                                );
+                                diffDays = todayDate.difference(date).inDays;
+                              } catch (_) {}
+                            }
                             return DataRow(
                               cells: [
                                 // Documento
@@ -1080,7 +1158,9 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                     onTap: () => _showFormDialog(cxc),
                                     borderRadius: BorderRadius.circular(6),
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 4,
+                                      ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -1088,7 +1168,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                             padding: const EdgeInsets.all(5),
                                             decoration: BoxDecoration(
                                               color: color.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(6),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
                                             ),
                                             child: Icon(
                                               Icons.description_rounded,
@@ -1099,10 +1180,10 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                           const SizedBox(width: 8),
                                           Text(
                                             cxc.documento,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
                                               fontSize: 13,
-                                              color: Color(0xFF1E293B),
+                                              color: Colors.grey.shade300,
                                             ),
                                           ),
                                         ],
@@ -1113,15 +1194,17 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                 // Cliente
                                 DataCell(
                                   ConstrainedBox(
-                                    constraints: const BoxConstraints(maxWidth: 180),
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 180,
+                                    ),
                                     child: Tooltip(
                                       message: cxc.cliente,
                                       child: Text(
                                         cxc.cliente,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w500,
-                                          color: Color(0xFF334155),
+                                          color: Colors.grey.shade300,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -1134,7 +1217,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                     cxc.fechaFactura ?? '-',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade700,
+                                      color: Colors.grey.shade400,
                                     ),
                                   ),
                                 ),
@@ -1145,7 +1228,9 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                     children: [
                                       if (pastDue)
                                         Padding(
-                                          padding: const EdgeInsets.only(right: 4),
+                                          padding: const EdgeInsets.only(
+                                            right: 4,
+                                          ),
                                           child: Icon(
                                             Icons.warning_amber_rounded,
                                             size: 14,
@@ -1156,10 +1241,28 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                         cxc.fechaVencimiento,
                                         style: TextStyle(
                                           fontSize: 12,
-                                          fontWeight: pastDue ? FontWeight.bold : FontWeight.normal,
-                                          color: pastDue ? AppTheme.dangerColor : Colors.grey.shade700,
+                                          fontWeight: pastDue
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                          color: pastDue
+                                              ? AppTheme.dangerColor
+                                              : Colors.grey.shade400,
                                         ),
                                       ),
+                                      if (pastDue && diffDays > 0)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            left: 4,
+                                          ),
+                                          child: Text(
+                                            '($diffDays d)',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppTheme.dangerColor,
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),
@@ -1167,9 +1270,10 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                 DataCell(
                                   Text(
                                     currencyFormatter.format(cxc.montoFactura),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
+                                      color: Colors.grey.shade300,
                                     ),
                                   ),
                                 ),
@@ -1179,31 +1283,40 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                     currencyFormatter.format(cxc.montoPagado),
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Colors.grey.shade700,
+                                      color: Colors.grey.shade400,
                                     ),
                                   ),
                                 ),
                                 // Pendiente
                                 DataCell(
                                   Text(
-                                    currencyFormatter.format(cxc.montoPendiente),
+                                    currencyFormatter.format(
+                                      cxc.montoPendiente,
+                                    ),
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
                                       color: cxc.montoPendiente <= 0
                                           ? AppTheme.successColor
-                                          : (pastDue ? AppTheme.dangerColor : const Color(0xFFEA580C)),
+                                          : (pastDue
+                                                ? AppTheme.dangerColor
+                                                : const Color(0xFFEA580C)),
                                     ),
                                   ),
                                 ),
                                 // Estado
                                 DataCell(
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: color.withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: color.withOpacity(0.3)),
+                                      border: Border.all(
+                                        color: color.withOpacity(0.3),
+                                      ),
                                     ),
                                     child: Text(
                                       cxc.estado.toUpperCase(),
@@ -1221,7 +1334,10 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       if (cxc.clienteObj?.whatsapp != null &&
-                                          cxc.clienteObj!.whatsapp!.toString().trim().isNotEmpty)
+                                          cxc.clienteObj!.whatsapp!
+                                              .toString()
+                                              .trim()
+                                              .isNotEmpty)
                                         IconButton(
                                           icon: const FaIcon(
                                             FontAwesomeIcons.whatsapp,
@@ -1243,7 +1359,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                         tooltip: 'Gestión de Cobro',
                                         padding: const EdgeInsets.all(4),
                                         constraints: const BoxConstraints(),
-                                        onPressed: () => _showSoporteDialog(cxc),
+                                        onPressed: () =>
+                                            _showSoporteDialog(cxc),
                                       ),
                                       const SizedBox(width: 4),
                                       IconButton(
@@ -1323,10 +1440,22 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                     isDense: true,
                     underline: const SizedBox(),
                     items: const [
-                      DropdownMenuItem(value: 10, child: Text('10', style: TextStyle(fontSize: 12))),
-                      DropdownMenuItem(value: 25, child: Text('25', style: TextStyle(fontSize: 12))),
-                      DropdownMenuItem(value: 50, child: Text('50', style: TextStyle(fontSize: 12))),
-                      DropdownMenuItem(value: 100, child: Text('100', style: TextStyle(fontSize: 12))),
+                      DropdownMenuItem(
+                        value: 10,
+                        child: Text('10', style: TextStyle(fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 25,
+                        child: Text('25', style: TextStyle(fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 50,
+                        child: Text('50', style: TextStyle(fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 100,
+                        child: Text('100', style: TextStyle(fontSize: 12)),
+                      ),
                     ],
                     onChanged: (val) {
                       if (val != null) {
@@ -1342,40 +1471,63 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                     icon: const Icon(Icons.first_page_rounded),
                     iconSize: 20,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                    constraints: const BoxConstraints(
+                      minWidth: 26,
+                      minHeight: 26,
+                    ),
                     tooltip: 'Primera página',
-                    onPressed: _currentPage > 1 ? () => setState(() => _currentPage = 1) : null,
+                    onPressed: _currentPage > 1
+                        ? () => setState(() => _currentPage = 1)
+                        : null,
                   ),
                   IconButton(
                     icon: const Icon(Icons.chevron_left_rounded),
                     iconSize: 20,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                    constraints: const BoxConstraints(
+                      minWidth: 26,
+                      minHeight: 26,
+                    ),
                     tooltip: 'Página anterior',
-                    onPressed: _currentPage > 1 ? () => setState(() => _currentPage--) : null,
+                    onPressed: _currentPage > 1
+                        ? () => setState(() => _currentPage--)
+                        : null,
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
                       '$_currentPage / ${totalPages == 0 ? 1 : totalPages}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.chevron_right_rounded),
                     iconSize: 20,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                    constraints: const BoxConstraints(
+                      minWidth: 26,
+                      minHeight: 26,
+                    ),
                     tooltip: 'Página siguiente',
-                    onPressed: _currentPage < totalPages ? () => setState(() => _currentPage++) : null,
+                    onPressed: _currentPage < totalPages
+                        ? () => setState(() => _currentPage++)
+                        : null,
                   ),
                   IconButton(
                     icon: const Icon(Icons.last_page_rounded),
                     iconSize: 20,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                    constraints: const BoxConstraints(
+                      minWidth: 26,
+                      minHeight: 26,
+                    ),
                     tooltip: 'Última página',
-                    onPressed: _currentPage < totalPages ? () => setState(() => _currentPage = totalPages) : null,
+                    onPressed: _currentPage < totalPages
+                        ? () => setState(() => _currentPage = totalPages)
+                        : null,
                   ),
                 ],
               ),
@@ -1407,14 +1559,13 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
     if (diasAtraso > 0) {
       mensaje += '*Días de atraso:* $diasAtraso días\n';
     }
-    mensaje +=
-        '*Monto:* ${currencyFormatter.format(cxc.montoPendiente)}\n\n';
-    mensaje +=
-        'Por favor, contáctenos para coordinar el pago. Gracias.';
+    mensaje += '*Monto:* ${currencyFormatter.format(cxc.montoPendiente)}\n\n';
+    mensaje += 'Por favor, contáctenos para coordinar el pago. Gracias.';
 
-    String phone = (cxc.clienteObj?.whatsapp ?? '')
-        .toString()
-        .replaceAll(RegExp(r'\D'), '');
+    String phone = (cxc.clienteObj?.whatsapp ?? '').toString().replaceAll(
+      RegExp(r'\D'),
+      '',
+    );
     if (!phone.startsWith('1') && phone.length == 10) {
       phone = '1$phone';
     }

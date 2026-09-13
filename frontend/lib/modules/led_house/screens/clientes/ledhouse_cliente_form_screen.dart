@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/app_theme.dart';
 import '../../models/ledhouse_cliente.dart';
 import '../../services/ledhouse_cliente_service.dart';
+import '../../../../services/gps_service.dart';
 
 class LedhouseClienteFormScreen extends StatefulWidget {
   final LedhouseCliente? cliente;
@@ -26,6 +27,12 @@ class _LedhouseClienteFormScreenState extends State<LedhouseClienteFormScreen> {
   String? _tipoDocumento;
   late TextEditingController _limiteCreditoController;
   late TextEditingController _diasCreditoController;
+
+  late TextEditingController _latitudController;
+  late TextEditingController _longitudController;
+
+  double? _latitud;
+  double? _longitud;
 
   bool _isLoading = false;
 
@@ -60,6 +67,15 @@ class _LedhouseClienteFormScreenState extends State<LedhouseClienteFormScreen> {
           ? widget.cliente!.diasCredito.toString()
           : '',
     );
+    _latitud = widget.cliente?.latitud;
+    _longitud = widget.cliente?.longitud;
+
+    _latitudController = TextEditingController(
+      text: _latitud?.toString() ?? '',
+    );
+    _longitudController = TextEditingController(
+      text: _longitud?.toString() ?? '',
+    );
   }
 
   @override
@@ -71,6 +87,8 @@ class _LedhouseClienteFormScreenState extends State<LedhouseClienteFormScreen> {
     _documentoController.dispose();
     _limiteCreditoController.dispose();
     _diasCreditoController.dispose();
+    _latitudController.dispose();
+    _longitudController.dispose();
     super.dispose();
   }
 
@@ -100,6 +118,8 @@ class _LedhouseClienteFormScreenState extends State<LedhouseClienteFormScreen> {
         diasCredito: _diasCreditoController.text.trim().isEmpty
             ? null
             : int.tryParse(_diasCreditoController.text.trim()),
+        latitud: double.tryParse(_latitudController.text.trim()),
+        longitud: double.tryParse(_longitudController.text.trim()),
       );
 
       if (_isEditing) {
@@ -279,6 +299,160 @@ class _LedhouseClienteFormScreenState extends State<LedhouseClienteFormScreen> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 16),
+
+                        // ── Captura de GPS ───────────────────────────
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFBBF7D0)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.gps_fixed_rounded,
+                                  color: Colors.green,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: const Text(
+                                            'Ubicación Exacta (GPS)',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              color: Colors.green,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        InkWell(
+                                          onTap: () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (ctx) => AlertDialog(
+                                                title: const Row(
+                                                  children: [
+                                                    Icon(Icons.info_outline, color: Colors.blue),
+                                                    SizedBox(width: 8),
+                                                    Text('¿Cómo llenar el GPS?'),
+                                                  ],
+                                                ),
+                                                content: Container(
+                                                  constraints: const BoxConstraints(maxWidth: 300),
+                                                  child: const Text(
+                                                    '• Si está en la oficina (Windows): Ignore el botón "Capturar". Busque el cliente en Google Maps, copie la Latitud y Longitud y péguela en las casillas.\n\n'
+                                                    '• Si está en la calle (Móvil): Presione "Capturar" para que el sistema obtenga su ubicación actual automáticamente.',
+                                                    style: TextStyle(height: 1.4),
+                                                  ),
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(ctx),
+                                                    child: const Text('Entendido'),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                          child: const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller: _latitudController,
+                                            keyboardType:
+                                                const TextInputType.numberWithOptions(
+                                                  decimal: true,
+                                                ),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                            ),
+                                            decoration: InputDecoration(
+                                              hintText: 'Latitud',
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 8,
+                                                  ),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller: _longitudController,
+                                            keyboardType:
+                                                const TextInputType.numberWithOptions(
+                                                  decimal: true,
+                                                ),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                            ),
+                                            decoration: InputDecoration(
+                                              hintText: 'Longitud',
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 8,
+                                                  ),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              ElevatedButton.icon(
+                                onPressed: _isLoading
+                                    ? null
+                                    : _capturarUbicacion,
+                                icon: const Icon(Icons.location_on, size: 16),
+                                label: const Text('Capturar'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
                         const SizedBox(height: 28),
 
                         // ── Buttons ─────────────────────────────────
@@ -611,5 +785,39 @@ class _LedhouseClienteFormScreenState extends State<LedhouseClienteFormScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _capturarUbicacion() async {
+    setState(() => _isLoading = true);
+    try {
+      final pos = await GpsService.getCurrentPosition();
+      if (pos != null) {
+        setState(() {
+          _latitud = pos.latitude;
+          _longitud = pos.longitude;
+          _latitudController.text = pos.latitude.toString();
+          _longitudController.text = pos.longitude.toString();
+        });
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ubicación capturada con éxito'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo obtener el GPS: $e. Puede ingresar las coordenadas manualmente.',
+          ),
+          backgroundColor: Colors.orange.shade800,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/vendedor_pedido_flow_screen.dart';
+import '../screens/vendedor_pedidos_screen.dart';
 import '../screens/vendedor_rutas_screen.dart';
 import 'build_action_button.dart';
 
@@ -30,7 +31,7 @@ class ActionQuickVendedor extends StatelessWidget {
             children: [
               _ActionTile(
                 icon: Icons.add_shopping_cart,
-                label: 'Nuevo\nPedido',
+                label: 'Agregar Pedido',
                 isPrimary: true,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
@@ -54,10 +55,15 @@ class ActionQuickVendedor extends StatelessWidget {
                 false,
                 showBadge: true,
               ),
-              const BuildActionButton(
-                Icons.bar_chart_outlined,
-                'Reportes',
-                false,
+              _ActionTile(
+                icon: Icons.list_alt,
+                label: 'Pedidos',
+                isPrimary: false,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const VendedorPedidosScreen(),
+                  ),
+                ),
               ),
             ],
           ),

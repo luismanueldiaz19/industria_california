@@ -21,6 +21,8 @@ class Client {
   final String classification;
   final bool active;
   final String? notes;
+  final double? latitud;
+  final double? longitud;
 
   Client({
     this.id,
@@ -45,6 +47,8 @@ class Client {
     this.classification = 'bueno',
     this.active = true,
     this.notes,
+    this.latitud,
+    this.longitud,
   });
 
   factory Client.fromJson(Map<String, dynamic> json) {
@@ -71,6 +75,8 @@ class Client {
       classification: json['classification'] ?? 'bueno',
       active: json['active'] == true || json['active'] == 1,
       notes: json['notes'],
+      latitud: json['latitud'] != null ? double.tryParse(json['latitud'].toString()) : null,
+      longitud: json['longitud'] != null ? double.tryParse(json['longitud'].toString()) : null,
     );
   }
 
@@ -98,6 +104,8 @@ class Client {
       'classification': classification,
       'active': active,
       'notes': notes,
+      if (latitud != null) 'latitud': latitud,
+      if (longitud != null) 'longitud': longitud,
     };
   }
 }

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../../../core/constants.dart';
+
 import '../../../core/app_theme.dart';
 import '../providers/ledhouse_provider.dart';
 import '../componentes/ganancia_neta_chart_widget.dart';
@@ -25,8 +24,7 @@ class _LedhouseDetallesScreenState extends State<LedhouseDetallesScreen> {
 
   String? _startDate;
   String? _endDate;
-  String _selectedRange = 'Todo el año';
-  String _selectedModuloFilter = 'TODOS';
+  final String _selectedModuloFilter = 'TODOS';
   final currencyFormatter = NumberFormat.currency(
     symbol: '\$',
     decimalDigits: 2,
@@ -60,7 +58,6 @@ class _LedhouseDetallesScreenState extends State<LedhouseDetallesScreen> {
 
   void _applyQuickFilter(String range) {
     setState(() {
-      _selectedRange = range;
       final now = DateTime.now();
 
       const meses = [

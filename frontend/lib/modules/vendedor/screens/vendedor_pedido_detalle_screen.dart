@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../../core/app_theme.dart';
 import '../../logistica/models/pedido.dart';
 import '../../logistica/models/pedido_detalle.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../logistica/providers/pedido_provider.dart';
+
 /// Pantalla de detalle de un pedido existente.
 /// Solo muestra — no edita directamente (navega a Form para eso).
-class VendedorPedidoDetalleScreen extends StatelessWidget {
+class VendedorPedidoDetalleScreen extends StatefulWidget {
   final Pedido pedido;
 
-  static const _primaryBlue = Color(0xFF1E3A5F);
-  static const _accentBlue = Color(0xFF1976D2);
+  const VendedorPedidoDetalleScreen({super.key, required this.pedido});
+
+  @override
+  State<VendedorPedidoDetalleScreen> createState() =>
+      _VendedorPedidoDetalleScreenState();
+}
+
+class _VendedorPedidoDetalleScreenState
+    extends State<VendedorPedidoDetalleScreen> {
+  static const _primaryBlue = AppTheme.primaryBlue;
+  static const _accentBlue = AppTheme.secondaryBlue;
   static final _currencyFmt = NumberFormat.currency(
     symbol: '\$',
     decimalDigits: 2,
@@ -18,12 +33,40 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
 
   static final Map<String, Color> _estadoColor = {
     'borrador': const Color(0xFFFF9800),
-    'enviado': const Color(0xFF2196F3),
+    'enviado': AppTheme.primaryBlue,
     'facturado': const Color(0xFF4CAF50),
     'cancelado': const Color(0xFFE53935),
   };
 
-  const VendedorPedidoDetalleScreen({super.key, required this.pedido});
+  Pedido get pedido => widget.pedido;
+
+  bool _isGeneratingPdf = false;
+
+  Future<void> _generarPdf() async {
+    setState(() => _isGeneratingPdf = true);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Generando Factura...')));
+    try {
+      final urlStr = await context.read<PedidoProvider>().getPdfUrl(
+        widget.pedido.id,
+      );
+      final url = Uri.parse(urlStr);
+      if (!await launchUrl(url)) {
+        throw Exception('No se pudo abrir el enlace');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al abrir PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isGeneratingPdf = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,32 +77,52 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: _primaryBlue,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white, size: 20),
         title: Text(
           'Pedido #${pedido.id}',
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: _isGeneratingPdf
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(
+                    Icons.picture_as_pdf_rounded,
+                    color: Colors.redAccent,
+                  ),
+            tooltip: 'Ver Factura',
+            onPressed: _isGeneratingPdf ? null : _generarPdf,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeaderCard(estadoColor),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             _buildInfoCard(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             _buildDetallesSection(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             _buildTotalRow(),
             if (pedido.comentario != null && pedido.comentario!.isNotEmpty) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               _buildComentario(),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
           ],
         ),
       ),
@@ -68,14 +131,14 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
 
   Widget _buildHeaderCard(Color estadoColor) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [_primaryBlue, _accentBlue],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -85,37 +148,37 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
             children: [
               const Text(
                 'TOTAL DEL PEDIDO',
-                style: TextStyle(color: Colors.white60, fontSize: 12),
+                style: TextStyle(color: Colors.white60, fontSize: 10),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 _currencyFmt.format(pedido.total),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 28,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 _dateFmt.format(pedido.createdAt),
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: const TextStyle(color: Colors.white70, fontSize: 10),
               ),
             ],
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: estadoColor,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               pedido.estado.toUpperCase(),
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: 12,
-                letterSpacing: 1,
+                fontSize: 10,
+                letterSpacing: 0.5,
               ),
             ),
           ),
@@ -126,22 +189,29 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
 
   Widget _buildInfoCard() {
     return _card(
-      child: Column(
-        children: [
-          _infoRow(
-            Icons.person_outline,
-            'Cliente',
-            pedido.clienteNombre ?? '—',
-          ),
-          const Divider(height: 24),
-          _infoRow(Icons.map_outlined, 'Ruta', pedido.rutaNombre ?? 'Sin ruta'),
-          const Divider(height: 24),
-          _infoRow(
-            Icons.person_pin_outlined,
-            'Vendedor',
-            pedido.vendedorNombre ?? '—',
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          children: [
+            _infoRow(
+              Icons.person_outline,
+              'Cliente',
+              pedido.clienteNombre ?? '—',
+            ),
+            const Divider(height: 8, thickness: 0.5),
+            _infoRow(
+              Icons.map_outlined,
+              'Ruta',
+              pedido.rutaNombre ?? 'Sin ruta',
+            ),
+            const Divider(height: 8, thickness: 0.5),
+            _infoRow(
+              Icons.person_pin_outlined,
+              'Vendedor',
+              pedido.vendedorNombre ?? '—',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -150,21 +220,23 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Productos',
-          style: TextStyle(
-            color: _primaryBlue,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Text(
+            'Productos',
+            style: TextStyle(
+              color: _primaryBlue,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
           ),
         ),
-        const SizedBox(height: 8),
         _card(
           child: Column(
             children: pedido.detalles.asMap().entries.map((e) {
               return Column(
                 children: [
-                  if (e.key > 0) const Divider(height: 1),
+                  if (e.key > 0) const Divider(height: 1, thickness: 0.5),
                   _buildDetalleTile(e.value),
                 ],
               );
@@ -177,7 +249,7 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
 
   Widget _buildDetalleTile(PedidoDetalle det) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       child: Row(
         children: [
           Expanded(
@@ -188,20 +260,20 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
                   det.productoNombre ?? 'Producto #${det.productoId}',
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 13,
+                    fontSize: 11,
                     color: _primaryBlue,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Text(
                   '${det.cantidad % 1 == 0 ? det.cantidad.toInt() : det.cantidad.toStringAsFixed(3)} × ${_currencyFmt.format(det.precioUnitario)}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
                 ),
                 if (det.observacion != null && det.observacion!.isNotEmpty)
                   Text(
                     det.observacion!,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 9,
                       color: Colors.grey.shade500,
                       fontStyle: FontStyle.italic,
                     ),
@@ -214,7 +286,7 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
             style: const TextStyle(
               color: _accentBlue,
               fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: 12,
             ),
           ),
         ],
@@ -225,7 +297,7 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
   Widget _buildTotalRow() {
     return _card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -234,14 +306,14 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
               style: TextStyle(
                 color: _primaryBlue,
                 fontWeight: FontWeight.bold,
-                fontSize: 15,
+                fontSize: 13,
               ),
             ),
             Text(
               _currencyFmt.format(pedido.total),
               style: const TextStyle(
                 color: _accentBlue,
-                fontSize: 20,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -254,7 +326,7 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
   Widget _buildComentario() {
     return _card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -262,22 +334,22 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
               children: [
                 Icon(
                   Icons.notes_outlined,
-                  size: 16,
+                  size: 14,
                   color: Colors.grey.shade600,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 Text(
                   'Comentario',
                   style: TextStyle(
                     color: Colors.grey.shade600,
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(pedido.comentario!, style: const TextStyle(fontSize: 14)),
+            const SizedBox(height: 4),
+            Text(pedido.comentario!, style: const TextStyle(fontSize: 11)),
           ],
         ),
       ),
@@ -285,24 +357,30 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
   }
 
   Widget _infoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: _accentBlue),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-            ),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: _accentBlue),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -311,12 +389,12 @@ class VendedorPedidoDetalleScreen extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),

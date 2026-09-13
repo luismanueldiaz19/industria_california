@@ -26,7 +26,6 @@ class _InventarioProductosScreenState extends State<InventarioProductosScreen>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
 
-  static const _dark = Color(0xFFF8F9FA);
   // Color(0xFF1A1C1E);
 
   @override
@@ -187,12 +186,12 @@ class _InventarioProductosScreenState extends State<InventarioProductosScreen>
             decoration: BoxDecoration(
               border: Border.all(
                 color: isRequired
-                    ? const Color(0xFFE31E24).withOpacity(0.4)
+                    ? const Color(0xFFE31E24).withValues(alpha: 0.4)
                     : Colors.grey.shade300,
               ),
               borderRadius: BorderRadius.circular(4),
               color: isRequired
-                  ? const Color(0xFFE31E24).withOpacity(0.04)
+                  ? const Color(0xFFE31E24).withValues(alpha: 0.04)
                   : Colors.transparent,
             ),
             child: Text(

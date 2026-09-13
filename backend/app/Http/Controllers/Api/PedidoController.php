@@ -9,6 +9,7 @@ use App\Models\InventarioProducto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\PdfSecurityService;
 
 class PedidoController extends Controller
 {
@@ -41,6 +42,11 @@ class PedidoController extends Controller
         // Vendedor can only see their own orders unless they are admin
         if (!Auth::user()->hasRole('admin')) {
             $query->where('vendedor_id', Auth::id());
+        } else {
+            // If admin and they provided a vendedor_id filter, apply it
+            if ($request->filled('vendedor_id')) {
+                $query->where('vendedor_id', $request->input('vendedor_id'));
+            }
         }
 
         $query->orderBy('created_at', 'desc');
@@ -61,6 +67,8 @@ class PedidoController extends Controller
             'detalles.*.cantidad' => 'required|numeric|min:0.01',
             'detalles.*.precio_unitario' => 'required|numeric|min:0',
             'detalles.*.observacion' => 'nullable|string',
+            'latitud' => 'nullable|numeric',
+            'longitud' => 'nullable|numeric',
         ]);
 
         try {
@@ -105,6 +113,8 @@ class PedidoController extends Controller
                 'estado' => $request->estado,
                 'comentario' => $request->comentario,
                 'total' => $total,
+                'latitud' => $request->latitud,
+                'longitud' => $request->longitud,
             ]);
 
             foreach ($detallesToInsert as $det) {
@@ -137,6 +147,8 @@ class PedidoController extends Controller
             'detalles.*.cantidad' => 'required|numeric|min:0.01',
             'detalles.*.precio_unitario' => 'required|numeric|min:0',
             'detalles.*.observacion' => 'nullable|string',
+            'latitud' => 'nullable|numeric',
+            'longitud' => 'nullable|numeric',
         ]);
 
         try {
@@ -179,6 +191,8 @@ class PedidoController extends Controller
                 'estado' => $request->estado,
                 'comentario' => $request->comentario,
                 'total' => $total,
+                'latitud' => $request->latitud,
+                'longitud' => $request->longitud,
             ]);
 
             DB::commit();
@@ -187,6 +201,16 @@ class PedidoController extends Controller
             DB::rollBack();
             return response()->json(['message' => 'Error al actualizar pedido', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function destroy(Pedido $pedido)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'No autorizado para eliminar pedidos.'], 403);
+        }
+
+        $pedido->delete();
+        return response()->json(['message' => 'Pedido eliminado correctamente.']);
     }
 
     public function changeStatus(Request $request, Pedido $pedido)
@@ -212,5 +236,139 @@ class PedidoController extends Controller
         $pedido->save();
 
         return response()->json($pedido);
+    }
+    public function getGeneralPdfUrl(Request $request)
+    {
+        $params = $request->only(['cliente_id', 'ruta_id', 'estado', 'start_date', 'end_date']);
+        if (!Auth::user()->hasRole('admin')) {
+            $params['vendedor_id'] = Auth::id();
+        }
+        $url = PdfSecurityService::generarUrl('pedidos_general', $params, Auth::id(), 30);
+        return response()->json(['url' => $url]);
+    }
+
+    public function getPdfUrl($id)
+    {
+        $pedido = Pedido::findOrFail($id);
+        if (!Auth::user()->hasRole('admin') && $pedido->vendedor_id !== Auth::id()) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $url = PdfSecurityService::generarUrl('pedido', ['id' => $id], Auth::id(), 30);
+        
+        return response()->json(['url' => $url]);
+    }
+
+    public function generatePdf($id)
+    {
+        $pedido = Pedido::with([
+            'cliente:id,nombre,direccion,telefono,rnc', 
+            'ruta:id,nombre', 
+            'vendedor:id,name', 
+            'detalles.producto:id,codigo,nombre,unidad'
+        ])->findOrFail($id);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.pedido_factura', compact('pedido'));
+        return $pdf->stream("pedido_{$pedido->id}.pdf");
+    }
+
+    public function assignRuta(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $request->validate([
+            'pedido_ids' => 'required|array|min:1',
+            'pedido_ids.*' => 'exists:pedidos,id',
+            'ruta_id' => 'required|exists:rutas,id',
+        ]);
+
+        Pedido::whereIn('id', $request->pedido_ids)->update(['ruta_id' => $request->ruta_id]);
+
+        return response()->json(['message' => 'Pedidos asignados a la ruta correctamente.']);
+    }
+
+    public function optimizeDayRoute(Request $request)
+    {
+        $request->validate([
+            'ruta_id' => 'required|exists:rutas,id',
+            'date' => 'nullable|date',
+            'origin_lat' => 'required|numeric',
+            'origin_lng' => 'required|numeric'
+        ]);
+
+        $date = $request->input('date', date('Y-m-d'));
+        
+        $pedidos = Pedido::with(['cliente:id,nombre,direccion,latitud,longitud', 'ruta:id,nombre'])
+            ->where('ruta_id', $request->ruta_id)
+            ->whereDate('created_at', $date)
+            ->get();
+            
+        if ($pedidos->isEmpty()) {
+            return response()->json([]);
+        }
+
+        // Greedy TSP using Haversine
+        $origin = ['lat' => (float) $request->origin_lat, 'lng' => (float) $request->origin_lng];
+        $unvisited = $pedidos->toArray();
+        $ordered = [];
+
+        $currentPos = $origin;
+
+        while(count($unvisited) > 0) {
+            $nearestIndex = -1;
+            $minDist = PHP_FLOAT_MAX;
+
+            foreach($unvisited as $index => $pedido) {
+                // Fallback to client location if pedido location is missing
+                $lat = $pedido['latitud'] ?? $pedido['cliente']['latitud'] ?? null;
+                $lng = $pedido['longitud'] ?? $pedido['cliente']['longitud'] ?? null;
+
+                if ($lat === null || $lng === null) {
+                    $dist = PHP_FLOAT_MAX - 1; // Send to end of route
+                } else {
+                    $dist = $this->haversineGreatCircleDistance(
+                        $currentPos['lat'], $currentPos['lng'], 
+                        (float)$lat, (float)$lng
+                    );
+                }
+
+                if ($dist < $minDist) {
+                    $minDist = $dist;
+                    $nearestIndex = $index;
+                }
+            }
+
+            $nearest = $unvisited[$nearestIndex];
+            $ordered[] = $nearest;
+            
+            $nearestLat = $nearest['latitud'] ?? $nearest['cliente']['latitud'] ?? null;
+            $nearestLng = $nearest['longitud'] ?? $nearest['cliente']['longitud'] ?? null;
+            if ($nearestLat !== null && $nearestLng !== null) {
+                $currentPos = ['lat' => (float)$nearestLat, 'lng' => (float)$nearestLng];
+            }
+            
+            unset($unvisited[$nearestIndex]);
+            $unvisited = array_values($unvisited);
+        }
+
+        return response()->json($ordered);
+    }
+
+    private function haversineGreatCircleDistance($latitudeFrom, $longitudeFrom, $latitudeTo, $longitudeTo, $earthRadius = 6371000)
+    {
+        $latFrom = deg2rad($latitudeFrom);
+        $lonFrom = deg2rad($longitudeFrom);
+        $latTo = deg2rad($latitudeTo);
+        $lonTo = deg2rad($longitudeTo);
+
+        $latDelta = $latTo - $latFrom;
+        $lonDelta = $lonTo - $lonFrom;
+
+        $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) +
+            cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
+        
+        return $angle * $earthRadius;
     }
 }

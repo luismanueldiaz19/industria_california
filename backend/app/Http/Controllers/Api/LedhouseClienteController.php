@@ -40,6 +40,8 @@ class LedhouseClienteController extends Controller
             'documento' => 'nullable|string',
             'limite_credito' => 'nullable|numeric',
             'dias_credito' => 'nullable|integer',
+            'latitud' => 'nullable|numeric',
+            'longitud' => 'nullable|numeric',
         ]);
 
         $cliente = LedhouseCliente::create($validated);
@@ -72,6 +74,8 @@ class LedhouseClienteController extends Controller
             'documento' => 'nullable|string',
             'limite_credito' => 'nullable|numeric',
             'dias_credito' => 'nullable|integer',
+            'latitud' => 'nullable|numeric',
+            'longitud' => 'nullable|numeric',
         ]);
 
         $cliente->update($validated);

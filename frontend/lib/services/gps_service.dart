@@ -1,0 +1,31 @@
+import 'package:geolocator/geolocator.dart';
+
+class GpsService {
+  /// Solicita permisos y obtiene la posición actual
+  static Future<Position?> getCurrentPosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return Future.error('Los servicios de ubicación están deshabilitados. Por favor encienda el GPS.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return Future.error('Los permisos de ubicación fueron denegados');
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      return Future.error('Los permisos de ubicación están permanentemente denegados. Cambie esto en Ajustes.');
+    } 
+
+    return await Geolocator.getCurrentPosition(
+      // ignore: deprecated_member_use
+      desiredAccuracy: LocationAccuracy.high,
+    );
+  }
+}

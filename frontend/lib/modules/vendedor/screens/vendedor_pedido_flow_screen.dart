@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/app_theme.dart';
 import 'package:provider/provider.dart';
 import '../../logistica/models/pedido.dart';
 import '../providers/pedido_form_provider.dart';
@@ -31,10 +32,12 @@ class _VendedorPedidoFlowContent extends StatefulWidget {
   const _VendedorPedidoFlowContent({this.pedidoOriginal});
 
   @override
-  State<_VendedorPedidoFlowContent> createState() => _VendedorPedidoFlowContentState();
+  State<_VendedorPedidoFlowContent> createState() =>
+      _VendedorPedidoFlowContentState();
 }
 
-class _VendedorPedidoFlowContentState extends State<_VendedorPedidoFlowContent> {
+class _VendedorPedidoFlowContentState
+    extends State<_VendedorPedidoFlowContent> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
   bool _isLoading = true;
@@ -62,7 +65,7 @@ class _VendedorPedidoFlowContentState extends State<_VendedorPedidoFlowContent> 
         context.read<InventarioProductoProvider>().productos,
       );
     }
-    
+
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -97,17 +100,25 @@ class _VendedorPedidoFlowContentState extends State<_VendedorPedidoFlowContent> 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF5F7FA),
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: const Color(0xFF121212),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: const Scaffold(
+              backgroundColor: Color(0xFFF5F7FA),
+              body: Center(child: CircularProgressIndicator()),
+            ),
+          ),
+        ),
       );
     }
 
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       // Custom AppBar para los pasos
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E3A5F),
+        backgroundColor: AppTheme.primaryBlue,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -115,7 +126,10 @@ class _VendedorPedidoFlowContentState extends State<_VendedorPedidoFlowContent> 
         ),
         title: Text(
           widget.pedidoOriginal != null ? 'Editar Pedido' : 'Nuevo Pedido',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(40),
@@ -130,6 +144,23 @@ class _VendedorPedidoFlowContentState extends State<_VendedorPedidoFlowContent> 
           VendedorPedidoCatalogoScreen(onNext: _nextStep, onPrev: _prevStep),
           VendedorPedidoRevisionScreen(onPrev: _prevStep),
         ],
+      ),
+    );
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(
+                MediaQuery.of(context).size.width > 500 ? 20 : 0,
+              ),
+              child: scaffold,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -150,11 +181,20 @@ class _StepperIndicators extends StatelessWidget {
         children: List.generate(steps.length, (i) {
           final isPast = i < currentIndex;
           final isCurrent = i == currentIndex;
-          final color = isPast || isCurrent ? const Color(0xFF1976D2) : Colors.white30;
+          final color = isPast || isCurrent
+              ? const Color(0xFF1976D2)
+              : Colors.white30;
           return Expanded(
             child: Row(
               children: [
-                if (i > 0) Expanded(child: Container(height: 2, color: color, margin: const EdgeInsets.symmetric(horizontal: 8))),
+                if (i > 0)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      color: color,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                  ),
                 Text(
                   steps[i],
                   style: TextStyle(
@@ -163,7 +203,14 @@ class _StepperIndicators extends StatelessWidget {
                     fontSize: 12,
                   ),
                 ),
-                if (i == 0 && currentIndex == 0) Expanded(child: Container(height: 2, color: Colors.transparent, margin: const EdgeInsets.symmetric(horizontal: 8))),
+                if (i == 0 && currentIndex == 0)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      color: Colors.transparent,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                  ),
               ],
             ),
           );

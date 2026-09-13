@@ -17,6 +17,8 @@ class Pedido extends Model
         'estado',
         'comentario',
         'total',
+        'latitud',
+        'longitud'
     ];
 
     protected $casts = [

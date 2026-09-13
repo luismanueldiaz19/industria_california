@@ -29,10 +29,10 @@ class PedidoRutaSelector extends StatelessWidget {
           children: [
             // Dropdown principal
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
@@ -47,14 +47,14 @@ class PedidoRutaSelector extends StatelessWidget {
                   isExpanded: true,
                   hint: const Text(
                     'Sin ruta asignada',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                   items: [
                     const DropdownMenuItem<Ruta?>(
                       value: null,
                       child: Text(
                         'Sin ruta',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ),
                     ...provider.rutas.map(
@@ -70,12 +70,12 @@ class PedidoRutaSelector extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(r.nombre,
-                                    style: const TextStyle(fontSize: 14)),
+                                    style: const TextStyle(fontSize: 12)),
                                 if (r.chofer != null)
                                   Text(
                                     r.chofer!,
                                     style: const TextStyle(
-                                        fontSize: 11, color: Colors.grey),
+                                        fontSize: 10, color: Colors.grey),
                                   ),
                               ],
                             ),

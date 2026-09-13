@@ -16,6 +16,15 @@ class PedidoFormProvider extends ChangeNotifier {
   bool get isEditing => _pedidoOriginal != null;
   int? get originalId => _pedidoOriginal?.id;
 
+  // GPS Override
+  bool _usarUbicacionCliente = true;
+  double? _latitudPersonalizada;
+  double? _longitudPersonalizada;
+
+  bool get usarUbicacionCliente => _usarUbicacionCliente;
+  double? get latitudPersonalizada => _latitudPersonalizada;
+  double? get longitudPersonalizada => _longitudPersonalizada;
+
   LedhouseCliente? get cliente => _cliente;
   Ruta? get ruta => _ruta;
   String get comentario => _comentario;
@@ -92,6 +101,17 @@ class PedidoFormProvider extends ChangeNotifier {
     // No hace falta notifyListeners si solo actualiza el modelo en textchange
   }
 
+  void toggleUsarUbicacionCliente(bool val) {
+    _usarUbicacionCliente = val;
+    notifyListeners();
+  }
+
+  void setUbicacionPersonalizada(double lat, double lng) {
+    _latitudPersonalizada = lat;
+    _longitudPersonalizada = lng;
+    notifyListeners();
+  }
+
   void agregarProducto(
     InventarioProducto producto,
     double cantidad,
@@ -139,13 +159,23 @@ class PedidoFormProvider extends ChangeNotifier {
       _carrito.isNotEmpty && _carrito.every((i) => i.precioEsValido);
 
   Map<String, dynamic> buildPayload(String estado) {
-    return {
+    final payload = <String, dynamic>{
       'cliente_id': _cliente!.id,
       'ruta_id': _ruta?.id,
       'estado': estado,
       'comentario': _comentario.isEmpty ? null : _comentario,
       'detalles': _carrito.map((i) => i.toJson()).toList(),
     };
+
+    if (!_usarUbicacionCliente && _latitudPersonalizada != null && _longitudPersonalizada != null) {
+      payload['latitud'] = _latitudPersonalizada;
+      payload['longitud'] = _longitudPersonalizada;
+    } else if (_usarUbicacionCliente && _cliente!.latitud != null && _cliente!.longitud != null) {
+      payload['latitud'] = _cliente!.latitud;
+      payload['longitud'] = _cliente!.longitud;
+    }
+
+    return payload;
   }
 
   @override

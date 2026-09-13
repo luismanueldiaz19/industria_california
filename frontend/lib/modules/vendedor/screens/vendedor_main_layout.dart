@@ -18,13 +18,12 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
   List<Widget> _getScreens() {
     return [
       VendedorDashboardScreen(
-        onProfileTap: () => setState(() => _currentIndex = 5),
+        onProfileTap: () => setState(() => _currentIndex = 4),
       ),
-      const VendedorPedidosScreen(), // index 1
-      const VendedorCxcScreen(), // index 2
-      const Center(child: Text('Clientes')), // index 3
-      const VendedorActividadScreen(), // index 4
-      const VendedorPerfilScreen(), // index 5
+      const VendedorCxcScreen(), // index 1
+      const Center(child: Text('Clientes')), // index 2
+      const VendedorActividadScreen(), // index 3
+      const VendedorPerfilScreen(), // index 4
     ];
   }
 
@@ -71,11 +70,6 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
                       icon: Icon(Icons.home_outlined),
                       activeIcon: Icon(Icons.home),
                       label: 'Inicio',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.shopping_cart_outlined),
-                      activeIcon: Icon(Icons.shopping_cart),
-                      label: 'Pedidos',
                     ),
                     BottomNavigationBarItem(
                       icon: Icon(Icons.receipt_long_outlined),

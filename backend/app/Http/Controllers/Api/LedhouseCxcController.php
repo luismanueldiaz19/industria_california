@@ -57,6 +57,9 @@ class LedhouseCxcController extends Controller
             $query->whereHas('alertas');
         }
 
+        // Por defecto, no mostrar las pagadas a menos que se pidan explícitamente (si existiera un filtro en el futuro)
+        $query->where('estado', '!=', 'pagado');
+
         return response()->json($query->orderBy('fecha_vencimiento', 'asc')->paginate($request->per_page ?? 20));
     }
 
@@ -155,8 +158,11 @@ class LedhouseCxcController extends Controller
         }
 
         // Filtro opcional por estado
-        if ($request->filled('estado') && $request->estado !== 'Todos') {
+        if ($request->filled('estado') && $request->estado !== 'Todos' && $request->estado !== 'Todos los Estados') {
             $query->where('estado', $request->estado);
+        } else {
+            // Por defecto no mostramos las pagadas
+            $query->where('estado', '!=', 'pagado');
         }
 
         // Paginación opcional
@@ -167,11 +173,24 @@ class LedhouseCxcController extends Controller
         return response()->json($query->orderBy('created_at', 'desc')->get());
     }
 
-    public function groupedByCliente()
+    public function groupedByCliente(Request $request)
     {
-        $clientes = \App\Models\LedhouseCliente::withSum('cxcs as total_facturado', 'monto_factura')
-            ->withSum('cxcs as total_pendiente', 'monto_pendiente')
+        $queryCxc = function ($q) use ($request) {
+            $q->where('estado', '!=', 'pagado');
+            if ($request->filled('vendedor_id')) {
+                $q->where('vendedor_id', $request->vendedor_id);
+            }
+            if ($request->filled('vencidos') && $request->vencidos == '1') {
+                $q->where('monto_pendiente', '>', 0)
+                  ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
+            }
+        };
+
+        $clientes = \App\Models\LedhouseCliente::whereHas('cxcs', $queryCxc)
+            ->withSum(['cxcs as total_facturado' => $queryCxc], 'monto_factura')
+            ->withSum(['cxcs as total_pendiente' => $queryCxc], 'monto_pendiente')
             ->get();
+            
         return response()->json($clientes);
     }
 
@@ -257,7 +276,12 @@ class LedhouseCxcController extends Controller
     {
         $url = \App\Services\PdfSecurityService::generarUrl(
             'cxc_general',
-            [],
+            [
+                'search'     => $request->search,
+                'vencidos'   => $request->vencidos,
+                'estado'     => $request->estado,
+                'con_visita' => $request->con_visita,
+            ],
             $request->user()?->id,
             minutos: 30
         );
@@ -268,7 +292,11 @@ class LedhouseCxcController extends Controller
     {
         $url = \App\Services\PdfSecurityService::generarUrl(
             'cxc_agrupado',
-            [],
+            [
+                'search' => $request->search,
+                'vendedor_id' => $request->vendedor_id,
+                'vencidos' => $request->vencidos,
+            ],
             $request->user()?->id,
             minutos: 30
         );
@@ -307,8 +335,58 @@ class LedhouseCxcController extends Controller
             abort(401, 'URL inválida o expirada.');
         }
 
-        $cxcs = LedhouseCxc::with('cliente')->orderBy('fecha_vencimiento', 'asc')->get();
-        $pdf  = Pdf::loadView('pdf.cxc_general', ['cxcs' => $cxcs]);
+        $query = LedhouseCxc::with('cliente');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('documento', 'like', "%{$search}%")
+                  ->orWhereHas('cliente', function($q2) use ($search) {
+                      $q2->where('nombre', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $isVencidos = false;
+        if ($request->filled('vencidos') && $request->vencidos == '1') {
+            $isVencidos = true;
+            $query->where('monto_pendiente', '>', 0)
+                  ->where('estado', '!=', 'pagado')
+                  ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
+        }
+
+        if ($request->filled('estado') && $request->estado !== 'Todos' && $request->estado !== 'Todos los Estados') {
+            $query->where('estado', $request->estado);
+        } else {
+            $query->where('estado', '!=', 'pagado');
+        }
+
+        if ($request->filled('vendedor_id')) {
+            $query->where('vendedor_id', $request->vendedor_id);
+        }
+
+        if ($request->filled('con_visita') && $request->con_visita == '1') {
+            $query->whereHas('soportes', function ($q) {
+                $q->whereNotNull('fecha_visita');
+            });
+        }
+
+        $vendedorNombre = null;
+        if ($request->filled('vendedor_id')) {
+            $vendedor = \App\Models\User::find($request->vendedor_id);
+            if ($vendedor) {
+                $vendedorNombre = $vendedor->name;
+            }
+        }
+
+        $cxcs = $query->orderBy('fecha_vencimiento', 'asc')->get();
+        $pdf  = Pdf::loadView('pdf.cxc_general', [
+            'cxcs' => $cxcs,
+            'search' => $request->search,
+            'isVencidos' => $isVencidos,
+            'estado' => $request->estado,
+            'vendedorNombre' => $vendedorNombre,
+        ]);
         return $pdf->stream("Reporte_General_CXC.pdf");
     }
 
@@ -318,12 +396,42 @@ class LedhouseCxcController extends Controller
             abort(401, 'URL inválida o expirada.');
         }
 
-        $clientes = LedhouseCliente::withSum('cxcs as total_facturado', 'monto_factura')
-            ->withSum('cxcs as total_pendiente', 'monto_pendiente')
-            ->get()
+        $queryCxc = function ($q) use ($request) {
+            $q->where('estado', '!=', 'pagado');
+            if ($request->filled('vendedor_id')) {
+                $q->where('vendedor_id', $request->vendedor_id);
+            }
+            if ($request->filled('vencidos') && $request->vencidos == '1') {
+                $q->where('monto_pendiente', '>', 0)
+                  ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
+            }
+        };
+
+        $query = LedhouseCliente::whereHas('cxcs', $queryCxc)
+            ->withSum(['cxcs as total_facturado' => $queryCxc], 'monto_factura')
+            ->withSum(['cxcs as total_pendiente' => $queryCxc], 'monto_pendiente');
+
+        if ($request->filled('search')) {
+            $query->where('nombre', 'like', "%{$request->search}%");
+        }
+
+        $clientes = $query->get()
             ->filter(fn($c) => $c->total_pendiente > 0);
 
-        $pdf = Pdf::loadView('pdf.cxc_agrupado', ['clientes' => $clientes]);
+        $vendedorNombre = null;
+        if ($request->filled('vendedor_id')) {
+            $vendedor = \App\Models\User::find($request->vendedor_id);
+            if ($vendedor) {
+                $vendedorNombre = $vendedor->name;
+            }
+        }
+
+        $pdf = Pdf::loadView('pdf.cxc_agrupado', [
+            'clientes' => $clientes,
+            'search' => $request->search,
+            'vendedorNombre' => $vendedorNombre,
+            'isVencidos' => $request->filled('vencidos') && $request->vencidos == '1',
+        ]);
         return $pdf->stream("Reporte_Agrupado_CXC.pdf");
     }
 

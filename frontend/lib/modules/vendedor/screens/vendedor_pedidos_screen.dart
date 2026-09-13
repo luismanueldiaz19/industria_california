@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../logistica/models/pedido.dart';
 import '../../logistica/providers/pedido_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'vendedor_pedido_flow_screen.dart';
 import 'vendedor_pedido_detalle_screen.dart';
 
@@ -98,17 +99,55 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
         .then((_) => _loadData());
   }
 
+  Future<void> _generarPdf(Pedido pedido) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Generando Factura...')),
+    );
+    try {
+      final urlStr = await context.read<PedidoProvider>().getPdfUrl(pedido.id);
+      final url = Uri.parse(urlStr);
+      if (!await launchUrl(url)) {
+        throw Exception('No se pudo abrir el enlace');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al abrir PDF: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _generarReporteGeneralPdf() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Generando Reporte General...')),
+    );
+    try {
+      final urlStr = await context.read<PedidoProvider>().getGeneralPdfUrl();
+      final url = Uri.parse(urlStr);
+      if (!await launchUrl(url)) {
+        throw Exception('No se pudo abrir el enlace');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al abrir PDF: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   // ─── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: Column(
-        children: [
-          _buildHeader(),
-          Expanded(child: _buildBody()),
-        ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(child: _buildBody()),
+          ],
+        ),
       ),
     );
   }
@@ -121,47 +160,69 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
         children: [
           // Título + botón nuevo
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Mis Pedidos',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.3,
-                  ),
+                Row(
+                  children: [
+                    if (Navigator.canPop(context)) ...[
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: const Icon(Icons.arrow_back, color: Colors.white),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    const Text(
+                      'Mis Pedidos',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
                 ),
-                // Un solo botón: Nuevo Pedido
-                GestureDetector(
-                  onTap: _goToCreate,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
+                      tooltip: 'Reporte General',
+                      onPressed: _generarReporteGeneralPdf,
                     ),
-                    decoration: BoxDecoration(
-                      color: _bgSecondary,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.add, color: Colors.white, size: 18),
-                        SizedBox(width: 4),
-                        Text(
-                          'Nuevo',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
+                    const SizedBox(width: 8),
+                    // Un solo botón: Nuevo Pedido
+                    GestureDetector(
+                      onTap: _goToCreate,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
                         ),
-                      ],
+                        decoration: BoxDecoration(
+                          color: _bgSecondary,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add, color: Colors.white, size: 18),
+                            SizedBox(width: 4),
+                            Text(
+                              'Nuevo',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -304,13 +365,32 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
               padding: const EdgeInsets.all(14),
               child: Column(
                 children: [
-                  _infoRow(Icons.person_outline, pedido.clienteNombre ?? '—'),
-                  if (pedido.rutaNombre != null) ...[
-                    const SizedBox(height: 6),
-                    _infoRow(Icons.map_outlined, pedido.rutaNombre!),
-                  ],
-                  const SizedBox(height: 6),
-                  _infoRow(Icons.schedule_outlined, fecha),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _infoRow(Icons.person_outline, pedido.clienteNombre ?? '—'),
+                            if (pedido.rutaNombre != null) ...[
+                              const SizedBox(height: 6),
+                              _infoRow(Icons.map_outlined, pedido.rutaNombre!),
+                            ],
+                            const SizedBox(height: 6),
+                            _infoRow(Icons.schedule_outlined, fecha),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => _generarPdf(pedido),
+                        icon: const Icon(Icons.picture_as_pdf, color: Colors.redAccent),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: 'Ver PDF',
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

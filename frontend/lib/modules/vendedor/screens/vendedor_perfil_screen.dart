@@ -136,24 +136,28 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
     String? Function(String?)? validator,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
         obscureText: isPassword,
+        style: const TextStyle(fontSize: 13),
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: AppTheme.primaryBlue),
+          labelStyle: const TextStyle(fontSize: 13, color: Colors.black54),
+          prefixIcon: Icon(icon, color: AppTheme.primaryBlue, size: 20),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 1.5),
           ),
           filled: true,
           fillColor: Colors.white,
@@ -190,252 +194,213 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
+                    const SizedBox(height: 10),
+                    _buildAvatarSection(authProvider),
                     const SizedBox(height: 20),
-                    // Avatar
-                    Center(
-                      child: GestureDetector(
-                        onTap: _pickImage,
-                        child: Stack(
-                          children: [
-                            Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 4,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 5),
-                                  ),
-                                ],
-                                color: Colors.grey.shade200,
-                              ),
-                              child: ClipOval(
-                                child: _selectedPhotoBytes != null
-                                    ? Image.memory(
-                                        _selectedPhotoBytes!,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : (authProvider.profilePhotoUrl != null
-                                          ? Image.network(
-                                              authProvider.profilePhotoUrl!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (ctx, err, stack) =>
-                                                  const Icon(
-                                                    Icons.person,
-                                                    size: 60,
-                                                    color: Colors.grey,
-                                                  ),
-                                            )
-                                          : const Icon(
-                                              Icons.person,
-                                              size: 60,
-                                              color: Colors.grey,
-                                            )),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryBlue,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-
-                    // Campos de Información
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Información Personal',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          _buildTextField(
-                            controller: _nameCtrl,
-                            label: 'Nombre Completo',
-                            icon: Icons.person_outline,
-                            validator: (val) =>
-                                val == null || val.isEmpty ? 'Requerido' : null,
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildInfoSection(),
+                    const SizedBox(height: 16),
+                    _buildSecuritySection(),
+                    const SizedBox(height: 24),
+                    _buildActionButtons(context),
                     const SizedBox(height: 20),
-
-                    // Seguridad
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Seguridad',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Deja los campos vacíos si no deseas cambiar tu contraseña.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          _buildTextField(
-                            controller: _currentPasswordCtrl,
-                            label: 'Contraseña Actual',
-                            icon: Icons.lock_outline,
-                            isPassword: true,
-                            validator: (val) {
-                              if (_newPasswordCtrl.text.isNotEmpty &&
-                                  (val == null || val.isEmpty)) {
-                                return 'Requerida para cambiar contraseña';
-                              }
-                              return null;
-                            },
-                          ),
-                          _buildTextField(
-                            controller: _newPasswordCtrl,
-                            label: 'Nueva Contraseña (min. 6)',
-                            icon: Icons.lock_outline,
-                            isPassword: true,
-                            validator: (val) {
-                              if (val != null &&
-                                  val.isNotEmpty &&
-                                  val.length < 6) {
-                                return 'Mínimo 6 caracteres';
-                              }
-                              return null;
-                            },
-                          ),
-                          _buildTextField(
-                            controller: _confirmPasswordCtrl,
-                            label: 'Confirmar Nueva Contraseña',
-                            icon: Icons.lock_outline,
-                            isPassword: true,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-
-                    // Botón Guardar
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton.icon(
-                        onPressed: _saveProfile,
-                        icon: const Icon(Icons.save, color: Colors.white),
-                        label: const Text(
-                          'Guardar Cambios',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryBlue,
-                          elevation: 5,
-                          shadowColor: AppTheme.primaryBlue.withValues(
-                            alpha: 0.4,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Botón Cerrar Sesión
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _logout(context),
-                        icon: const Icon(Icons.logout, color: Colors.red),
-                        label: const Text(
-                          'Cerrar Sesión',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            side: const BorderSide(
-                              color: Colors.red,
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildAvatarSection(AuthProvider authProvider) {
+    return Center(
+      child: GestureDetector(
+        onTap: _pickImage,
+        child: Stack(
+          children: [
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+                color: Colors.grey.shade200,
+              ),
+              child: ClipOval(
+                child: _selectedPhotoBytes != null
+                    ? Image.memory(_selectedPhotoBytes!, fit: BoxFit.cover)
+                    : (authProvider.profilePhotoUrl != null
+                        ? Image.network(
+                            authProvider.profilePhotoUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (ctx, err, stack) =>
+                                const Icon(Icons.person, size: 40, color: Colors.grey),
+                          )
+                        : const Icon(Icons.person, size: 40, color: Colors.grey)),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryBlue,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Información Personal',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _nameCtrl,
+            label: 'Nombre Completo',
+            icon: Icons.person_outline,
+            validator: (val) => val == null || val.isEmpty ? 'Requerido' : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecuritySection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Seguridad',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Deja los campos vacíos si no deseas cambiar tu contraseña.',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _currentPasswordCtrl,
+            label: 'Contraseña Actual',
+            icon: Icons.lock_outline,
+            isPassword: true,
+            validator: (val) {
+              if (_newPasswordCtrl.text.isNotEmpty && (val == null || val.isEmpty)) {
+                return 'Requerida';
+              }
+              return null;
+            },
+          ),
+          _buildTextField(
+            controller: _newPasswordCtrl,
+            label: 'Nueva Contraseña (min. 6)',
+            icon: Icons.lock_outline,
+            isPassword: true,
+            validator: (val) {
+              if (val != null && val.isNotEmpty && val.length < 6) {
+                return 'Mínimo 6 caracteres';
+              }
+              return null;
+            },
+          ),
+          _buildTextField(
+            controller: _confirmPasswordCtrl,
+            label: 'Confirmar Nueva Contraseña',
+            icon: Icons.lock_outline,
+            isPassword: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 45,
+          child: ElevatedButton.icon(
+            onPressed: _saveProfile,
+            icon: const Icon(Icons.save, color: Colors.white, size: 18),
+            label: const Text(
+              'Guardar Cambios',
+              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryBlue,
+              elevation: 2,
+              shadowColor: AppTheme.primaryBlue.withValues(alpha: 0.3),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 45,
+          child: ElevatedButton.icon(
+            onPressed: () => _logout(context),
+            icon: const Icon(Icons.logout, color: Colors.red, size: 18),
+            label: const Text(
+              'Cerrar Sesión',
+              style: TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: const BorderSide(color: Colors.red, width: 1.2),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

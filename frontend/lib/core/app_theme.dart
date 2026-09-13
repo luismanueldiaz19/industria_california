@@ -17,11 +17,24 @@ class AppTheme {
   static const whatsappColor = Color(0xFF25D366); // WhatsApp Green
 
   // Colores del diseño
+  //  const Color(0xFF1E3A5F),
   static const primaryBlue = Color(0xFF1E2F4C); // Azul oscuro
   static const secondaryBlue = Color(0xFF284168); // Azul más claro para tarjeta
   static const accentGreen = Color(0xFF2E7D32); // Verde para éxito
   static const accentYellow = Color(0xFFF9A825); // Amarillo para proceso
   static const bgColor = Color(0xFFF5F7FA); // Gris claro de fondo
+
+  // ── Dark Theme Colors (CXC & Modern UI) ────────────────────────
+  static const darkBgColor = Color(0xFF1A1C1E); // Background principal
+  static const darkCardColor = Color(
+    0xFF24262A,
+  ); // Tarjetas, contenedores, barras
+  static const darkInputColor = Color(
+    0xFF2C2E33,
+  ); // Campos de texto y dropdowns
+  static const darkBorderColor = Color(
+    0xFF424242,
+  ); // Gris oscuro para bordes (grey.shade800)
 
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
