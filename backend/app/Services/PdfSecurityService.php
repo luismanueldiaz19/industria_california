@@ -307,7 +307,7 @@ class PdfSecurityService
             case 'pedido':
                 $id = $params['id'] ?? null;
                 $pedido = Pedido::with([
-                    'cliente:id,nombre,direccion,telefono,rnc', 
+                    'cliente:id,nombre,direccion,whatsapp,rnc', 
                     'ruta:id,nombre', 
                     'vendedor:id,name', 
                     'detalles.producto:id,codigo,nombre,unidad'

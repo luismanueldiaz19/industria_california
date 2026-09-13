@@ -122,7 +122,7 @@
                         <strong>Datos del Cliente</strong>
                         <div style="font-size: 11px; font-weight: bold; color: #1e293b; margin-bottom: 4px;">{{ $pedido->cliente->nombre ?? 'N/A' }}</div>
                         <span class="label">RNC:</span> {{ $pedido->cliente->rnc ?? 'N/A' }}<br>
-                        <span class="label">Tel:</span> {{ $pedido->cliente->telefono ?? 'N/A' }}<br>
+                        <span class="label">Tel/WA:</span> {{ $pedido->cliente->whatsapp ?? 'N/A' }}<br>
                         <span class="label">Dir:</span> {{ $pedido->cliente->direccion ?? 'N/A' }}
                     </div>
                 </td>
