@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pedido;
 use App\Models\PedidoDetalle;
 use App\Models\InventarioProducto;
+use App\Models\InventarioMovimiento;
 use App\Models\OrdenProduccion;
 use App\Models\OrdenProduccionDetalle;
 use Illuminate\Http\Request;
@@ -170,6 +171,10 @@ class PedidoController extends Controller
                 }
             }
 
+            if ($request->estado === 'enviado') {
+                $this->_deducirInventario($pedido->load('detalles'));
+            }
+
             DB::commit();
             return response()->json($pedido->load('detalles'), 201);
         } catch (\Exception $e) {
@@ -201,6 +206,8 @@ class PedidoController extends Controller
 
         try {
             DB::beginTransaction();
+
+            $originalEstado = $pedido->estado;
 
             $total = 0;
             $pedido->detalles()->delete(); // Clear old ones to easily sync
@@ -243,6 +250,10 @@ class PedidoController extends Controller
                 'longitud' => $request->longitud,
             ]);
 
+            if ($originalEstado === 'borrador' && $request->estado === 'enviado') {
+                $this->_deducirInventario($pedido->load('detalles'));
+            }
+
             DB::commit();
             return response()->json($pedido->load('detalles'));
         } catch (\Exception $e) {
@@ -280,14 +291,28 @@ class PedidoController extends Controller
             $pedido->facturador_id = Auth::id();
         }
 
-        $pedido->estado = $nuevoEstado;
-        $pedido->save();
+        $estadoAnterior = $pedido->estado;
 
-        return response()->json($pedido);
+        try {
+            DB::beginTransaction();
+
+            $pedido->estado = $nuevoEstado;
+            $pedido->save();
+
+            if ($estadoAnterior === 'borrador' && $nuevoEstado === 'enviado') {
+                $this->_deducirInventario($pedido->load('detalles'));
+            }
+
+            DB::commit();
+            return response()->json($pedido);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Error al cambiar estado', 'error' => $e->getMessage()], 500);
+        }
     }
     public function getGeneralPdfUrl(Request $request)
     {
-        $params = $request->only(['cliente_id', 'ruta_id', 'estado', 'start_date', 'end_date']);
+        $params = $request->only(['cliente_id', 'ruta_id', 'vendedor_id', 'estado', 'start_date', 'end_date']);
         if (!Auth::user()->hasRole('admin')) {
             $params['vendedor_id'] = Auth::id();
         }
@@ -418,5 +443,30 @@ class PedidoController extends Controller
             cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
         
         return $angle * $earthRadius;
+    }
+
+    private function _deducirInventario(Pedido $pedido)
+    {
+        foreach ($pedido->detalles as $detalle) {
+            $producto = InventarioProducto::lockForUpdate()->find($detalle->producto_id);
+            if ($producto) {
+                $stockAnterior = (float) $producto->stock;
+                $cantidad = (float) $detalle->cantidad;
+                $stockResultante = $stockAnterior - $cantidad;
+
+                $producto->update(['stock' => $stockResultante]);
+
+                InventarioMovimiento::create([
+                    'producto_id'      => $producto->id,
+                    'user_id'          => Auth::id(),
+                    'tipo'             => 'VENTA',
+                    'subtipo'          => 'VENTA A PEDIDO',
+                    'cantidad'         => -$cantidad,
+                    'stock_anterior'   => $stockAnterior,
+                    'stock_resultante' => $stockResultante,
+                    'nota'             => "Pedido #{$pedido->id}",
+                ]);
+            }
+        }
     }
 }

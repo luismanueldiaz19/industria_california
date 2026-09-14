@@ -9,7 +9,8 @@ class VendedorInventarioScreen extends StatefulWidget {
   const VendedorInventarioScreen({super.key});
 
   @override
-  State<VendedorInventarioScreen> createState() => _VendedorInventarioScreenState();
+  State<VendedorInventarioScreen> createState() =>
+      _VendedorInventarioScreenState();
 }
 
 class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
@@ -90,7 +91,10 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
   }
 
   Widget _buildTopBar() {
-    final totalProductos = context.watch<InventarioProductoProvider>().productos.length;
+    final totalProductos = context
+        .watch<InventarioProductoProvider>()
+        .productos
+        .length;
     final mostrando = _productosFiltrados.length;
 
     return Container(
@@ -104,24 +108,31 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
               // Búsqueda
               Expanded(
                 flex: 3,
-                child: SizedBox(
-                  height: 32,
-                  child: TextField(
-                    onChanged: (v) => setState(() => _searchQuery = v),
-                    style: const TextStyle(fontSize: 12),
-                    decoration: InputDecoration(
-                      hintText: 'Buscar...',
-                      hintStyle: const TextStyle(fontSize: 12),
-                      prefixIcon: const Icon(Icons.search, size: 16),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
-                      isDense: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, size: 18, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          onChanged: (v) => setState(() => _searchQuery = v),
+                          style: const TextStyle(fontSize: 13),
+                          decoration: const InputDecoration(
+                            hintText: 'Buscar...',
+                            hintStyle: TextStyle(fontSize: 13),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -129,47 +140,82 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
               // Filtro Categoría
               Expanded(
                 flex: 2,
-                child: SizedBox(
-                  height: 32,
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedCategoria,
-                    isExpanded: true,
-                    style: const TextStyle(fontSize: 12, color: Colors.black87),
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                      filled: true,
-                      isDense: true,
-                      fillColor: Colors.grey.shade100,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedCategoria,
+                      isExpanded: true,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black87,
                       ),
+                      icon: const Icon(Icons.arrow_drop_down, size: 20),
+                      items: _categorias
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c,
+                              child: Text(c, overflow: TextOverflow.ellipsis),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedCategoria = v!),
                     ),
-                    items: _categorias
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c,
-                            child: Text(c, overflow: TextOverflow.ellipsis),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) => setState(() => _selectedCategoria = v!),
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(
-              'Mostrando $mostrando de $totalProductos productos disponibles',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  'Mostrando $mostrando de $totalProductos productos disponibles',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
               ),
-            ),
+              InkWell(
+                onTap: () =>
+                    context.read<InventarioProductoProvider>().fetchProductos(),
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.refresh,
+                        size: 14,
+                        color: Color(0xFF1976D2),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Actualizar',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF1976D2),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -297,19 +343,13 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
           Expanded(
             flex: 2,
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     producto.codigo,
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

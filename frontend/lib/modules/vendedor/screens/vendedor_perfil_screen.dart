@@ -136,17 +136,20 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
     String? Function(String?)? validator,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 8),
       child: TextFormField(
         controller: controller,
         obscureText: isPassword,
-        style: const TextStyle(fontSize: 13),
+        style: const TextStyle(fontSize: 12),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(fontSize: 13, color: Colors.black54),
-          prefixIcon: Icon(icon, color: AppTheme.primaryBlue, size: 20),
+          labelStyle: const TextStyle(fontSize: 12, color: Colors.black54),
+          prefixIcon: Icon(icon, color: AppTheme.primaryBlue, size: 18),
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 8,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: Colors.grey.shade300),
@@ -157,7 +160,10 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 1.5),
+            borderSide: const BorderSide(
+              color: AppTheme.primaryBlue,
+              width: 1.5,
+            ),
           ),
           filled: true,
           fillColor: Colors.white,
@@ -189,20 +195,20 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(12),
               child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 4),
                     _buildAvatarSection(authProvider),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     _buildInfoSection(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     _buildSecuritySection(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     _buildActionButtons(context),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                   ],
                 ),
               ),
@@ -217,8 +223,8 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
         child: Stack(
           children: [
             Container(
-              width: 90,
-              height: 90,
+              width: 70,
+              height: 70,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
@@ -235,26 +241,37 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
                 child: _selectedPhotoBytes != null
                     ? Image.memory(_selectedPhotoBytes!, fit: BoxFit.cover)
                     : (authProvider.profilePhotoUrl != null
-                        ? Image.network(
-                            authProvider.profilePhotoUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, err, stack) =>
-                                const Icon(Icons.person, size: 40, color: Colors.grey),
-                          )
-                        : const Icon(Icons.person, size: 40, color: Colors.grey)),
+                          ? Image.network(
+                              authProvider.profilePhotoUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (ctx, err, stack) => const Icon(
+                                Icons.person,
+                                size: 30,
+                                color: Colors.grey,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 30,
+                              color: Colors.grey,
+                            )),
               ),
             ),
             Positioned(
               bottom: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryBlue,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
-                child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                child: const Icon(
+                  Icons.camera_alt,
+                  color: Colors.white,
+                  size: 12,
+                ),
               ),
             ),
           ],
@@ -265,7 +282,7 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
 
   Widget _buildInfoSection() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -282,9 +299,9 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
         children: [
           const Text(
             'Información Personal',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           _buildTextField(
             controller: _nameCtrl,
             label: 'Nombre Completo',
@@ -298,7 +315,7 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
 
   Widget _buildSecuritySection() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -315,21 +332,22 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
         children: [
           const Text(
             'Seguridad',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             'Deja los campos vacíos si no deseas cambiar tu contraseña.',
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           _buildTextField(
             controller: _currentPasswordCtrl,
             label: 'Contraseña Actual',
             icon: Icons.lock_outline,
             isPassword: true,
             validator: (val) {
-              if (_newPasswordCtrl.text.isNotEmpty && (val == null || val.isEmpty)) {
+              if (_newPasswordCtrl.text.isNotEmpty &&
+                  (val == null || val.isEmpty)) {
                 return 'Requerida';
               }
               return null;
@@ -363,32 +381,42 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
       children: [
         SizedBox(
           width: double.infinity,
-          height: 45,
+          height: 38,
           child: ElevatedButton.icon(
             onPressed: _saveProfile,
-            icon: const Icon(Icons.save, color: Colors.white, size: 18),
+            icon: const Icon(Icons.save, color: Colors.white, size: 16),
             label: const Text(
               'Guardar Cambios',
-              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryBlue,
               elevation: 2,
               shadowColor: AppTheme.primaryBlue.withValues(alpha: 0.3),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,
-          height: 45,
+          height: 38,
           child: ElevatedButton.icon(
             onPressed: () => _logout(context),
-            icon: const Icon(Icons.logout, color: Colors.red, size: 18),
+            icon: const Icon(Icons.logout, color: Colors.red, size: 16),
             label: const Text(
               'Cerrar Sesión',
-              style: TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,

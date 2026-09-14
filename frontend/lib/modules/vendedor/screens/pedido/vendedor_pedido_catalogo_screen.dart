@@ -85,7 +85,10 @@ class _VendedorPedidoCatalogoScreenState
   }
 
   Widget _buildTopBar() {
-    final totalProductos = context.watch<InventarioProductoProvider>().productos.length;
+    final totalProductos = context
+        .watch<InventarioProductoProvider>()
+        .productos
+        .length;
     final mostrando = _productosFiltrados.length;
 
     return Container(
@@ -96,113 +99,151 @@ class _VendedorPedidoCatalogoScreenState
         children: [
           Row(
             children: [
-          // Botón para carrito con Badge en Stack
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.shopping_cart),
-                color: _primaryBlue,
-                onPressed: _mostrarCarritoBottomSheet,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-              ),
-              Consumer<PedidoFormProvider>(
-                builder: (ctx, prov, _) => prov.itemCount > 0
-                    ? Positioned(
-                        right: -4,
-                        top: -4,
-                        child: CircleAvatar(
-                          radius: 9,
-                          backgroundColor: Colors.red,
-                          child: Text(
-                            '${prov.itemCount}',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+              // Botón para carrito con Badge en Stack
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart),
+                    color: _primaryBlue,
+                    onPressed: _mostrarCarritoBottomSheet,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(),
+                  ),
+                  Consumer<PedidoFormProvider>(
+                    builder: (ctx, prov, _) => prov.itemCount > 0
+                        ? Positioned(
+                            right: -4,
+                            top: -4,
+                            child: CircleAvatar(
+                              radius: 9,
+                              backgroundColor: Colors.red,
+                              child: Text(
+                                '${prov.itemCount}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+
+              const SizedBox(width: 8),
+
+              // Búsqueda
+              Expanded(
+                flex: 3,
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, size: 18, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          onChanged: (v) => setState(() => _searchQuery = v),
+                          style: const TextStyle(fontSize: 13),
+                          decoration: const InputDecoration(
+                            hintText: 'Buscar...',
+                            hintStyle: TextStyle(fontSize: 13),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
                           ),
                         ),
-                      )
-                    : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // Filtro Categoría
+              Expanded(
+                flex: 2,
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedCategoria,
+                      isExpanded: true,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black87,
+                      ),
+                      icon: const Icon(Icons.arrow_drop_down, size: 20),
+                      items: _categorias
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c,
+                              child: Text(c, overflow: TextOverflow.ellipsis),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedCategoria = v!),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-
-          const SizedBox(width: 8),
-
-          // Búsqueda
-          Expanded(
-            flex: 3,
-            child: SizedBox(
-              height: 32,
-              child: TextField(
-                onChanged: (v) => setState(() => _searchQuery = v),
-                style: const TextStyle(fontSize: 12),
-                decoration: InputDecoration(
-                  hintText: 'Buscar...',
-                  hintStyle: const TextStyle(fontSize: 12),
-                  prefixIcon: const Icon(Icons.search, size: 16),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          // Filtro Categoría
-          Expanded(
-            flex: 2,
-            child: SizedBox(
-              height: 32,
-              child: DropdownButtonFormField<String>(
-                value: _selectedCategoria,
-                isExpanded: true,
-                style: const TextStyle(fontSize: 12, color: Colors.black87),
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                  filled: true,
-                  isDense: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                items: _categorias
-                    .map(
-                      (c) => DropdownMenuItem(
-                        value: c,
-                        child: Text(c, overflow: TextOverflow.ellipsis),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedCategoria = v!),
-              ),
-            ),
-          ),
-        ],
-      ),
           const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(
-              'Mostrando $mostrando de $totalProductos productos disponibles',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  'Mostrando $mostrando de $totalProductos productos disponibles',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
               ),
-            ),
+              InkWell(
+                onTap: () =>
+                    context.read<InventarioProductoProvider>().fetchProductos(),
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.refresh, size: 14, color: _primaryBlue),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Actualizar',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: _primaryBlue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -332,10 +373,7 @@ class _VendedorPedidoCatalogoScreenState
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -742,43 +780,53 @@ class _AddProductDialogState extends State<_AddProductDialog> {
   @override
   Widget build(BuildContext context) {
     final p = widget.producto;
-    final minPrecio = p.venta * 0.8;
-    final maxPrecio = p.venta * 1.2;
-    final fmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 8,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Form(
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.blue.shade100),
                     ),
                     child: p.imagenUrl != null
-                        ? Image.network(
-                            p.imagenUrl!,
-                            fit: BoxFit.cover,
-                            headers: {
-                              'Authorization': 'Bearer ${HttpService.token}',
-                            },
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(Icons.inventory, color: Colors.blue),
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(
+                              p.imagenUrl!,
+                              fit: BoxFit.cover,
+                              headers: {
+                                'Authorization': 'Bearer ${HttpService.token}',
+                              },
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.inventory,
+                                color: Colors.blue,
+                              ),
+                            ),
                           )
                         : const Icon(Icons.inventory_2, color: Colors.blue),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -787,14 +835,28 @@ class _AddProductDialogState extends State<_AddProductDialog> {
                           p.nombre,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 15,
+                            color: Color(0xFF1E3A5F),
                           ),
                         ),
-                        Text(
-                          'Stock actual: ${p.stock % 1 == 0 ? p.stock.toInt() : p.stock.toStringAsFixed(2)} ${p.unidad}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Text(
+                            'Stock: ${p.stock % 1 == 0 ? p.stock.toInt() : p.stock.toStringAsFixed(2)} ${p.unidad}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.grey.shade700,
+                            ),
                           ),
                         ),
                       ],
@@ -802,6 +864,8 @@ class _AddProductDialogState extends State<_AddProductDialog> {
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
+              const Divider(height: 1),
               const SizedBox(height: 24),
 
               // Inputs
@@ -812,9 +876,38 @@ class _AddProductDialogState extends State<_AddProductDialog> {
                     flex: 2,
                     child: TextFormField(
                       controller: _cantCtrl,
-                      decoration: const InputDecoration(
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: InputDecoration(
                         labelText: 'Cantidad',
-                        border: OutlineInputBorder(),
+                        labelStyle: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF1E3A5F),
+                            width: 1.5,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        isDense: true,
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
@@ -827,7 +920,6 @@ class _AddProductDialogState extends State<_AddProductDialog> {
                       validator: (v) {
                         final val = double.tryParse(v ?? '');
                         if (val == null || val <= 0) return 'Inválido';
-                        // No validamos contra stock porque el user pidió poder mandar a pedir si falta
                         return null;
                       },
                     ),
@@ -837,10 +929,44 @@ class _AddProductDialogState extends State<_AddProductDialog> {
                     flex: 3,
                     child: TextFormField(
                       controller: _precioCtrl,
-                      decoration: const InputDecoration(
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: InputDecoration(
                         labelText: 'Precio Unitario',
+                        labelStyle: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
                         prefixText: '\$ ',
-                        border: OutlineInputBorder(),
+                        prefixStyle: const TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF1E3A5F),
+                            width: 1.5,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        isDense: true,
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
@@ -853,8 +979,7 @@ class _AddProductDialogState extends State<_AddProductDialog> {
                       validator: (v) {
                         final val = double.tryParse(v ?? '');
                         if (val == null || val <= 0) return 'Inválido';
-                        if (p.venta > 0 && (val < minPrecio || val > maxPrecio))
-                          return 'Rango ±20%\n(${fmt.format(minPrecio)} - ${fmt.format(maxPrecio)})';
+                        // Restricción eliminada, se permite cualquier precio válido
                         return null;
                       },
                     ),
@@ -870,29 +995,50 @@ class _AddProductDialogState extends State<_AddProductDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
                       'Cancelar',
-                      style: TextStyle(fontSize: 13),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (!_formKey.currentState!.validate()) return;
-                        final cant = double.parse(_cantCtrl.text);
-                        final precio = double.parse(_precioCtrl.text);
-                        widget.onConfirm(cant, precio);
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1976D2),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (!_formKey.currentState!.validate()) return;
+                      final cant = double.parse(_cantCtrl.text);
+                      final precio = double.parse(_precioCtrl.text);
+                      widget.onConfirm(cant, precio);
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E3A5F),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
                       ),
-                      child: const Text(
-                        'Agregar',
-                        style: TextStyle(color: Colors.white, fontSize: 13),
-                        overflow: TextOverflow.ellipsis,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Agregar al Pedido',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

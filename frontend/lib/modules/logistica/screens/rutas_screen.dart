@@ -497,28 +497,31 @@ class _RutaFormDialogState extends State<_RutaFormDialog> {
       actions: [
         TextButton(
           style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           onPressed: _isLoading ? null : () => Navigator.pop(context),
           child: const Text(
             'Cancelar',
-            style: TextStyle(color: Colors.white54, fontSize: 12),
+            style: TextStyle(color: Colors.white54, fontSize: 14),
           ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF2196F3),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           onPressed: _isLoading ? null : _save,
           child: _isLoading
               ? const SizedBox(
-                  width: 12,
-                  height: 12,
+                  width: 16,
+                  height: 16,
                   child: CircularProgressIndicator(
                     color: Colors.white,
                     strokeWidth: 2,
@@ -528,8 +531,8 @@ class _RutaFormDialogState extends State<_RutaFormDialog> {
                   'Guardar',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 12,
                     fontWeight: FontWeight.bold,
+                    fontSize: 14,
                   ),
                 ),
         ),

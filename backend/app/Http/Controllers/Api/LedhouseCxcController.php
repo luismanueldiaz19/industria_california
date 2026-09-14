@@ -60,7 +60,13 @@ class LedhouseCxcController extends Controller
         // Por defecto, no mostrar las pagadas a menos que se pidan explícitamente (si existiera un filtro en el futuro)
         $query->where('estado', '!=', 'pagado');
 
-        return response()->json($query->orderBy('fecha_vencimiento', 'asc')->paginate($request->per_page ?? 20));
+        if ($request->filled('orden_monto')) {
+            $query->orderBy('monto_pendiente', $request->orden_monto === 'desc' ? 'desc' : 'asc');
+        } else {
+            $query->orderBy('fecha_vencimiento', 'asc');
+        }
+
+        return response()->json($query->paginate($request->per_page ?? 20));
     }
 
     public function getMisCxcPdfUrl(Request $request)
@@ -76,6 +82,7 @@ class LedhouseCxcController extends Controller
                 'vendedor_id' => $user->id,
                 'search'      => $request->search,
                 'vencidos'    => $request->vencidos,
+                'orden_monto' => $request->orden_monto,
             ],
             $user->id,
             minutos: 30
@@ -114,7 +121,13 @@ class LedhouseCxcController extends Controller
                   ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
         }
 
-        $cxcs = $query->orderBy('fecha_vencimiento', 'asc')->get();
+        if ($request->filled('orden_monto')) {
+            $query->orderBy('monto_pendiente', $request->orden_monto === 'desc' ? 'desc' : 'asc');
+        } else {
+            $query->orderBy('fecha_vencimiento', 'asc');
+        }
+
+        $cxcs = $query->get();
 
         $pdf = Pdf::loadView('pdf.cxc_vendedor', [
             'cxcs' => $cxcs,

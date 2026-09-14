@@ -73,6 +73,7 @@ class VendedorCxcService {
     String search = '',
     bool vencidos = false,
     bool conAlerta = false,
+    String? ordenMonto,
   }) async {
     final uri = Uri.parse('$_base/vendedor/mis-cxc').replace(
       queryParameters: {
@@ -80,6 +81,7 @@ class VendedorCxcService {
         if (search.isNotEmpty) 'search': search,
         if (vencidos) 'vencidos': '1',
         if (conAlerta) 'con_alerta': '1',
+        if (ordenMonto != null) 'orden_monto': ordenMonto,
       },
     );
 
@@ -96,12 +98,14 @@ class VendedorCxcService {
     String search = '',
     bool vencidos = false,
     bool conAlerta = false,
+    String? ordenMonto,
   }) async {
     final uri = Uri.parse('$_base/vendedor/mis-cxc-pdf-url').replace(
       queryParameters: {
         if (search.isNotEmpty) 'search': search,
         if (vencidos) 'vencidos': '1',
         if (conAlerta) 'con_alerta': '1',
+        if (ordenMonto != null) 'orden_monto': ordenMonto,
       },
     );
 
@@ -118,12 +122,14 @@ class VendedorCxcService {
     String search = '',
     bool vencidos = false,
     bool conAlerta = false,
+    String? ordenMonto,
   }) async {
     final uri = Uri.parse('$_base/vendedor/mis-cxc-pdf').replace(
       queryParameters: {
         if (search.isNotEmpty) 'search': search,
         if (vencidos) 'vencidos': '1',
         if (conAlerta) 'con_alerta': '1',
+        if (ordenMonto != null) 'orden_monto': ordenMonto,
       },
     );
 

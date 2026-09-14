@@ -73,57 +73,73 @@ class _VendedorPedidoDetalleScreenState
     final estadoColor = _estadoColor[pedido.estado] ?? Colors.grey;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        backgroundColor: _primaryBlue,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white, size: 20),
-        title: Text(
-          'Pedido #${pedido.id}',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: _isGeneratingPdf
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
+      backgroundColor: const Color(0xFF121212),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(
+                MediaQuery.of(context).size.width > 500 ? 20 : 0,
+              ),
+              child: Scaffold(
+                backgroundColor: const Color(0xFFF5F7FA),
+                appBar: AppBar(
+                  backgroundColor: _primaryBlue,
+                  elevation: 0,
+                  iconTheme: const IconThemeData(color: Colors.white, size: 20),
+                  title: Text(
+                    'Pedido #${pedido.id}',
+                    style: const TextStyle(
                       color: Colors.white,
-                      strokeWidth: 2,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                  )
-                : const Icon(
-                    Icons.picture_as_pdf_rounded,
-                    color: Colors.redAccent,
                   ),
-            tooltip: 'Ver Factura',
-            onPressed: _isGeneratingPdf ? null : _generarPdf,
+                  actions: [
+                    IconButton(
+                      icon: _isGeneratingPdf
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.picture_as_pdf_rounded,
+                              color: Colors.redAccent,
+                            ),
+                      tooltip: 'Ver Factura',
+                      onPressed: _isGeneratingPdf ? null : _generarPdf,
+                    ),
+                  ],
+                ),
+                body: SingleChildScrollView(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeaderCard(estadoColor),
+                      const SizedBox(height: 8),
+                      _buildInfoCard(),
+                      const SizedBox(height: 8),
+                      _buildDetallesSection(),
+                      const SizedBox(height: 8),
+                      _buildTotalRow(),
+                      if (pedido.comentario != null &&
+                          pedido.comentario!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _buildComentario(),
+                      ],
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeaderCard(estadoColor),
-            const SizedBox(height: 8),
-            _buildInfoCard(),
-            const SizedBox(height: 8),
-            _buildDetallesSection(),
-            const SizedBox(height: 8),
-            _buildTotalRow(),
-            if (pedido.comentario != null && pedido.comentario!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _buildComentario(),
-            ],
-            const SizedBox(height: 12),
-          ],
         ),
       ),
     );

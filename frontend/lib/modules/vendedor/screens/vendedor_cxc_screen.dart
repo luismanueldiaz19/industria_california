@@ -27,6 +27,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
   String _searchQuery = '';
   bool _soloVencidos = false;
   bool _conAlerta = false;
+  String? _ordenMonto;
 
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -80,6 +81,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
         search: _searchQuery,
         vencidos: _soloVencidos,
         conAlerta: _conAlerta,
+        ordenMonto: _ordenMonto,
       );
       final rawItems = data['data'] as List;
       final items = rawItems.where((c) => c['estado'] != 'pagado').toList();
@@ -113,6 +115,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
         search: _searchQuery,
         vencidos: _soloVencidos,
         conAlerta: _conAlerta,
+        ordenMonto: _ordenMonto,
       );
       final rawItems = data['data'] as List;
       final items = rawItems.where((c) => c['estado'] != 'pagado').toList();
@@ -139,6 +142,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
         search: _searchQuery,
         vencidos: _soloVencidos,
         conAlerta: _conAlerta,
+        ordenMonto: _ordenMonto,
       );
       final url = Uri.parse(urlStr);
       if (!await launchUrl(url)) {
@@ -310,6 +314,44 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                           contentPadding: EdgeInsets.zero,
                           visualDensity: VisualDensity.compact,
                           activeColor: Colors.orange.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      const Text(
+                        'Ordenar por monto: ',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        height: 30,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String?>(
+                            value: _ordenMonto,
+                            hint: const Text('Por defecto', style: TextStyle(fontSize: 12)),
+                            style: const TextStyle(fontSize: 12, color: Colors.black87),
+                            icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+                            items: const [
+                              DropdownMenuItem(value: null, child: Text('Por defecto (Fecha)')),
+                              DropdownMenuItem(value: 'asc', child: Text('Menor a Mayor (ASC)')),
+                              DropdownMenuItem(value: 'desc', child: Text('Mayor a Menor (DESC)')),
+                            ],
+                            onChanged: (val) {
+                              setState(() {
+                                _ordenMonto = val;
+                                _load();
+                              });
+                            },
+                          ),
                         ),
                       ),
                     ],

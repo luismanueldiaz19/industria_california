@@ -100,9 +100,9 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
   }
 
   Future<void> _generarPdf(Pedido pedido) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Generando Factura...')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Generando Factura...')));
     try {
       final urlStr = await context.read<PedidoProvider>().getPdfUrl(pedido.id);
       final url = Uri.parse(urlStr);
@@ -112,7 +112,10 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al abrir PDF: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Error al abrir PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -130,23 +133,40 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al abrir PDF: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Error al abrir PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
   // ─── Build ──────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFF121212),
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(child: _buildBody()),
-          ],
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(
+                MediaQuery.of(context).size.width > 500 ? 20 : 0,
+              ),
+              child: Scaffold(
+                backgroundColor: const Color(0xFFF5F7FA),
+                body: SafeArea(
+                  child: Column(
+                    children: [
+                      _buildHeader(),
+                      Expanded(child: _buildBody()),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -169,7 +189,10 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                     if (Navigator.canPop(context)) ...[
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
-                        child: const Icon(Icons.arrow_back, color: Colors.white),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(width: 12),
                     ],
@@ -188,7 +211,10 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
+                      icon: const Icon(
+                        Icons.picture_as_pdf_rounded,
+                        color: Colors.white,
+                      ),
                       tooltip: 'Reporte General',
                       onPressed: _generarReporteGeneralPdf,
                     ),
@@ -372,7 +398,10 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _infoRow(Icons.person_outline, pedido.clienteNombre ?? '—'),
+                            _infoRow(
+                              Icons.person_outline,
+                              pedido.clienteNombre ?? '—',
+                            ),
                             if (pedido.rutaNombre != null) ...[
                               const SizedBox(height: 6),
                               _infoRow(Icons.map_outlined, pedido.rutaNombre!),
@@ -384,7 +413,10 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                       ),
                       IconButton(
                         onPressed: () => _generarPdf(pedido),
-                        icon: const Icon(Icons.picture_as_pdf, color: Colors.redAccent),
+                        icon: const Icon(
+                          Icons.picture_as_pdf,
+                          color: Colors.redAccent,
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         tooltip: 'Ver PDF',

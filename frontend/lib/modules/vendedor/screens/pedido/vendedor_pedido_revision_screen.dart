@@ -401,44 +401,44 @@ class _VendedorPedidoRevisionScreenState
           final color = e.value['color'] as Color;
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: InkWell(
-              onTap: () => setState(() => _estadoSeleccionado = e.key),
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? color.withValues(alpha: 0.1)
-                      : Colors.white,
-                  border: Border.all(
-                    color: isSelected ? color : Colors.grey.shade300,
-                    width: isSelected ? 1.5 : 1,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
+            child: Material(
+              color: isSelected ? color.withValues(alpha: 0.1) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: BorderSide(
+                  color: isSelected ? color : Colors.grey.shade300,
+                  width: isSelected ? 1.5 : 1,
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      e.value['icon'] as IconData,
-                      size: 16,
-                      color: isSelected ? color : Colors.grey,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        e.value['label'] as String,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isSelected ? color : Colors.black87,
+              ),
+              child: InkWell(
+                onTap: () => setState(() => _estadoSeleccionado = e.key),
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      Icon(
+                        e.value['icon'] as IconData,
+                        size: 16,
+                        color: isSelected ? color : Colors.grey,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          e.value['label'] as String,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isSelected ? color : Colors.black87,
+                          ),
                         ),
                       ),
-                    ),
-                    if (isSelected)
-                      Icon(Icons.check_circle, size: 16, color: color),
-                  ],
+                      if (isSelected)
+                        Icon(Icons.check_circle, size: 16, color: color),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -483,155 +483,159 @@ class _VendedorPedidoRevisionScreenState
   }
 
   Widget _buildProduccionCard(List<CartItem> faltantes) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.red.shade50,
+    return Material(
+      color: Colors.red.shade50,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.red.shade200),
+        side: BorderSide(color: Colors.red.shade200),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: Colors.red.shade700,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '¡Alerta de Inventario!',
-                  style: TextStyle(
-                    color: Colors.red.shade900,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'El pedido excede el inventario actual para los siguientes productos:',
-            style: TextStyle(fontSize: 11, color: Colors.red.shade800),
-          ),
-          const SizedBox(height: 6),
-          ...faltantes.map((f) {
-            final cant = double.tryParse(f.cantidadController.text) ?? 0;
-            final stockEfectivo = f.stock < 0 ? 0 : f.stock;
-            final falta = cant - stockEfectivo;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Text(
-                '• ${f.productoNombre} (Faltan: ${falta % 1 == 0 ? falta.toInt() : falta.toStringAsFixed(2)})',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.red.shade900,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            );
-          }),
-          const SizedBox(height: 12),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          CheckboxListTile(
-            value: _generarOrdenProduccion,
-            onChanged: (val) =>
-                setState(() => _generarOrdenProduccion = val ?? false),
-            title: const Text(
-              'Generar orden de producción por el faltante',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            activeColor: _primaryBlue,
-          ),
-          if (_generarOrdenProduccion) ...[
-            const SizedBox(height: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
               children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.red.shade700,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: InkWell(
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now().add(
-                          const Duration(days: 7),
-                        ),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (date != null) {
-                        setState(() => _fechaEntregaEstimada = date);
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _fechaEntregaEstimada != null
-                                ? DateFormat(
-                                    'dd/MM/yyyy',
-                                  ).format(_fechaEntregaEstimada!)
-                                : 'Estimar Entrega',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _fechaEntregaEstimada != null
-                                  ? Colors.black87
-                                  : Colors.grey,
-                            ),
-                          ),
-                          const Icon(
-                            Icons.calendar_today,
-                            size: 14,
-                            color: Colors.grey,
-                          ),
-                        ],
-                      ),
+                  child: Text(
+                    '¡Alerta de Inventario!',
+                    style: TextStyle(
+                      color: Colors.red.shade900,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: _notasProduccionController,
-              maxLines: 2,
-              style: const TextStyle(fontSize: 11),
-              decoration: InputDecoration(
-                hintText: 'Notas para la fábrica (opcional)',
-                hintStyle: const TextStyle(fontSize: 11),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.all(8),
-                isDense: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
+            Text(
+              'El pedido excede el inventario actual para los siguientes productos:',
+              style: TextStyle(fontSize: 11, color: Colors.red.shade800),
+            ),
+            const SizedBox(height: 6),
+            ...faltantes.map((f) {
+              final cant = double.tryParse(f.cantidadController.text) ?? 0;
+              final stockEfectivo = f.stock < 0 ? 0 : f.stock;
+              final falta = cant - stockEfectivo;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  '• ${f.productoNombre} (Faltan: ${falta % 1 == 0 ? falta.toInt() : falta.toStringAsFixed(2)})',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.red.shade900,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
+              );
+            }),
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            CheckboxListTile(
+              value: _generarOrdenProduccion,
+              onChanged: (val) =>
+                  setState(() => _generarOrdenProduccion = val ?? false),
+              title: const Text(
+                'Generar orden de producción por el faltante',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              activeColor: _primaryBlue,
+            ),
+            if (_generarOrdenProduccion) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now().add(
+                            const Duration(days: 7),
+                          ),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365),
+                          ),
+                        );
+                        if (date != null) {
+                          setState(() => _fechaEntregaEstimada = date);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey.shade400),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              _fechaEntregaEstimada != null
+                                  ? DateFormat(
+                                      'dd/MM/yyyy',
+                                    ).format(_fechaEntregaEstimada!)
+                                  : 'Estimar Entrega',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: _fechaEntregaEstimada != null
+                                    ? Colors.black87
+                                    : Colors.grey,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.calendar_today,
+                              size: 14,
+                              color: Colors.grey,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _notasProduccionController,
+                maxLines: 2,
+                style: const TextStyle(fontSize: 11),
+                decoration: InputDecoration(
+                  hintText: 'Notas para la fábrica (opcional)',
+                  hintStyle: const TextStyle(fontSize: 11),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.all(8),
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(color: Colors.grey.shade400),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide(color: Colors.grey.shade400),
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

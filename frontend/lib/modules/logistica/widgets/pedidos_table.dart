@@ -412,7 +412,7 @@ class _PedidosTableState extends State<PedidosTable> {
                   columns: const [
                     DataColumn(
                       label: Text(
-                        'ID',
+                        'Num de Pedido',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
