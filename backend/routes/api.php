@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\InventarioMovimientoController;
 // Módulo Logística/Ventas
 use App\Http\Controllers\Api\RutaController;
 use App\Http\Controllers\Api\PedidoController;
+use App\Http\Controllers\Api\OrdenProduccionController;
 
 // =========================================================
 // RUTA PÚBLICA DE DOCUMENTOS SEGUROS CON TOKEN (COMPATIBLE CON APACHE)
@@ -143,6 +144,9 @@ Route::prefix('v1')->group(function () {
                 // Productos
                 Route::get('inventario/productos-pdf-url', [InventarioProductoController::class, 'getInventarioPdfUrl']);
                 Route::post('inventario/productos/import', [InventarioProductoController::class, 'import']);
+                // Sync masivo inventario (fase 1 preview + fase 2 confirm) — deben ir ANTES del apiResource
+                Route::post('inventario/productos/sync-preview', [InventarioProductoController::class, 'inventarioSyncPreview']);
+                Route::post('inventario/productos/sync-confirm', [InventarioProductoController::class, 'inventarioSyncConfirm']);
                 Route::post('inventario/productos/{id}/imagen', [InventarioProductoController::class, 'uploadImagen']);
                 Route::delete('inventario/productos/{id}/imagen', [InventarioProductoController::class, 'deleteImagen']);
                 Route::apiResource('inventario/productos', InventarioProductoController::class);
@@ -159,6 +163,11 @@ Route::prefix('v1')->group(function () {
                 Route::get('pedidos-pdf-url', [PedidoController::class, 'getGeneralPdfUrl']);
                 Route::get('pedidos/{id}/pdf-url', [PedidoController::class, 'getPdfUrl']);
                 Route::apiResource('pedidos', PedidoController::class)->except(['show']);
+                
+                // Órdenes de Producción
+                Route::get('produccion', [OrdenProduccionController::class, 'index']);
+                Route::get('produccion/{id}', [OrdenProduccionController::class, 'show']);
+                Route::patch('produccion/detalles/{detalleId}/listo', [OrdenProduccionController::class, 'marcarDetalleListo']);
             });
         }
     });

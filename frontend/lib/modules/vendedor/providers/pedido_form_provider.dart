@@ -65,6 +65,7 @@ class PedidoFormProvider extends ChangeNotifier {
             det.productoNombre ?? prod?.nombre ?? 'Producto #${det.productoId}',
         productoCodigo: det.productoCodigo ?? prod?.codigo ?? '',
         unidad: prod?.unidad ?? 'UN',
+        stock: prod?.stock ?? 0,
         precioBase: prod?.venta ?? det.precioUnitario,
         precioController: TextEditingController(
           text: det.precioUnitario.toStringAsFixed(2),

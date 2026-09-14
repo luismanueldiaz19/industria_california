@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../screens/vendedor_pedido_flow_screen.dart';
 import '../screens/vendedor_pedidos_screen.dart';
 import '../screens/vendedor_rutas_screen.dart';
+import '../screens/vendedor_ordenes_produccion_screen.dart';
 import 'build_action_button.dart';
 
 /// Acciones rápidas del dashboard del vendedor.
@@ -26,12 +27,14 @@ class ActionQuickVendedor extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 20,
+            runSpacing: 16,
+            alignment: WrapAlignment.start,
             children: [
               _ActionTile(
                 icon: Icons.add_shopping_cart,
-                label: 'Agregar Pedido',
+                label: 'Agregar\nPedido',
                 isPrimary: true,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
@@ -62,6 +65,16 @@ class ActionQuickVendedor extends StatelessWidget {
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const VendedorPedidosScreen(),
+                  ),
+                ),
+              ),
+              _ActionTile(
+                icon: Icons.precision_manufacturing,
+                label: 'Producción',
+                isPrimary: false,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const VendedorOrdenesProduccionScreen(),
                   ),
                 ),
               ),

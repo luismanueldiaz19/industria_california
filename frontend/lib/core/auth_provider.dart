@@ -8,6 +8,7 @@ class AuthProvider extends ChangeNotifier {
   String? _username;
   String? _name;
   String? _profilePhotoUrl;
+  int? _id;
   List<String> _roles = [];
 
   bool get isAuthenticated => _isAuthenticated;
@@ -16,10 +17,11 @@ class AuthProvider extends ChangeNotifier {
   String? get username => _username;
   String? get name => _name;
   String? get profilePhotoUrl => _profilePhotoUrl;
+  int? get id => _id;
   List<String> get roles => _roles;
-  
+
   String? get token => HttpService.token;
-  
+
   bool get isVendedor => _roles.contains('vendedor');
   bool get isAdmin => _roles.contains('admin');
 
@@ -52,6 +54,7 @@ class AuthProvider extends ChangeNotifier {
         _username = response['user']['username'] ?? trimmedUsername;
         _name = response['user']['name'];
         _profilePhotoUrl = response['user']['profile_photo_url'];
+        _id = response['user']['id'];
         if (response['user']['roles'] != null) {
           _roles = List<String>.from(response['user']['roles']);
         }
@@ -72,7 +75,12 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> registerUser(String name, String username, String password, String? role) async {
+  Future<bool> registerUser(
+    String name,
+    String username,
+    String password,
+    String? role,
+  ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -116,6 +124,7 @@ class AuthProvider extends ChangeNotifier {
       _username = null;
       _name = null;
       _profilePhotoUrl = null;
+      _id = null;
       _roles = [];
       notifyListeners();
     }

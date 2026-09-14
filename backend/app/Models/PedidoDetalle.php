@@ -13,6 +13,7 @@ class PedidoDetalle extends Model
         'pedido_id',
         'producto_id',
         'cantidad',
+        'cantidad_en_produccion',
         'precio_unitario',
         'subtotal',
         'observacion',
@@ -20,6 +21,7 @@ class PedidoDetalle extends Model
 
     protected $casts = [
         'cantidad' => 'decimal:3',
+        'cantidad_en_produccion' => 'decimal:3',
         'precio_unitario' => 'decimal:2',
         'subtotal' => 'decimal:2',
     ];

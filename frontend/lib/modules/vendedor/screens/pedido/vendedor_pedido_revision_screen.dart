@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../models/cart_item.dart';
 import '../../providers/pedido_form_provider.dart';
 import '../../../logistica/providers/pedido_provider.dart';
 
@@ -25,6 +26,12 @@ class _VendedorPedidoRevisionScreenState
 
   String _estadoSeleccionado = 'borrador';
   bool _isSaving = false;
+
+  // Variables para Orden de Producción
+  bool _generarOrdenProduccion = false;
+  final TextEditingController _notasProduccionController =
+      TextEditingController();
+  DateTime? _fechaEntregaEstimada;
 
   final Map<String, Map<String, dynamic>> _estadosConfig = {
     'borrador': {
@@ -360,9 +367,20 @@ class _VendedorPedidoRevisionScreenState
   }
 
   Widget _buildAcciones(PedidoFormProvider provider) {
+    // Calcular faltantes
+    final faltantes = provider.carrito.where((item) {
+      final cant = double.tryParse(item.cantidadController.text) ?? 0;
+      final stockEfectivo = item.stock < 0 ? 0 : item.stock;
+      return cant > stockEfectivo;
+    }).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (faltantes.isNotEmpty) ...[
+          _buildProduccionCard(faltantes),
+          const SizedBox(height: 16),
+        ],
         const Text(
           'Finalizar Pedido',
           style: TextStyle(
@@ -464,6 +482,160 @@ class _VendedorPedidoRevisionScreenState
     );
   }
 
+  Widget _buildProduccionCard(List<CartItem> faltantes) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.red.shade700,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '¡Alerta de Inventario!',
+                  style: TextStyle(
+                    color: Colors.red.shade900,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'El pedido excede el inventario actual para los siguientes productos:',
+            style: TextStyle(fontSize: 11, color: Colors.red.shade800),
+          ),
+          const SizedBox(height: 6),
+          ...faltantes.map((f) {
+            final cant = double.tryParse(f.cantidadController.text) ?? 0;
+            final stockEfectivo = f.stock < 0 ? 0 : f.stock;
+            final falta = cant - stockEfectivo;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                '• ${f.productoNombre} (Faltan: ${falta % 1 == 0 ? falta.toInt() : falta.toStringAsFixed(2)})',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.red.shade900,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          CheckboxListTile(
+            value: _generarOrdenProduccion,
+            onChanged: (val) =>
+                setState(() => _generarOrdenProduccion = val ?? false),
+            title: const Text(
+              'Generar orden de producción por el faltante',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            activeColor: _primaryBlue,
+          ),
+          if (_generarOrdenProduccion) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now().add(
+                          const Duration(days: 7),
+                        ),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (date != null) {
+                        setState(() => _fechaEntregaEstimada = date);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _fechaEntregaEstimada != null
+                                ? DateFormat(
+                                    'dd/MM/yyyy',
+                                  ).format(_fechaEntregaEstimada!)
+                                : 'Estimar Entrega',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: _fechaEntregaEstimada != null
+                                  ? Colors.black87
+                                  : Colors.grey,
+                            ),
+                          ),
+                          const Icon(
+                            Icons.calendar_today,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _notasProduccionController,
+              maxLines: 2,
+              style: const TextStyle(fontSize: 11),
+              decoration: InputDecoration(
+                hintText: 'Notas para la fábrica (opcional)',
+                hintStyle: const TextStyle(fontSize: 11),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.all(8),
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(color: Colors.grey.shade400),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(color: Colors.grey.shade400),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildBottomBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -477,7 +649,10 @@ class _VendedorPedidoRevisionScreenState
           TextButton.icon(
             onPressed: _isSaving ? null : widget.onPrev,
             icon: const Icon(Icons.arrow_back, size: 18),
-            label: const Text('Atrás (Catálogo)', style: TextStyle(fontSize: 12)),
+            label: const Text(
+              'Atrás (Catálogo)',
+              style: TextStyle(fontSize: 12),
+            ),
           ),
         ],
       ),
@@ -489,6 +664,33 @@ class _VendedorPedidoRevisionScreenState
 
     try {
       final payload = formProvider.buildPayload(_estadoSeleccionado);
+
+      // Inject Production Order if selected
+      if (_generarOrdenProduccion) {
+        final faltantes = formProvider.carrito.where((item) {
+          final cant = double.tryParse(item.cantidadController.text) ?? 0;
+          final stockEfectivo = item.stock < 0 ? 0 : item.stock;
+          return cant > stockEfectivo;
+        }).toList();
+
+        if (faltantes.isNotEmpty) {
+          payload['orden_produccion'] = {
+            'fecha_estimada_entrega': _fechaEntregaEstimada != null
+                ? DateFormat('yyyy-MM-dd').format(_fechaEntregaEstimada!)
+                : null,
+            'notas': _notasProduccionController.text,
+            'detalles': faltantes.map((f) {
+              final cant = double.tryParse(f.cantidadController.text) ?? 0;
+              final stockEfectivo = f.stock < 0 ? 0 : f.stock;
+              return {
+                'producto_id': f.productoId,
+                'cantidad_faltante': cant - stockEfectivo,
+              };
+            }).toList(),
+          };
+        }
+      }
+
       final pedidoProvider = context.read<PedidoProvider>();
 
       bool ok;

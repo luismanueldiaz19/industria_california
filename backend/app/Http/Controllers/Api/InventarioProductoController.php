@@ -63,7 +63,7 @@ class InventarioProductoController extends Controller
 
         // Paginación
         $perPage = (int) $request->input('per_page', 24);
-        $perPage = min(max($perPage, 6), 100); // Entre 6 y 100
+        $perPage = min(max($perPage, 6), 5000); // Entre 6 y 5000 para soportar carga completa en POS
 
         $productos = $query->paginate($perPage);
 
@@ -320,6 +320,262 @@ class InventarioProductoController extends Controller
             return response()->json(['message' => 'Error al importar: ' . $e->getMessage()], 500);
         }
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // Sync Masivo de Inventario (Preview + Confirm) — igual que CXC
+    // Columnas Excel: A=id_producto | B=descripcion | C=unidad | D=cantidad | E=costo | F=precio_venta
+    // La columna G (Monto/Valor) se IGNORA completamente.
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Convierte un valor con formato de peso ($1,500.00 o 1500 o "1,500.00") a float.
+     */
+    private function parseMoney($value): float
+    {
+        if ($value === null || $value === '') return 0.0;
+        // Elimina símbolo $, comas y espacios; deja solo dígitos, punto y signo negativo
+        $clean = preg_replace('/[\$,\s]/', '', (string) $value);
+        return (float) $clean;
+    }
+
+    /**
+     * Determina si una fila de Excel está completamente vacía (columnas A–F).
+     */
+    private function isEmptyRow(array $row): bool
+    {
+        $relevant = array_slice($row, 0, 6); // Sólo columnas A-F
+        foreach ($relevant as $cell) {
+            if (trim((string) $cell) !== '') return false;
+        }
+        return true;
+    }
+
+    /**
+     * FASE 1 — Analiza el Excel sin escribir en BD.
+     * Devuelve: resumen, errores, nuevos, actualizaciones.
+     */
+    public function inventarioSyncPreview(Request $request)
+    {
+        if (!$request->user()->hasRole('admin')) {
+            return response()->json(['message' => 'No tienes permiso para sincronizar el inventario.'], 403);
+        }
+
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv',
+        ]);
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($request->file('file')->getPathname());
+            $rows        = $spreadsheet->getActiveSheet()->toArray();
+            array_shift($rows); // Ignorar encabezado
+
+            $errores        = [];
+            $nuevos         = [];
+            $actualizaciones = [];
+
+            foreach ($rows as $index => $row) {
+                $fila = $index + 2; // +2: encabezado + 0-index
+
+                // Saltar filas completamente vacías (columnas A-F)
+                if ($this->isEmptyRow($row)) continue;
+
+                $idProducto  = isset($row[0]) ? trim((string) $row[0]) : '';
+                if ($idProducto !== '') {
+                    $idProducto = ltrim($idProducto, '0');
+                    if ($idProducto === '') $idProducto = '0';
+                }
+                $nombre      = isset($row[1]) ? strtoupper(trim((string) $row[1])) : '';
+                $unidad      = isset($row[2]) ? strtoupper(trim((string) $row[2])) : 'UNIDAD';
+                $cantidad    = isset($row[3]) ? $this->parseMoney($row[3]) : 0.0;
+                $costo       = isset($row[4]) ? $this->parseMoney($row[4]) : 0.0;
+                $precioVenta = isset($row[5]) ? $this->parseMoney($row[5]) : 0.0;
+                // Columna G (Monto/Valor) se ignora completamente
+
+                if (!in_array($unidad, ['UNIDAD', 'LIBRA', 'KG', 'OTRO'])) {
+                    $unidad = 'UNIDAD';
+                }
+
+                // Validar que al menos tenga nombre
+                if ($nombre === '') {
+                    $errores[] = [
+                        'fila'   => $fila,
+                        'id_producto' => $idProducto,
+                        'razon'  => 'Descripción (columna B) vacía.',
+                    ];
+                    continue;
+                }
+
+                // 1. Buscar por código
+                $productoExistente = null;
+                if ($idProducto !== '') {
+                    $productoExistente = InventarioProducto::where('codigo', $idProducto)->first();
+                }
+
+                // 2. Fallback: Buscar por nombre solo si NO enviaron ID en el Excel
+                if ($idProducto === '' && $nombre !== '') {
+                    $productoExistente = InventarioProducto::where('nombre', $nombre)->first();
+                }
+
+                $item = [
+                    'fila'        => $fila,
+                    'id_producto' => $idProducto,
+                    'nombre'      => $nombre,
+                    'unidad'      => $unidad,
+                    'cantidad'    => $cantidad,
+                    'costo'       => $costo,
+                    'precio_venta'=> $precioVenta,
+                ];
+
+                if ($productoExistente) {
+                    $item['nombre_actual']   = $productoExistente->nombre;
+                    $item['stock_actual']    = $productoExistente->stock;
+                    $item['costo_actual']    = $productoExistente->costo;
+                    $item['venta_actual']    = $productoExistente->venta;
+                    $actualizaciones[] = $item;
+                } else {
+                    $nuevos[] = $item;
+                }
+            }
+
+            return response()->json([
+                'resumen' => [
+                    'total_filas'     => count($rows),
+                    'errores'         => count($errores),
+                    'nuevos'          => count($nuevos),
+                    'actualizaciones' => count($actualizaciones),
+                ],
+                'errores'         => $errores,
+                'nuevos'          => $nuevos,
+                'actualizaciones' => $actualizaciones,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al procesar el archivo: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * FASE 2 — Ejecuta la sincronización en una transacción atómica.
+     * Si algo falla, hace rollback total.
+     */
+    public function inventarioSyncConfirm(Request $request)
+    {
+        if (!$request->user()->hasRole('admin')) {
+            return response()->json(['message' => 'No tienes permiso para sincronizar el inventario.'], 403);
+        }
+
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv',
+        ]);
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($request->file('file')->getPathname());
+            $rows        = $spreadsheet->getActiveSheet()->toArray();
+            array_shift($rows);
+
+            $creados     = 0;
+            $actualizados = 0;
+            $omitidos    = 0;
+            $errores     = [];
+
+            \Illuminate\Support\Facades\DB::transaction(function () use (
+                $rows, &$creados, &$actualizados, &$omitidos, &$errores
+            ) {
+                foreach ($rows as $index => $row) {
+                    $fila = $index + 2;
+
+                    // Saltar filas completamente vacías (columnas A-F)
+                    if ($this->isEmptyRow($row)) {
+                        continue;
+                    }
+
+                    $idProducto  = isset($row[0]) ? trim((string) $row[0]) : '';
+                    if ($idProducto !== '') {
+                        $idProducto = ltrim($idProducto, '0');
+                        if ($idProducto === '') $idProducto = '0';
+                    }
+                    $nombre      = isset($row[1]) ? strtoupper(trim((string) $row[1])) : '';
+                    $unidad      = isset($row[2]) ? strtoupper(trim((string) $row[2])) : 'UNIDAD';
+                    $cantidad    = isset($row[3]) ? $this->parseMoney($row[3]) : 0.0;
+                    $costo       = isset($row[4]) ? $this->parseMoney($row[4]) : 0.0;
+                    $precioVenta = isset($row[5]) ? $this->parseMoney($row[5]) : 0.0;
+                    // Columna G (Monto/Valor) ignorada
+
+                    if (!in_array($unidad, ['UNIDAD', 'LIBRA', 'KG', 'OTRO'])) {
+                        $unidad = 'UNIDAD';
+                    }
+
+                    if ($nombre === '') {
+                        $errores[] = ['fila' => $fila, 'razon' => 'Descripción vacía, fila omitida.'];
+                        $omitidos++;
+                        continue;
+                    }
+
+                    // 1. Buscar producto por código
+                    $productoExistente = null;
+                    if ($idProducto !== '') {
+                        $productoExistente = InventarioProducto::where('codigo', $idProducto)->first();
+                    }
+
+                    // 2. Fallback: Buscar por nombre solo si NO enviaron ID en el Excel
+                    if ($idProducto === '' && $nombre !== '') {
+                        $productoExistente = InventarioProducto::where('nombre', $nombre)->first();
+                    }
+
+                    if ($productoExistente) {
+                        // ACTUALIZAR campos: descripcion, unidad, cantidad, costo y precio
+                        $productoExistente->update([
+                            'nombre' => $nombre,
+                            'unidad' => $unidad,
+                            'stock'  => $cantidad,
+                            'costo'  => $costo,
+                            'venta'  => $precioVenta,
+                            'activo' => true,
+                        ]);
+                        $actualizados++;
+                    } else {
+                        // CREAR nuevo producto
+                        // Usar el id_producto del excel como código. Si está vacío, generar uno del nombre.
+                        if ($idProducto !== '') {
+                            $codigoFinal = $idProducto;
+                        } else {
+                            $codigoBase = substr($nombre, 0, 55);
+                            $codigoFinal = $codigoBase;
+                            $suffix = 1;
+                            // Evitar colisión de código
+                            while (InventarioProducto::where('codigo', $codigoFinal)->exists()) {
+                                $codigoFinal = $codigoBase . '-' . $suffix;
+                                $suffix++;
+                            }
+                        }
+
+                        InventarioProducto::create([
+                            'codigo' => $codigoFinal,
+                            'nombre' => $nombre,
+                            'unidad' => $unidad,
+                            'stock'  => $cantidad,
+                            'costo'  => $costo,
+                            'venta'  => $precioVenta,
+                            'activo' => true,
+                        ]);
+                        $creados++;
+                    }
+                }
+            });
+
+            return response()->json([
+                'message'      => 'Sincronización de inventario completada exitosamente.',
+                'creados'      => $creados,
+                'actualizados' => $actualizados,
+                'omitidos'     => $omitidos,
+                'errores'      => $errores,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error durante la sincronización. Se realizó rollback. Detalle: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
     /**
      * Genera URL segura (token) para PDF de inventario.

@@ -46,44 +46,44 @@ class _UsersScreenState extends State<UsersScreen> {
                     color: const Color(0xFF1A1C1E),
                   ),
                 ),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  final result = await showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (context) => const RegisterUserDialog(),
-                  );
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => const RegisterUserDialog(),
+                    );
 
-                  if (result == true) {
-                    if (!context.mounted) return;
-                    Provider.of<UsersProvider>(
-                      context,
-                      listen: false,
-                    ).fetchUsers();
-                  }
-                },
-                icon: const Icon(
-                  Icons.person_add_alt_1_outlined,
-                  color: Colors.white,
-                ),
-                label: const Text(
-                  'Nuevo Usuario',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
+                    if (result == true) {
+                      if (!context.mounted) return;
+                      Provider.of<UsersProvider>(
+                        context,
+                        listen: false,
+                      ).fetchUsers();
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.person_add_alt_1_outlined,
+                    color: Colors.white,
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  label: const Text(
+                    'Nuevo Usuario',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
           const SizedBox(height: 32),
           Expanded(
             child: Card(
@@ -172,8 +172,12 @@ class _UsersScreenState extends State<UsersScreen> {
                           ),
                         ],
                         rows: provider.users.map((user) {
-                          final roleName = user['roles'] != null && (user['roles'] as List).isNotEmpty
-                              ? user['roles'][0]['name'].toString().toLowerCase()
+                          final roleName =
+                              user['roles'] != null &&
+                                  (user['roles'] as List).isNotEmpty
+                              ? user['roles'][0]['name']
+                                    .toString()
+                                    .toLowerCase()
                               : 'sin rol';
 
                           Color roleColor;
@@ -203,7 +207,10 @@ class _UsersScreenState extends State<UsersScreen> {
                               ),
                               DataCell(
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: roleColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(16),

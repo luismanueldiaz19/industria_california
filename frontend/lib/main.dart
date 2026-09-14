@@ -38,10 +38,14 @@ import 'modules/logistica/providers/ruta_provider.dart';
 import 'modules/logistica/providers/pedido_provider.dart';
 import 'modules/logistica/screens/pedidos_screen.dart';
 import 'modules/logistica/screens/rutas_screen.dart';
+import 'modules/logistica/screens/admin_ordenes_produccion_screen.dart';
+
+import 'modules/logistica/providers/orden_produccion_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es', null);
+
   runApp(
     MultiProvider(
       providers: [
@@ -61,6 +65,7 @@ void main() async {
         // Módulo Logística
         ChangeNotifierProvider(create: (_) => RutaProvider()),
         ChangeNotifierProvider(create: (_) => PedidoProvider()),
+        ChangeNotifierProvider(create: (_) => OrdenProduccionProvider()),
       ],
       child: const ConstruccionERP(),
     ),
@@ -141,9 +146,10 @@ class _MainLayoutState extends State<MainLayout> {
     // Módulo Inventario (8-9)
     const InventarioProductosScreen(), // 8
     const InventarioMovimientosScreen(), // 9
-    // Módulo Logística y Pedidos (10-11)
+    // Módulo Logística y Pedidos (10-12)
     const PedidosScreen(), // 10
     const RutasScreen(), // 11
+    const AdminOrdenesProduccionScreen(), // 12
   ];
 
   @override

@@ -557,7 +557,7 @@ class _LedhouseClientesScreenState extends State<LedhouseClientesScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Clientes Ledhouse',
+                  'Clientes',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,

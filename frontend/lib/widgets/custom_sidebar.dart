@@ -128,7 +128,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
                       4,
                       Icons.people_outline,
                       Icons.people,
-                      'Clientes Ledhouse',
+                      'Clientes',
                       accentColor,
                     ),
                     _buildMenuItem(
@@ -200,6 +200,13 @@ class _CustomSidebarState extends State<CustomSidebar> {
                       Icons.map_outlined,
                       Icons.map_rounded,
                       'Rutas',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
+                      12,
+                      Icons.factory_outlined,
+                      Icons.factory_rounded,
+                      'Producción',
                       accentColor,
                     ),
                   ],

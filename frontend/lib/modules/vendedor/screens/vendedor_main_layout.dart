@@ -3,7 +3,7 @@ import 'vendedor_dashboard_screen.dart';
 import 'vendedor_perfil_screen.dart';
 import 'vendedor_cxc_screen.dart';
 import 'vendedor_actividad_screen.dart';
-import 'vendedor_pedidos_screen.dart';
+import 'vendedor_inventario_screen.dart';
 
 class VendedorMainLayout extends StatefulWidget {
   const VendedorMainLayout({super.key});
@@ -21,7 +21,7 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
         onProfileTap: () => setState(() => _currentIndex = 4),
       ),
       const VendedorCxcScreen(), // index 1
-      const Center(child: Text('Clientes')), // index 2
+      const VendedorInventarioScreen(), // index 2
       const VendedorActividadScreen(), // index 3
       const VendedorPerfilScreen(), // index 4
     ];
@@ -77,9 +77,9 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
                       label: 'CXC',
                     ),
                     BottomNavigationBarItem(
-                      icon: Icon(Icons.people_outline),
-                      activeIcon: Icon(Icons.people),
-                      label: 'Clientes',
+                      icon: Icon(Icons.inventory_2_outlined),
+                      activeIcon: Icon(Icons.inventory_2),
+                      label: 'Inventario',
                     ),
                     BottomNavigationBarItem(
                       icon: Icon(Icons.campaign_outlined),

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Pedido;
 use App\Models\PedidoDetalle;
 use App\Models\InventarioProducto;
+use App\Models\OrdenProduccion;
+use App\Models\OrdenProduccionDetalle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -67,8 +69,15 @@ class PedidoController extends Controller
             'detalles.*.cantidad' => 'required|numeric|min:0.01',
             'detalles.*.precio_unitario' => 'required|numeric|min:0',
             'detalles.*.observacion' => 'nullable|string',
+            'detalles.*.observacion' => 'nullable|string',
             'latitud' => 'nullable|numeric',
             'longitud' => 'nullable|numeric',
+            'orden_produccion' => 'nullable|array',
+            'orden_produccion.fecha_estimada_entrega' => 'nullable|date',
+            'orden_produccion.notas' => 'nullable|string',
+            'orden_produccion.detalles' => 'nullable|array',
+            'orden_produccion.detalles.*.producto_id' => 'required_with:orden_produccion.detalles|exists:inventario_productos,id',
+            'orden_produccion.detalles.*.cantidad_faltante' => 'required_with:orden_produccion.detalles|numeric|min:0.01',
         ]);
 
         try {
@@ -103,6 +112,8 @@ class PedidoController extends Controller
                     'precio_unitario' => $precioEnviado,
                     'subtotal' => $subtotal,
                     'observacion' => $detalle['observacion'] ?? null,
+                    // Inicializar temporalmente a 0, se actualizará si hay orden de producción
+                    'cantidad_en_produccion' => 0,
                 ];
             }
 
@@ -117,9 +128,46 @@ class PedidoController extends Controller
                 'longitud' => $request->longitud,
             ]);
 
+            $pedidoDetallesModels = [];
             foreach ($detallesToInsert as $det) {
                 $det['pedido_id'] = $pedido->id;
-                PedidoDetalle::create($det);
+                $pedidoDetallesModels[$det['producto_id']] = PedidoDetalle::create($det);
+            }
+
+            // Procesar orden de producción si existe
+            if ($request->filled('orden_produccion')) {
+                $produccionData = $request->input('orden_produccion');
+                
+                $ordenProduccion = OrdenProduccion::create([
+                    'pedido_id' => $pedido->id,
+                    'cliente_id' => $request->cliente_id,
+                    'vendedor_id' => Auth::id(),
+                    'estado' => 'pendiente',
+                    'fecha_estimada_entrega' => $produccionData['fecha_estimada_entrega'] ?? null,
+                    'notas' => $produccionData['notas'] ?? null,
+                ]);
+
+                if (!empty($produccionData['detalles'])) {
+                    foreach ($produccionData['detalles'] as $prodDetalle) {
+                        $pId = $prodDetalle['producto_id'];
+                        $cFaltante = $prodDetalle['cantidad_faltante'];
+
+                        $pdId = null;
+                        if (isset($pedidoDetallesModels[$pId])) {
+                            $pdId = $pedidoDetallesModels[$pId]->id;
+                            // Actualizar la cantidad en producción del detalle del pedido original
+                            $pedidoDetallesModels[$pId]->update(['cantidad_en_produccion' => $cFaltante]);
+                        }
+
+                        OrdenProduccionDetalle::create([
+                            'orden_produccion_id' => $ordenProduccion->id,
+                            'producto_id' => $pId,
+                            'pedido_detalle_id' => $pdId,
+                            'cantidad_faltante' => $cFaltante,
+                            'estado' => 'pendiente',
+                        ]);
+                    }
+                }
             }
 
             DB::commit();

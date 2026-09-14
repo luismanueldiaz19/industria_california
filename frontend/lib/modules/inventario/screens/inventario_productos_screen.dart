@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:file_picker/file_picker.dart';
 import '../providers/inventario_producto_provider.dart';
 import '../providers/inventario_categoria_provider.dart';
 import '../providers/inventario_movimiento_provider.dart';
@@ -9,6 +8,7 @@ import '../widgets/inventario_filter_bar.dart';
 import '../widgets/producto_grid_card.dart';
 import '../widgets/producto_form_dialog.dart';
 import '../widgets/movimiento_form_dialog.dart';
+import '../screens/inventario_sync_screen.dart';
 import '../../../core/auth_provider.dart';
 import '../../../widgets/general_header.dart';
 
@@ -155,270 +155,15 @@ class _InventarioProductosScreenState extends State<InventarioProductosScreen>
     }
   }
 
-  Widget _buildFormatRow(String col, String desc, {required bool isRequired}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 85,
-            child: Text(
-              col,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-                letterSpacing: 0.2,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              desc,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: isRequired
-                    ? const Color(0xFFE31E24).withValues(alpha: 0.4)
-                    : Colors.grey.shade300,
-              ),
-              borderRadius: BorderRadius.circular(4),
-              color: isRequired
-                  ? const Color(0xFFE31E24).withValues(alpha: 0.04)
-                  : Colors.transparent,
-            ),
-            child: Text(
-              isRequired ? 'Obligatorio' : 'Opcional',
-              style: TextStyle(
-                fontSize: 10,
-                color: isRequired
-                    ? const Color(0xFFE31E24)
-                    : Colors.grey.shade600,
-                fontWeight: isRequired ? FontWeight.w600 : FontWeight.w500,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ],
-      ),
+  Future<void> _openSyncScreen() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const InventarioSyncScreen()),
     );
-  }
-
-  Future<void> _importExcel() async {
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: Colors.grey.shade300, width: 1),
-        ),
-        elevation: 24,
-        shadowColor: Colors.black26,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.table_chart_outlined,
-                      color: Colors.grey.shade800,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Text(
-                        'Formato de Importación',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.5,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Divider(color: Colors.grey.shade200, height: 1),
-                const SizedBox(height: 20),
-                Text(
-                  'El archivo Excel (o CSV) debe seguir estrictamente el siguiente orden de columnas. La primera fila se ignorará (encabezados).',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade200),
-                    borderRadius: BorderRadius.circular(6),
-                    color: Colors.white,
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: [
-                      _buildFormatRow(
-                        'Columna A',
-                        'Código de Producto',
-                        isRequired: true,
-                      ),
-                      _buildFormatRow(
-                        'Columna B',
-                        'Nombre / Descripción',
-                        isRequired: true,
-                      ),
-                      _buildFormatRow(
-                        'Columna C',
-                        'ID de Categoría (Número)',
-                        isRequired: false,
-                      ),
-                      _buildFormatRow('Columna D', 'Costo', isRequired: false),
-                      _buildFormatRow(
-                        'Columna E',
-                        'Precio de Venta',
-                        isRequired: false,
-                      ),
-                      _buildFormatRow(
-                        'Columna F',
-                        'Stock Inicial',
-                        isRequired: false,
-                      ),
-                      _buildFormatRow(
-                        'Columna G',
-                        'Stock Mínimo',
-                        isRequired: false,
-                      ),
-                      _buildFormatRow(
-                        'Columna H',
-                        'Stock Máximo',
-                        isRequired: false,
-                      ),
-                      _buildFormatRow(
-                        'Columna I',
-                        'Unidad (UNIDAD, LIBRA, KG)',
-                        isRequired: false,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 14,
-                        ),
-                        foregroundColor: Colors.grey.shade700,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(
-                          0xFF1A1A1A,
-                        ), // Classic premium black
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Continuar',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    if (confirm != true) return;
-
-    final file = await FilePicker.pickFile(
-      type: FileType.custom,
-      allowedExtensions: ['xlsx', 'xls', 'csv'],
-    );
-    if (file == null) return;
-
-    final bytes = await file.readAsBytes();
-    if (!mounted) return;
-
-    // Mostrar un Snackbar de carga
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            ),
-            SizedBox(width: 12),
-            Text('Importando productos...', style: TextStyle(fontSize: 12.5)),
-          ],
-        ),
-        backgroundColor: const Color(0xFF1A73E8), // Blue para loading
-        duration: const Duration(
-          seconds: 10,
-        ), // Duración larga, se sobrescribirá
-      ),
-    );
-
-    final success = await context
-        .read<InventarioProductoProvider>()
-        .importExcel(bytes, file.name);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).hideCurrentSnackBar(); // Ocultar el loading
-
-    _showSnack(
-      success ? 'Importación exitosa' : 'Error en importación',
-      isError: !success,
-    );
+    // Al volver, refrescar inventario (puede haber cambios)
+    if (mounted) {
+      await context.read<InventarioProductoProvider>().fetchProductos();
+    }
   }
 
   Future<void> _openPdf() async {
@@ -480,7 +225,7 @@ class _InventarioProductosScreenState extends State<InventarioProductosScreen>
             isAdmin: isAdmin,
             onApply: () => prodProvider.fetchProductos(),
             onAddProducto: isAdmin ? () => _openFormDialog() : null,
-            onImport: isAdmin ? _importExcel : null,
+            onSync: isAdmin ? _openSyncScreen : null,
             onPdf: _openPdf,
           ),
 

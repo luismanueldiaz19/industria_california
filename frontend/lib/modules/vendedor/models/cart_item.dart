@@ -9,6 +9,7 @@ class CartItem {
   final String productoNombre;
   final String productoCodigo;
   final String unidad;
+  final double stock; // Nuevo campo para control de producción
 
   /// Precio base tomado de inventario_producto.venta
   final double precioBase;
@@ -22,6 +23,7 @@ class CartItem {
     required this.productoNombre,
     required this.productoCodigo,
     required this.unidad,
+    required this.stock,
     required this.precioBase,
     required this.precioController,
     required this.cantidadController,
@@ -35,6 +37,7 @@ class CartItem {
       productoNombre: producto.nombre,
       productoCodigo: producto.codigo,
       unidad: producto.unidad,
+      stock: producto.stock,
       precioBase: producto.venta,
       precioController: TextEditingController(
         text: producto.venta.toStringAsFixed(2),

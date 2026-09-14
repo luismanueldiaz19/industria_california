@@ -7,7 +7,8 @@ class InventarioFilterBar extends StatefulWidget {
   final List<InventarioCategoria> categorias;
   final VoidCallback onApply;
   final VoidCallback? onAddProducto;
-  final VoidCallback? onImport;
+  /// Navega a la pantalla de sincronización masiva de inventario (solo admin).
+  final VoidCallback? onSync;
   final VoidCallback? onPdf;
   final bool isAdmin;
 
@@ -17,7 +18,7 @@ class InventarioFilterBar extends StatefulWidget {
     required this.categorias,
     required this.onApply,
     this.onAddProducto,
-    this.onImport,
+    this.onSync,
     this.onPdf,
     this.isAdmin = false,
   });
@@ -195,10 +196,10 @@ class _InventarioFilterBarState extends State<InventarioFilterBar> {
               onTap: widget.onAddProducto,
             ),
             _actionButton(
-              icon: Icons.upload_file,
-              label: 'Importar',
-              color: const Color(0xFF1A73E8),
-              onTap: widget.onImport,
+              icon: Icons.sync_rounded,
+              label: 'Sincronizar',
+              color: const Color(0xFF00897B),
+              onTap: widget.onSync,
             ),
           ],
 

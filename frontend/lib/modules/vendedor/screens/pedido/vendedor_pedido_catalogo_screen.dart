@@ -34,6 +34,17 @@ class _VendedorPedidoCatalogoScreenState
   String _searchQuery = '';
   String _selectedCategoria = 'Todas';
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final prov = context.read<InventarioProductoProvider>();
+      if (prov.productos.isEmpty) {
+        prov.fetchProductos();
+      }
+    });
+  }
+
   List<String> get _categorias {
     final prods = context.read<InventarioProductoProvider>().productos;
     final cats = prods
@@ -74,11 +85,17 @@ class _VendedorPedidoCatalogoScreenState
   }
 
   Widget _buildTopBar() {
+    final totalProductos = context.watch<InventarioProductoProvider>().productos.length;
+    final mostrando = _productosFiltrados.length;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       color: Colors.white,
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
           // Botón para carrito con Badge en Stack
           Stack(
             clipBehavior: Clip.none,
@@ -170,6 +187,20 @@ class _VendedorPedidoCatalogoScreenState
                     )
                     .toList(),
                 onChanged: (v) => setState(() => _selectedCategoria = v!),
+              ),
+            ),
+          ),
+        ],
+      ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(
+              'Mostrando $mostrando de $totalProductos productos disponibles',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600,
               ),
             ),
           ),
