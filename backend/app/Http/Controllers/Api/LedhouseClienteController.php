@@ -85,6 +85,7 @@ class LedhouseClienteController extends Controller
 
     /**
      * Import records from Excel
+     * Omite clientes duplicados (mismo id_cliente_externo o mismo nombre).
      */
     public function import(Request $request)
     {
@@ -93,31 +94,33 @@ class LedhouseClienteController extends Controller
         ]);
 
         $file = $request->file('file');
-        
+
         try {
             $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
             $worksheet = $spreadsheet->getActiveSheet();
             $rows = $worksheet->toArray();
-            
+
             // Assuming first row is header
             $header = array_shift($rows);
-            
-            $importedCount = 0;
 
-            foreach ($rows as $row) {
+            $importedCount  = 0;
+            $skippedCount   = 0;
+            $skippedDetails = [];
+
+            foreach ($rows as $index => $row) {
                 $id_cliente_externo = isset($row[0]) ? trim((string)$row[0]) : null;
-                $nombre   = isset($row[1]) ? trim((string)$row[1]) : null;
-                $whatsapp = isset($row[2]) ? trim((string)$row[2]) : null;
-                $direccion = isset($row[3]) ? trim((string)$row[3]) : null;
-                $limite_credito = isset($row[4]) ? trim((string)$row[4]) : null;
-                $dias_credito = isset($row[5]) ? trim((string)$row[5]) : null;
-                $tipo_documento = isset($row[6]) ? trim((string)$row[6]) : null;
-                $documento = isset($row[7]) ? trim((string)$row[7]) : null;
+                $nombre             = isset($row[1]) ? trim((string)$row[1]) : null;
+                $whatsapp           = isset($row[2]) ? trim((string)$row[2]) : null;
+                $direccion          = isset($row[3]) ? trim((string)$row[3]) : null;
+                $limite_credito     = isset($row[4]) ? trim((string)$row[4]) : null;
+                $dias_credito       = isset($row[5]) ? trim((string)$row[5]) : null;
+                $tipo_documento     = isset($row[6]) ? trim((string)$row[6]) : null;
+                $documento          = isset($row[7]) ? trim((string)$row[7]) : null;
 
-                // Whatsapp can be empty, only nombre is required
-                $whatsapp = $whatsapp !== '' ? $whatsapp : null;
-                $direccion = $direccion !== '' ? $direccion : null;
-                $documento = $documento !== '' ? $documento : null;
+                // Campos opcionales vacíos => null
+                $whatsapp  = ($whatsapp  !== '') ? $whatsapp  : null;
+                $direccion = ($direccion !== '') ? $direccion : null;
+                $documento = ($documento !== '') ? $documento : null;
 
                 if ($tipo_documento !== '') {
                     $lower_tipo = strtolower($tipo_documento);
@@ -131,28 +134,56 @@ class LedhouseClienteController extends Controller
                 } else {
                     $tipo_documento = null;
                 }
-                
-                $limite_credito = ($limite_credito !== '' && is_numeric($limite_credito)) ? (float)$limite_credito : 0;
-                $dias_credito = ($dias_credito !== '' && is_numeric($dias_credito)) ? (int)$dias_credito : 0;
 
-                if ($id_cliente_externo && $nombre) {
-                    LedhouseCliente::updateOrCreate(
-                        ['id_cliente_externo' => $id_cliente_externo],
-                        [
-                            'nombre'    => $nombre,
-                            'whatsapp'  => $whatsapp,
-                            'direccion' => $direccion,
-                            'tipo_documento' => $tipo_documento,
-                            'documento' => $documento,
-                            'limite_credito' => $limite_credito,
-                            'dias_credito' => $dias_credito,
-                        ]
-                    );
-                    $importedCount++;
+                $limite_credito = ($limite_credito !== '' && is_numeric($limite_credito)) ? (float)$limite_credito : 0;
+                $dias_credito   = ($dias_credito   !== '' && is_numeric($dias_credito))   ? (int)$dias_credito   : 0;
+
+                // Omitir filas sin datos obligatorios
+                if (!$id_cliente_externo || !$nombre) {
+                    continue;
                 }
+
+                // Verificar si ya existe un cliente con el mismo id_cliente_externo O el mismo nombre
+                $existe = LedhouseCliente::where('id_cliente_externo', $id_cliente_externo)
+                    ->orWhereRaw('LOWER(nombre) = ?', [strtolower($nombre)])
+                    ->first();
+
+                if ($existe) {
+                    // Cliente duplicado: omitir y registrar detalle
+                    $skippedCount++;
+                    $razon = ($existe->id_cliente_externo === $id_cliente_externo)
+                        ? 'ID externo duplicado'
+                        : 'Nombre duplicado';
+                    $skippedDetails[] = [
+                        'fila'               => $index + 2, // +2 porque se quitó la cabecera y Excel es base 1
+                        'id_cliente_externo' => $id_cliente_externo,
+                        'nombre'             => $nombre,
+                        'razon'              => $razon,
+                    ];
+                    continue;
+                }
+
+                // Crear nuevo cliente
+                LedhouseCliente::create([
+                    'id_cliente_externo' => $id_cliente_externo,
+                    'nombre'             => $nombre,
+                    'whatsapp'           => $whatsapp,
+                    'direccion'          => $direccion,
+                    'tipo_documento'     => $tipo_documento,
+                    'documento'          => $documento,
+                    'limite_credito'     => $limite_credito,
+                    'dias_credito'       => $dias_credito,
+                ]);
+
+                $importedCount++;
             }
-            
-            return response()->json(['message' => "Importado exitosamente. $importedCount registros procesados."]);
+
+            return response()->json([
+                'message'          => "Importación completada. $importedCount creados, $skippedCount omitidos por duplicado.",
+                'creados'          => $importedCount,
+                'omitidos'         => $skippedCount,
+                'omitidos_detalle' => $skippedDetails,
+            ]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error al importar: ' . $e->getMessage()], 500);
         }
