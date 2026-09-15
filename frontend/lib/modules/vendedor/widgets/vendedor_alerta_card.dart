@@ -77,247 +77,258 @@ class VendedorAlertaCard extends StatelessWidget {
         .toList();
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Accent Bar
-              Container(height: 4, color: colorEstado),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Encabezado
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: colorEstado.withOpacity(0.1),
-                            shape: BoxShape.circle,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(11),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 4,
+                  child: Container(color: colorEstado),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(12.0).copyWith(left: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: colorEstado.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _getIconoPorTipo(tipoTexto),
+                              color: colorEstado,
+                              size: 16,
+                            ),
                           ),
-                          child: Icon(
-                            _getIconoPorTipo(tipoTexto),
-                            color: colorEstado,
-                            size: 20,
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  documento,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1F2937),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  cliente,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorEstado.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              alerta.estadoAlerta.toUpperCase(),
+                              style: TextStyle(
+                                color: colorEstado,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Detalles
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.label_important_outline_rounded,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Tipo: ${tipoTexto.toString().replaceAll('_', ' ').toUpperCase()}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF374151),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      if (monto != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.attach_money_rounded,
+                              size: 14,
+                              color: Colors.green,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Monto: ',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            Text(
+                              '\$$monto',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
+                      ],
+
+                      if (nota != null &&
+                          nota.toString().trim().isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF9FAFB),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                documento,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1F2937),
-                                ),
+                              Icon(
+                                Icons.notes_rounded,
+                                size: 14,
+                                color: Colors.grey.shade500,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                cliente,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade600,
-                                  fontWeight: FontWeight.w500,
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  nota,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade700,
+                                    height: 1.3,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorEstado.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            alerta.estadoAlerta.toUpperCase(),
-                            style: TextStyle(
-                              color: colorEstado,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
+                      ],
+
+                      if (evidencias.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 32,
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => Dialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: _EvidenciasDialog(
+                                    evidencias: evidencias,
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.attach_file_rounded,
+                              size: 14,
+                            ),
+                            label: Text(
+                              evidencias.length > 1
+                                  ? 'Ver Documentos (${evidencias.length})'
+                                  : 'Ver Documento Adjunto',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.blue.shade700,
+                              side: BorderSide(color: Colors.blue.shade200),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 0),
                             ),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(height: 1),
-                    const SizedBox(height: 16),
 
-                    // Detalles
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.label_important_outline_rounded,
-                          size: 16,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Tipo: ${tipoTexto.toString().replaceAll('_', ' ').toUpperCase()}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF374151),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    if (monto != null) ...[
                       const SizedBox(height: 8),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          const Icon(
-                            Icons.attach_money_rounded,
-                            size: 16,
-                            color: Colors.green,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Monto Informado:',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                            ),
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 12,
+                            color: Colors.grey.shade400,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '\$$monto',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
+                            DateFormat(
+                              'dd/MM/yyyy • HH:mm',
+                            ).format(alerta.createdAt),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
                     ],
-
-                    if (nota != null && nota.toString().trim().isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF9FAFB),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.notes_rounded,
-                              size: 16,
-                              color: Colors.grey.shade500,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                nota,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade700,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    ///backend\storage\app\public\cxc-evidencias
-                    if (evidencias.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => Dialog(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: _EvidenciasDialog(
-                                  evidencias: evidencias,
-                                ),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.attach_file_rounded, size: 18),
-                          label: Text(
-                            evidencias.length > 1
-                                ? 'Ver Documentos (${evidencias.length})'
-                                : 'Ver Documento Adjunto',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.blue.shade700,
-                            side: BorderSide(color: Colors.blue.shade200),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Icon(
-                          Icons.access_time_rounded,
-                          size: 14,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          DateFormat(
-                            'dd/MM/yyyy • HH:mm',
-                          ).format(alerta.createdAt),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -3,6 +3,7 @@ import '../screens/vendedor_pedido_flow_screen.dart';
 import '../screens/vendedor_pedidos_screen.dart';
 import '../screens/vendedor_rutas_screen.dart';
 import '../screens/vendedor_ordenes_produccion_screen.dart';
+import '../screens/clientes/vendedor_clientes_screen.dart';
 import 'build_action_button.dart';
 
 /// Acciones rápidas del dashboard del vendedor.
@@ -52,11 +53,16 @@ class ActionQuickVendedor extends StatelessWidget {
                   ),
                 ),
               ),
-              const BuildActionButton(
-                Icons.people_outline,
-                'Clientes',
-                false,
+              _ActionTile(
+                icon: Icons.people_outline,
+                label: 'Clientes',
+                isPrimary: false,
                 showBadge: true,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const VendedorClientesScreen(),
+                  ),
+                ),
               ),
               _ActionTile(
                 icon: Icons.list_alt,
@@ -92,12 +98,14 @@ class _ActionTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isPrimary;
+  final bool showBadge;
   final VoidCallback onTap;
 
   const _ActionTile({
     required this.icon,
     required this.label,
     required this.isPrimary,
+    this.showBadge = false,
     required this.onTap,
   });
 
@@ -105,7 +113,7 @@ class _ActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: BuildActionButton(icon, label, isPrimary),
+      child: BuildActionButton(icon, label, isPrimary, showBadge: showBadge),
     );
   }
 }

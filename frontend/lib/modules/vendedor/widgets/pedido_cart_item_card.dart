@@ -172,7 +172,7 @@ class PedidoCartItemCard extends StatelessWidget {
           onChanged: (_) => onChanged(),
           style: const TextStyle(fontSize: 14),
           validator: (_) {
-            if (!item.precioEsValido) return '±20% máx';
+            if (!item.precioEsValido) return '±75% máx';
             return null;
           },
           decoration: _inputDecoration(prefix: '\$ ', errorStyle: const TextStyle(fontSize: 10)),

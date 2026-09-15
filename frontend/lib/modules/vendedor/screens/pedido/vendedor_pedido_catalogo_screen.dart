@@ -669,7 +669,7 @@ class _VendedorPedidoCatalogoScreenState
                 ),
                 if (!item.precioEsValido)
                   const Text(
-                    'Precio fuera de rango (±20%)',
+                    'Precio fuera de rango (±75%)',
                     style: TextStyle(
                       fontSize: 10,
                       color: Colors.red,

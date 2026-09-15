@@ -16,14 +16,45 @@ class LedhouseClienteController extends Controller
         $query = LedhouseCliente::query();
 
         if ($request->has('search') && trim($request->input('search')) !== '') {
-            $search = strtolower(trim($request->input('search')));
-            $query->where(function ($q) use ($search) {
+            $rawSearch = trim($request->input('search'));
+            // Use the backend normalizer equivalent to the frontend one
+            $search = \App\Helpers\TextNormalizer::normalize($rawSearch);
+            // Also extract just digits in case they are searching for a phone number with dashes
+            $digitsOnly = \App\Helpers\TextNormalizer::onlyDigits($rawSearch);
+
+            $query->where(function ($q) use ($search, $digitsOnly) {
+                // MySQL's utf8mb4_unicode_ci is already case/accent insensitive, 
+                // but we use the normalized search just to be safe.
                 $q->whereRaw('LOWER(nombre) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(whatsapp) LIKE ?', ["%{$search}%"]);
+                  ->orWhereRaw('LOWER(id_cliente_externo) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(documento) LIKE ?', ["%{$search}%"]);
+                  
+                if (!empty($digitsOnly)) {
+                    // Try to match digits only (e.g. if they typed "809-555" we search "%809555%")
+                    // But also search the raw string just in case the db has formatting.
+                    $q->orWhereRaw("REPLACE(REPLACE(REPLACE(whatsapp, '-', ''), ' ', ''), '+', '') LIKE ?", ["%{$digitsOnly}%"])
+                      ->orWhereRaw('LOWER(whatsapp) LIKE ?', ["%{$search}%"]);
+                } else {
+                    $q->orWhereRaw('LOWER(whatsapp) LIKE ?', ["%{$search}%"]);
+                }
             });
         }
 
-        return response()->json($query->orderBy('id', 'desc')->get());
+        $sort = $request->input('sort', 'recent');
+        if ($sort === 'name_asc') {
+            $query->orderBy('nombre', 'asc');
+        } elseif ($sort === 'name_desc') {
+            $query->orderBy('nombre', 'desc');
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        if ($request->boolean('paginate')) {
+            $perPage = $request->input('per_page', 20);
+            return response()->json($query->paginate($perPage));
+        }
+
+        return response()->json($query->get());
     }
 
     /**

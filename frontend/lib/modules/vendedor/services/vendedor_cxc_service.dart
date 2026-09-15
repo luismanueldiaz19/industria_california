@@ -141,17 +141,37 @@ class VendedorCxcService {
   }
 
   /// Obtener alertas del vendedor (y opcionalmente por estado)
-  Future<List<VendedorAlertaModel>> getMisAlertas({
+  Future<Map<String, dynamic>> getMisAlertas({
     required String token,
     String? estado,
+    String? search,
+    String? startDate,
+    String? endDate,
+    String? tipo,
+    int page = 1,
   }) async {
-    final uri = Uri.parse(
-      '$_base/alertas',
-    ).replace(queryParameters: {if (estado != null) 'estado': estado});
+    final params = <String, String>{
+      'paginate': 'true',
+      'page': page.toString(),
+    };
+    if (estado != null) params['estado'] = estado;
+    if (search != null && search.isNotEmpty) params['search'] = search;
+    if (startDate != null) params['start_date'] = startDate;
+    if (endDate != null) params['end_date'] = endDate;
+    if (tipo != null && tipo.isNotEmpty) params['tipo'] = tipo;
+
+    final uri = Uri.parse('$_base/alertas').replace(queryParameters: params);
+    
     final res = await http.get(uri, headers: _headers(token));
     if (res.statusCode == 200) {
-      final List data = json.decode(res.body);
-      return data.map((e) => VendedorAlertaModel.fromJson(e)).toList();
+      final response = json.decode(res.body);
+      final List dataList = response['data'] ?? [];
+      return {
+        'data': dataList.map((e) => VendedorAlertaModel.fromJson(e)).toList(),
+        'current_page': response['current_page'] ?? 1,
+        'last_page': response['last_page'] ?? 1,
+        'total': response['total'] ?? 0,
+      };
     }
     throw Exception('Error al cargar alertas');
   }

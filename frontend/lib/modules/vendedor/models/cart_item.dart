@@ -56,8 +56,8 @@ class CartItem {
   double get precioActual =>
       double.tryParse(precioController.text) ?? precioBase;
 
-  double get minPrecio => precioBase * 0.8;
-  double get maxPrecio => precioBase * 1.2;
+  double get minPrecio => precioBase * 0.25;
+  double get maxPrecio => precioBase * 1.75;
 
   bool get precioEsValido {
     final p = precioActual;

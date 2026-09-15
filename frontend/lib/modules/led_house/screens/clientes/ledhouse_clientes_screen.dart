@@ -491,7 +491,7 @@ class _LedhouseClientesScreenState extends State<LedhouseClientesScreen>
   }
 
   String _initials(String nombre) {
-    final parts = nombre.trim().split(' ');
+    final parts = nombre.trim().split(RegExp(r'\s+'));
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
@@ -503,7 +503,7 @@ class _LedhouseClientesScreenState extends State<LedhouseClientesScreen>
     final totalClientes = _clientes.length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppTheme.bgColor,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

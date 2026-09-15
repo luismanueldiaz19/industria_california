@@ -10,6 +10,7 @@ class LedhouseCliente {
   final int? diasCredito;
   final double? latitud;
   final double? longitud;
+  final DateTime? createdAt;
 
   LedhouseCliente({
     this.id,
@@ -23,6 +24,7 @@ class LedhouseCliente {
     this.diasCredito,
     this.latitud,
     this.longitud,
+    this.createdAt,
   });
 
   factory LedhouseCliente.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,9 @@ class LedhouseCliente {
       longitud: json['longitud'] != null
           ? double.tryParse(json['longitud'].toString())
           : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
     );
   }
 
@@ -60,6 +65,7 @@ class LedhouseCliente {
       'dias_credito': diasCredito,
       if (latitud != null) 'latitud': latitud,
       if (longitud != null) 'longitud': longitud,
+      if (createdAt != null) 'created_at': createdAt?.toIso8601String(),
     };
   }
 }

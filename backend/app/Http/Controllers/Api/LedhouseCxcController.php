@@ -38,11 +38,13 @@ class LedhouseCxcController extends Controller
             ->where('vendedor_id', $user->id);
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $rawSearch = trim($request->search);
+            $search = \App\Helpers\TextNormalizer::normalize($rawSearch);
             $query->where(function($q) use ($search) {
-                $q->where('documento', 'like', "%{$search}%")
+                $q->whereRaw('LOWER(documento) LIKE ?', ["%{$search}%"])
                   ->orWhereHas('cliente', function($q2) use ($search) {
-                      $q2->where('nombre', 'like', "%{$search}%");
+                      $q2->whereRaw('LOWER(nombre) LIKE ?', ["%{$search}%"])
+                         ->orWhereRaw('LOWER(documento) LIKE ?', ["%{$search}%"]);
                   });
             });
         }
@@ -66,7 +68,26 @@ class LedhouseCxcController extends Controller
             $query->orderBy('fecha_vencimiento', 'asc');
         }
 
-        return response()->json($query->paginate($request->per_page ?? 20));
+        $totalesQuery = clone $query;
+        $totalFacturado = (float) $totalesQuery->sum('monto_factura');
+        $totalPendiente = (float) $totalesQuery->sum('monto_pendiente');
+        
+        $totalesQueryVencidos = clone $query;
+        $totalVencido = (float) $totalesQueryVencidos->where('monto_pendiente', '>', 0)
+                                             ->where('estado', '!=', 'pagado')
+                                             ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'))
+                                             ->sum('monto_pendiente');
+
+        $paginator = $query->paginate($request->per_page ?? 20);
+        
+        $response = $paginator->toArray();
+        $response['totales_globales'] = [
+            'facturado' => $totalFacturado,
+            'pendiente' => $totalPendiente,
+            'vencido' => $totalVencido,
+        ];
+
+        return response()->json($response);
     }
 
     public function getMisCxcPdfUrl(Request $request)
@@ -659,12 +680,53 @@ class LedhouseCxcController extends Controller
 
         $user = $request->user();
         if ($user && $user->hasRole('vendedor')) {
-            $query->where('vendedor_id', $user->id)
-                  ->where('estado_alerta', '!=', 'procesada');
+            $query->where('vendedor_id', $user->id);
+            // Default to 'pendiente' unless dates are provided or state is provided
+            if (!$request->has('start_date') && !$request->has('end_date') && !$request->has('estado')) {
+                $query->where('estado_alerta', '!=', 'procesada');
+            }
         }
 
-        if ($request->has('estado')) {
-            $query->where('estado_alerta', $request->estado);
+        // 1. Date Range
+        if ($request->has('start_date') && $request->has('end_date') && !empty($request->start_date) && !empty($request->end_date)) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        }
+
+        // 2. Type Filter
+        if ($request->has('tipo') && $request->tipo !== 'todos' && !empty($request->tipo)) {
+            $query->where('tipo', $request->tipo);
+        }
+
+        // 3. State Filter
+        if ($request->has('estado') && $request->estado !== 'todos' && !empty($request->estado)) {
+            if ($request->estado === 'pendiente') {
+                $query->where('estado_alerta', '!=', 'procesada');
+            } else {
+                $query->where('estado_alerta', $request->estado);
+            }
+        }
+
+        // 4. Free Text Search (Client Name or Document)
+        if ($request->has('search') && trim($request->input('search')) !== '') {
+            $rawSearch = trim($request->input('search'));
+            $search = \App\Helpers\TextNormalizer::normalize($rawSearch);
+            
+            $query->where(function($q) use ($search) {
+                $q->whereHas('cxc.cliente', function ($q2) use ($search) {
+                    $q2->whereRaw('LOWER(nombre) LIKE ?', ["%{$search}%"])
+                       ->orWhereRaw('LOWER(documento) LIKE ?', ["%{$search}%"]);
+                })->orWhereHas('cxc', function ($q3) use ($search) {
+                    $q3->whereRaw('LOWER(documento) LIKE ?', ["%{$search}%"]);
+                });
+            });
+        }
+
+        if ($request->boolean('paginate')) {
+            $perPage = $request->input('per_page', 20);
+            return response()->json($query->paginate($perPage));
         }
 
         return response()->json($query->get());
@@ -681,22 +743,55 @@ class LedhouseCxcController extends Controller
         $user = $request->user();
         if ($user && $user->hasRole('vendedor')) {
             $query->where('vendedor_id', $user->id);
+            // Default to 'pendiente' unless dates or state are provided
+            if (!$request->has('start_date') && !$request->has('end_date') && !$request->has('estado')) {
+                $query->where('estado_alerta', '!=', 'procesada');
+            }
         } elseif ($request->has('vendedor_id')) {
             $query->where('vendedor_id', $request->vendedor_id);
         }
 
-        if ($request->has('estado')) {
-            $query->where('estado_alerta', $request->estado);
+        // 1. Date Range
+        if ($request->has('start_date') && $request->has('end_date') && !empty($request->start_date) && !empty($request->end_date)) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        }
+
+        // 2. Type Filter
+        if ($request->has('tipo') && $request->tipo !== 'todos' && !empty($request->tipo)) {
+            $query->where('tipo', $request->tipo);
+        }
+
+        // 3. State Filter
+        if ($request->has('estado') && $request->estado !== 'todos' && !empty($request->estado)) {
+            if ($request->estado === 'pendiente') {
+                $query->where('estado_alerta', '!=', 'procesada');
+            } else {
+                $query->where('estado_alerta', $request->estado);
+            }
+        }
+
+        // 4. Free Text Search (Client Name or Document)
+        if ($request->has('search') && trim($request->input('search')) !== '') {
+            $rawSearch = trim($request->input('search'));
+            $search = \App\Helpers\TextNormalizer::normalize($rawSearch);
+            
+            $query->where(function($q) use ($search) {
+                $q->whereHas('cxc.cliente', function ($q2) use ($search) {
+                    $q2->whereRaw('LOWER(nombre) LIKE ?', ["%{$search}%"])
+                       ->orWhereRaw('LOWER(documento) LIKE ?', ["%{$search}%"]);
+                })->orWhereHas('cxc', function ($q3) use ($search) {
+                    $q3->whereRaw('LOWER(documento) LIKE ?', ["%{$search}%"]);
+                });
+            });
         }
 
         if ($request->has('cliente_id')) {
             $query->whereHas('cxc', function ($q) use ($request) {
                 $q->where('cliente_id', $request->cliente_id);
             });
-        }
-
-        if ($request->has('tipo')) {
-            $query->where('tipo', $request->tipo);
         }
 
         $alertas = $query->get();

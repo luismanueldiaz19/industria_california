@@ -24,6 +24,11 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
   bool _hasMore = true;
   int _currentPage = 1;
   int _totalRecords = 0;
+
+  double _totalFacturadoGlobal = 0.0;
+  double _totalPendienteGlobal = 0.0;
+  double _totalVencidoGlobal = 0.0;
+
   String _searchQuery = '';
   bool _soloVencidos = false;
   bool _conAlerta = false;
@@ -89,6 +94,21 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
         _cxcs = items;
         _hasMore = data['current_page'] < data['last_page'];
         _totalRecords = data['total'] ?? 0;
+        if (data['totales_globales'] != null) {
+          _totalFacturadoGlobal =
+              double.tryParse(
+                data['totales_globales']['facturado'].toString(),
+              ) ??
+              0;
+          _totalPendienteGlobal =
+              double.tryParse(
+                data['totales_globales']['pendiente'].toString(),
+              ) ??
+              0;
+          _totalVencidoGlobal =
+              double.tryParse(data['totales_globales']['vencido'].toString()) ??
+              0;
+        }
       });
     } catch (e) {
       if (mounted) {
@@ -123,6 +143,21 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
         _cxcs.addAll(items);
         _hasMore = data['current_page'] < data['last_page'];
         _totalRecords = data['total'] ?? _totalRecords;
+        if (data['totales_globales'] != null) {
+          _totalFacturadoGlobal =
+              double.tryParse(
+                data['totales_globales']['facturado'].toString(),
+              ) ??
+              0;
+          _totalPendienteGlobal =
+              double.tryParse(
+                data['totales_globales']['pendiente'].toString(),
+              ) ??
+              0;
+          _totalVencidoGlobal =
+              double.tryParse(data['totales_globales']['vencido'].toString()) ??
+              0;
+        }
       });
     } catch (e) {
       setState(() => _currentPage--);
@@ -171,30 +206,6 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
   @override
   Widget build(BuildContext context) {
     final themeStyle = Theme.of(context).textTheme;
-
-    double totalFacturado = 0;
-    double totalPendiente = 0;
-    double totalVencido = 0;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    for (var cxc in _cxcs) {
-      final fac = double.tryParse(cxc['monto_factura']?.toString() ?? '0') ?? 0;
-      final pend =
-          double.tryParse(cxc['monto_pendiente']?.toString() ?? '0') ?? 0;
-      totalFacturado += fac;
-      totalPendiente += pend;
-
-      final dateStr = cxc['fecha_vencimiento'];
-      if (dateStr != null && pend > 0) {
-        try {
-          final date = DateTime.parse(dateStr);
-          if (date.isBefore(today)) {
-            totalVencido += pend;
-          }
-        } catch (_) {}
-      }
-    }
 
     return Scaffold(
       backgroundColor: AppTheme.bgColor,
@@ -257,11 +268,18 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                       decoration: InputDecoration(
                         hintText: 'Buscar documento o cliente...',
                         hintStyle: const TextStyle(fontSize: 13),
-                        prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
                         filled: true,
                         fillColor: Colors.grey.shade100,
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 12,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide.none,
@@ -324,7 +342,10 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                     children: [
                       const Text(
                         'Ordenar por monto: ',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Container(
@@ -337,13 +358,31 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String?>(
                             value: _ordenMonto,
-                            hint: const Text('Por defecto', style: TextStyle(fontSize: 12)),
-                            style: const TextStyle(fontSize: 12, color: Colors.black87),
-                            icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+                            hint: const Text(
+                              'Por defecto',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black87,
+                            ),
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down,
+                              size: 16,
+                            ),
                             items: const [
-                              DropdownMenuItem(value: null, child: Text('Por defecto (Fecha)')),
-                              DropdownMenuItem(value: 'asc', child: Text('Menor a Mayor (ASC)')),
-                              DropdownMenuItem(value: 'desc', child: Text('Mayor a Menor (DESC)')),
+                              DropdownMenuItem(
+                                value: null,
+                                child: Text('Por defecto (Fecha)'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'asc',
+                                child: Text('Menor a Mayor (ASC)'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'desc',
+                                child: Text('Mayor a Menor (DESC)'),
+                              ),
                             ],
                             onChanged: (val) {
                               setState(() {
@@ -385,7 +424,11 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                   ),
           ),
           if (_cxcs.isNotEmpty)
-            _buildTotales(totalFacturado, totalPendiente, totalVencido),
+            _buildTotales(
+              _totalFacturadoGlobal,
+              _totalPendienteGlobal,
+              _totalVencidoGlobal,
+            ),
         ],
       ),
     );
@@ -414,7 +457,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
             Expanded(
               child: _buildMiniTotalCard(
                 'FACTURADO',
-                currencyFormatter.format(facturado),
+                currencyFormatter.format(_totalFacturadoGlobal),
                 AppTheme.primaryBlue,
               ),
             ),
@@ -422,7 +465,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
             Expanded(
               child: _buildMiniTotalCard(
                 'PENDIENTE',
-                currencyFormatter.format(pendiente),
+                currencyFormatter.format(_totalPendienteGlobal),
                 const Color(0xFFFB8C00),
               ),
             ),
@@ -430,7 +473,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
             Expanded(
               child: _buildMiniTotalCard(
                 'VENCIDO',
-                currencyFormatter.format(vencido),
+                currencyFormatter.format(_totalVencidoGlobal),
                 Colors.red.shade700,
               ),
             ),
@@ -585,22 +628,22 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                               ),
                             ),
                           Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              estado.toUpperCase(),
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
                               ),
-                              decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                estado.toUpperCase(),
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.2,
-                                ),
                             ),
                           ),
                         ],
