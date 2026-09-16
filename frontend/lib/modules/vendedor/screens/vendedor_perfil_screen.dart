@@ -2,10 +2,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../../../core/auth_provider.dart';
-import '../../../../core/services/profile_service.dart';
-import '../../../core/app_theme.dart';
-import '../../auth/login_screen.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../../core/services/profile_service.dart';
+import '../../../core/themes/app_theme.dart';
+import '../../auth/screens/login_screen.dart';
 
 class VendedorPerfilScreen extends StatefulWidget {
   const VendedorPerfilScreen({super.key});

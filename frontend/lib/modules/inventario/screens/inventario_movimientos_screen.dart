@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:industria_california/core/app_theme.dart';
+import 'package:industria_california/core/themes/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import '../providers/inventario_movimiento_provider.dart';
 import '../models/inventario_movimiento.dart';
-import '../../../widgets/general_header.dart';
+import '../../../core/widgets/general_header.dart';
 
 class InventarioMovimientosScreen extends StatefulWidget {
   const InventarioMovimientosScreen({super.key});

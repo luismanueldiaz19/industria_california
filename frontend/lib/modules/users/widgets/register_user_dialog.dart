@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/auth_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class RegisterUserDialog extends StatefulWidget {
   const RegisterUserDialog({super.key});

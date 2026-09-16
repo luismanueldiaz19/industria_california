@@ -51,6 +51,14 @@ class RolesAndPermissionsSeeder extends Seeder {
 
             // USUARIOS
             'gestionar_usuarios',
+
+            // PEDIDOS
+            'ver_pedidos',
+            'crear_pedidos',
+            'editar_pedidos',
+            'eliminar_pedidos',
+            'enviar_pedidos',
+            'facturar_pedidos',
             
    
         ];
@@ -85,6 +93,12 @@ class RolesAndPermissionsSeeder extends Seeder {
         $vendedor->givePermissionTo([
             'ver_clientes',
             'ver_facturas',
+             'ver_pedidos',
+            'crear_pedidos',
+            'editar_pedidos',
+            'eliminar_pedidos',
+            'enviar_pedidos',
+            'facturar_pedidos'
         ]);
     }
 }

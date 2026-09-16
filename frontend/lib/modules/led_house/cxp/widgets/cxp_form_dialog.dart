@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/app_theme.dart';
+import '../../../../core/themes/app_theme.dart';
 import '../models/cxp_model.dart';
 import '../providers/cxp_provider.dart';
 
@@ -166,18 +166,17 @@ class _CxpFormDialogState extends State<CxpFormDialog> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      
+
                       _buildField(
                         controller: _proveedorController,
                         label: 'Proveedor',
                         hint: 'Nombre del proveedor',
                         icon: Icons.store_rounded,
                         iconColor: AppTheme.dangerColor,
-                        validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Requerido'
-                            : null,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Requerido' : null,
                       ),
-                      
+
                       const SizedBox(height: 16),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,9 +188,14 @@ class _CxpFormDialogState extends State<CxpFormDialog> {
                               hint: '0.00',
                               icon: Icons.attach_money_rounded,
                               iconColor: AppTheme.dangerColor,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'^\d+(\.\d{0,2})?$')),
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+(\.\d{0,2})?$'),
+                                ),
                               ],
                               validator: (v) => v == null || v.trim().isEmpty
                                   ? 'Requerido'
@@ -206,9 +210,14 @@ class _CxpFormDialogState extends State<CxpFormDialog> {
                               hint: '0.00',
                               icon: Icons.money_off_rounded,
                               iconColor: Colors.grey.shade600,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'^\d+(\.\d{0,2})?$')),
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+(\.\d{0,2})?$'),
+                                ),
                               ],
                               optional: true,
                             ),
@@ -216,7 +225,7 @@ class _CxpFormDialogState extends State<CxpFormDialog> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      
+
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -247,29 +256,43 @@ class _CxpFormDialogState extends State<CxpFormDialog> {
                                   );
                                 },
                               );
-                              if (date != null) setState(() => _fechaVencimiento = date);
+                              if (date != null)
+                                setState(() => _fechaVencimiento = date);
                             },
                             child: IgnorePointer(
                               child: TextFormField(
                                 key: ValueKey(_fechaVencimiento),
-                                initialValue: DateFormat('dd/MM/yyyy').format(_fechaVencimiento),
-                                style: const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
+                                initialValue: DateFormat(
+                                  'dd/MM/yyyy',
+                                ).format(_fechaVencimiento),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF1F2937),
+                                ),
                                 decoration: InputDecoration(
                                   prefixIcon: Container(
                                     margin: const EdgeInsets.all(10),
                                     width: 36,
                                     height: 36,
                                     decoration: BoxDecoration(
-                                      color: AppTheme.dangerColor.withOpacity(0.1),
+                                      color: AppTheme.dangerColor.withOpacity(
+                                        0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Icon(Icons.calendar_today_rounded, color: AppTheme.dangerColor, size: 18),
+                                    child: const Icon(
+                                      Icons.calendar_today_rounded,
+                                      color: AppTheme.dangerColor,
+                                      size: 18,
+                                    ),
                                   ),
                                   filled: true,
                                   fillColor: const Color(0xFFF9FAFB),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade200,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
@@ -288,7 +311,7 @@ class _CxpFormDialogState extends State<CxpFormDialog> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 28),
 
                       // ── Buttons ─────────────────────────────────
@@ -302,7 +325,9 @@ class _CxpFormDialogState extends State<CxpFormDialog> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.grey.shade700,
                                 side: BorderSide(color: Colors.grey.shade300),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -322,7 +347,9 @@ class _CxpFormDialogState extends State<CxpFormDialog> {
                                 backgroundColor: AppTheme.dangerColor,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -543,7 +570,10 @@ class _CxpFormDialogState extends State<CxpFormDialog> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: value,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Colors.grey,
+          ),
           decoration: InputDecoration(
             prefixIcon: Container(
               margin: const EdgeInsets.all(10),
@@ -576,7 +606,10 @@ class _CxpFormDialogState extends State<CxpFormDialog> {
           items: items.map((e) {
             return DropdownMenuItem(
               value: e,
-              child: Text(e.toUpperCase(), style: const TextStyle(fontSize: 14)),
+              child: Text(
+                e.toUpperCase(),
+                style: const TextStyle(fontSize: 14),
+              ),
             );
           }).toList(),
           onChanged: onChanged,

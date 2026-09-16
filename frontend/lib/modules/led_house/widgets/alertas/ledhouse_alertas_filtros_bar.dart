@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/app_theme.dart';
+import '../../../../core/themes/app_theme.dart';
 
 class LedhouseAlertasFiltrosBar extends StatelessWidget {
   final List<String> vendedores;
   final List<String> tipos;
-  
+
   final String filtroVendedor;
   final String searchQuery;
   final String filtroTipo;
   final bool soloRepetidas;
-  
+
   final ValueChanged<String?> onChangedVendedor;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String?> onChangedTipo;
@@ -61,11 +61,7 @@ class LedhouseAlertasFiltrosBar extends StatelessWidget {
               ),
               SizedBox(
                 width: 140,
-                child: _buildDropdownFiltro(
-                  tipos,
-                  filtroTipo,
-                  onChangedTipo,
-                ),
+                child: _buildDropdownFiltro(tipos, filtroTipo, onChangedTipo),
               ),
               const SizedBox(width: 8),
               Row(
@@ -85,7 +81,9 @@ class LedhouseAlertasFiltrosBar extends StatelessWidget {
                     child: Switch(
                       value: soloRepetidas,
                       onChanged: onChangedSoloRepetidas,
-                      activeTrackColor: AppTheme.ledhouseBlue.withValues(alpha: 0.5),
+                      activeTrackColor: AppTheme.ledhouseBlue.withValues(
+                        alpha: 0.5,
+                      ),
                       activeThumbColor: AppTheme.ledhouseBlue,
                     ),
                   ),
@@ -120,13 +118,19 @@ class LedhouseAlertasFiltrosBar extends StatelessWidget {
         onChanged: onChanged,
         style: const TextStyle(fontSize: 13, color: Colors.white),
         decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
           border: InputBorder.none,
           isDense: true,
           hintText: hint,
           hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
           prefixIcon: Icon(Icons.search, size: 18, color: Colors.grey.shade500),
-          prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 36),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 40,
+            minHeight: 36,
+          ),
         ),
       ),
     );

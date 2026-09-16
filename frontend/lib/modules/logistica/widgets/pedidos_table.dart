@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/auth_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/pedido.dart';
 import '../providers/pedido_provider.dart';
 import 'pedido_detalle_dialog.dart';

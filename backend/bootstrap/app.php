@@ -15,5 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+      $exceptions->render(function (QueryException $e, $request) {
+            if ($request->is('api/*')) {
+                Log::error('Error de base de datos', ['mensaje' => $e->getMessage()]);
+
+                return response()->json([
+                    'message' => 'Ocurrió un error al procesar la solicitud. Intenta de nuevo.',
+                ], 500);
+            }
+        });
     })->create();

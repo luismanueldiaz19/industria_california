@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../../../core/auth_provider.dart';
-import '../../../../core/app_theme.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../../core/themes/app_theme.dart';
 import '../services/inventario_sync_service.dart';
 
 /// Wizard de Sincronizacion de Inventario — 3 pasos: Archivo → Preview → Resultado

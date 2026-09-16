@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../../core/app_theme.dart';
+import '../../../../../core/themes/app_theme.dart';
 
 class CxcClienteTotalsBar extends StatelessWidget {
   final double totalFacturado;
@@ -117,7 +117,9 @@ class _TotalItem extends StatelessWidget {
     );
 
     final child = Row(
-      mainAxisAlignment: isMobile ? MainAxisAlignment.start : MainAxisAlignment.center,
+      mainAxisAlignment: isMobile
+          ? MainAxisAlignment.start
+          : MainAxisAlignment.center,
       children: [
         Container(
           padding: const EdgeInsets.all(8),

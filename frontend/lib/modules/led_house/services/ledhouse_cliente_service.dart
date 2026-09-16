@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 import '../models/ledhouse_cliente.dart';
-import '../../../services/http_service.dart';
-import '../../../core/utils/text_normalizer.dart';
+import '../../../core/services/http_service.dart';
+import '../../../core/services/text_normalizer.dart';
 
 class LedhouseClienteService {
   final HttpService _http = HttpService();
@@ -22,13 +22,17 @@ class LedhouseClienteService {
     return [];
   }
 
-  Future<Map<String, dynamic>> getPaginatedClientes({String? search, int page = 1, String sort = 'recent'}) async {
+  Future<Map<String, dynamic>> getPaginatedClientes({
+    String? search,
+    int page = 1,
+    String sort = 'recent',
+  }) async {
     final queryParams = <String, String>{
       'paginate': 'true',
       'page': page.toString(),
       'sort': sort,
     };
-    
+
     if (search != null && search.isNotEmpty) {
       queryParams['search'] = TextNormalizer.normalizar(search);
     }
@@ -44,7 +48,7 @@ class LedhouseClienteService {
         'total': response['total'] ?? 0,
       };
     }
-    
+
     return {
       'data': <LedhouseCliente>[],
       'current_page': 1,

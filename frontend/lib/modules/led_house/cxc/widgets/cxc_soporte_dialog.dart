@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/app_theme.dart';
+import '../../../../core/themes/app_theme.dart';
 import '../models/cxc_model.dart';
 import '../providers/cxc_provider.dart';
 
@@ -24,7 +24,10 @@ class _CxcSoporteDialogState extends State<CxcSoporteDialog> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<CxcProvider>(context, listen: false).fetchSoportes(widget.cxc.id!);
+      Provider.of<CxcProvider>(
+        context,
+        listen: false,
+      ).fetchSoportes(widget.cxc.id!);
     });
   }
 
@@ -54,11 +57,17 @@ class _CxcSoporteDialogState extends State<CxcSoporteDialog> {
     if (success) {
       _notaController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nota guardada'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Nota guardada'),
+          backgroundColor: Colors.green,
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${provider.error}'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Error: ${provider.error}'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -85,14 +94,25 @@ class _CxcSoporteDialogState extends State<CxcSoporteDialog> {
                 Expanded(
                   child: Text(
                     'Gestión de Cobro - ${widget.cxc.cliente}',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20, color: Colors.white70),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: Colors.white70,
+                  ),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -110,18 +130,32 @@ class _CxcSoporteDialogState extends State<CxcSoporteDialog> {
                       children: [
                         const Text(
                           'Historial de Intervenciones',
-                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white70),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Colors.white70,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Expanded(
                           child: Consumer<CxcProvider>(
                             builder: (context, provider, child) {
                               if (provider.isLoadingSoportes) {
-                                return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                                return const Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                );
                               }
                               if (provider.soportes.isEmpty) {
                                 return Center(
-                                  child: Text('No hay historial registrado.', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                                  child: Text(
+                                    'No hay historial registrado.',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 13,
+                                    ),
+                                  ),
                                 );
                               }
                               return ListView.builder(
@@ -134,19 +168,29 @@ class _CxcSoporteDialogState extends State<CxcSoporteDialog> {
                                     decoration: BoxDecoration(
                                       color: darkBg,
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.grey.shade800),
+                                      border: Border.all(
+                                        color: Colors.grey.shade800,
+                                      ),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
-                                            Icon(Icons.phone_in_talk_rounded, color: Colors.blueAccent, size: 14),
+                                            Icon(
+                                              Icons.phone_in_talk_rounded,
+                                              color: Colors.blueAccent,
+                                              size: 14,
+                                            ),
                                             const SizedBox(width: 6),
                                             Expanded(
                                               child: Text(
                                                 soporte.nota,
-                                                style: const TextStyle(fontSize: 13, color: Colors.white),
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.white,
+                                                ),
                                               ),
                                             ),
                                           ],
@@ -154,7 +198,10 @@ class _CxcSoporteDialogState extends State<CxcSoporteDialog> {
                                         const SizedBox(height: 6),
                                         Text(
                                           'Gestión: ${soporte.fecha} | Próx. Visita: ${soporte.fechaVisita ?? 'N/A'}',
-                                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey.shade500,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -180,28 +227,54 @@ class _CxcSoporteDialogState extends State<CxcSoporteDialog> {
                         children: [
                           const Text(
                             'Nueva Nota',
-                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white70),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: Colors.white70,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _notaController,
                             maxLines: 4,
-                            style: const TextStyle(fontSize: 13, color: Colors.white),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.white,
+                            ),
                             decoration: InputDecoration(
                               hintText: 'Nota de lo conversado...',
-                              hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                              hintStyle: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 13,
+                              ),
                               alignLabelWithHint: true,
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade700)),
-                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade800)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade800,
+                                ),
+                              ),
                               filled: true,
                               fillColor: inputDark,
                             ),
                             validator: (v) => v!.isEmpty ? 'Requerido' : null,
                           ),
                           const SizedBox(height: 16),
-                          Text('Agendar Próxima Visita / Cobro:', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                          Text(
+                            'Agendar Próxima Visita / Cobro:',
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 12,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           InkWell(
                             onTap: () async {
@@ -224,20 +297,45 @@ class _CxcSoporteDialogState extends State<CxcSoporteDialog> {
                                   );
                                 },
                               );
-                              if (date != null) setState(() => _fechaVisita = date);
+                              if (date != null)
+                                setState(() => _fechaVisita = date);
                             },
                             child: IgnorePointer(
                               child: TextFormField(
                                 key: ValueKey(_fechaVisita),
-                                initialValue: DateFormat('dd/MM/yyyy').format(_fechaVisita),
-                                style: const TextStyle(fontSize: 13, color: Colors.white),
+                                initialValue: DateFormat(
+                                  'dd/MM/yyyy',
+                                ).format(_fechaVisita),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white,
+                                ),
                                 decoration: InputDecoration(
-                                  prefixIcon: Icon(Icons.calendar_month_rounded, color: Colors.grey.shade500, size: 16),
-                                  prefixIconConstraints: const BoxConstraints(minWidth: 36),
+                                  prefixIcon: Icon(
+                                    Icons.calendar_month_rounded,
+                                    color: Colors.grey.shade500,
+                                    size: 16,
+                                  ),
+                                  prefixIconConstraints: const BoxConstraints(
+                                    minWidth: 36,
+                                  ),
                                   isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade700)),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade800)),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade800,
+                                    ),
+                                  ),
                                   filled: true,
                                   fillColor: inputDark,
                                 ),
@@ -250,13 +348,35 @@ class _CxcSoporteDialogState extends State<CxcSoporteDialog> {
                             child: ElevatedButton.icon(
                               onPressed: _isSaving ? null : _save,
                               icon: _isSaving
-                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                  : const Icon(Icons.save_rounded, color: Colors.white, size: 16),
-                              label: const Text('Guardar', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                                  ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.save_rounded,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                              label: const Text(
+                                'Guardar',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blueAccent,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                                 elevation: 0,
                               ),
                             ),
@@ -274,4 +394,3 @@ class _CxcSoporteDialogState extends State<CxcSoporteDialog> {
     );
   }
 }
-

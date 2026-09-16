@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../core/auth_provider.dart';
-import '../../../core/app_theme.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../../core/themes/app_theme.dart';
 import '../services/vendedor_cxc_service.dart';
 
 class VendedorCxcDetalleScreen extends StatefulWidget {
@@ -309,43 +309,73 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                               items: const [
                                 DropdownMenuItem(
                                   value: 'pago_recibido',
-                                  child: Text('💰 Pago Recibido', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    '💰 Pago Recibido',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 DropdownMenuItem(
                                   value: 'informacion',
-                                  child: Text('📋 Información', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    '📋 Información',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 DropdownMenuItem(
                                   value: 'consulta',
-                                  child: Text('❓ Consulta', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    '❓ Consulta',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 DropdownMenuItem(
                                   value: 'credito',
-                                  child: Text('📄 Nota de Crédito', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    '📄 Nota de Crédito',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 DropdownMenuItem(
                                   value: 'debito',
-                                  child: Text('🧾 Nota de Débito', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    '🧾 Nota de Débito',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 DropdownMenuItem(
                                   value: 'devolucion',
-                                  child: Text('🔄 Devolución', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    '🔄 Devolución',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 DropdownMenuItem(
                                   value: 'retencion',
-                                  child: Text('📑 Carta de Retención', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    '📑 Carta de Retención',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 DropdownMenuItem(
                                   value: 'diferencia',
-                                  child: Text('⚖️ Diferencia de precio', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    '⚖️ Diferencia de precio',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 DropdownMenuItem(
                                   value: 'mer_no_entregada',
-                                  child: Text('📦 Mercancía no entregada', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    '📦 Mercancía no entregada',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 DropdownMenuItem(
                                   value: 'anular',
-                                  child: Text('❌ Anular Factura', overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    '❌ Anular Factura',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                               onChanged: (v) =>

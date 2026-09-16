@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../../core/app_theme.dart';
+import '../../../core/themes/app_theme.dart';
 import '../../logistica/models/pedido.dart';
 import '../../logistica/models/pedido_detalle.dart';
 

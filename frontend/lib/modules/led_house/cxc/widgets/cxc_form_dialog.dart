@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/app_theme.dart';
+import '../../../../core/themes/app_theme.dart';
 import '../models/cxc_model.dart';
 import '../providers/cxc_provider.dart';
 import '../../providers/ledhouse_cliente_provider.dart';
-import '../../../../core/auth_provider.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../../../vendedor/services/vendedor_cxc_service.dart';
 
 class CxcFormDialog extends StatefulWidget {
@@ -72,7 +72,9 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
     if (auth.isAdmin) {
       setState(() => _isAdmin = true);
       try {
-        final vends = await VendedorCxcService().getVendedores(auth.token ?? '');
+        final vends = await VendedorCxcService().getVendedores(
+          auth.token ?? '',
+        );
         setState(() => _vendedores = vends);
       } catch (e) {
         debugPrint('Error loading vendors: $e');
@@ -90,10 +92,15 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
 
   void _calculateFechaVencimiento() {
     if (_fechaFactura == null || _selectedClienteId == null) return;
-    
-    final provider = Provider.of<LedhouseClienteProvider>(context, listen: false);
-    final index = provider.clientes.indexWhere((c) => c.id == _selectedClienteId);
-    
+
+    final provider = Provider.of<LedhouseClienteProvider>(
+      context,
+      listen: false,
+    );
+    final index = provider.clientes.indexWhere(
+      (c) => c.id == _selectedClienteId,
+    );
+
     if (index != -1) {
       final cliente = provider.clientes[index];
       final dias = cliente.diasCredito ?? 0;
@@ -243,7 +250,7 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      
+
                       Consumer<LedhouseClienteProvider>(
                         builder: (context, provider, child) {
                           if (provider.isLoading && provider.clientes.isEmpty) {
@@ -265,7 +272,9 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                               ),
                               const SizedBox(height: 8),
                               DropdownMenu<int>(
-                                enabled: widget.preselectedClienteId == null && !_isEditing,
+                                enabled:
+                                    widget.preselectedClienteId == null &&
+                                    !_isEditing,
                                 initialSelection: _selectedClienteId,
                                 expandedInsets: EdgeInsets.zero,
                                 inputDecorationTheme: InputDecorationTheme(
@@ -273,7 +282,9 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                                   fillColor: const Color(0xFFF9FAFB),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade200,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
@@ -292,16 +303,25 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: AppTheme.successColor.withOpacity(0.1),
+                                    color: AppTheme.successColor.withOpacity(
+                                      0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Icon(Icons.person_rounded, color: AppTheme.successColor, size: 18),
+                                  child: const Icon(
+                                    Icons.person_rounded,
+                                    color: AppTheme.successColor,
+                                    size: 18,
+                                  ),
                                 ),
                                 enableFilter: true,
                                 enableSearch: true,
                                 menuHeight: 300,
                                 hintText: 'Seleccione un cliente',
-                                textStyle: const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
+                                textStyle: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF1F2937),
+                                ),
                                 dropdownMenuEntries: provider.clientes.map((c) {
                                   return DropdownMenuEntry<int>(
                                     value: c.id ?? 0,
@@ -317,7 +337,7 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                           );
                         },
                       ),
-                      
+
                       const SizedBox(height: 16),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,9 +349,14 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                               hint: '0.00',
                               icon: Icons.attach_money_rounded,
                               iconColor: AppTheme.successColor,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'^\d+(\.\d{0,2})?$')),
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+(\.\d{0,2})?$'),
+                                ),
                               ],
                               validator: (v) => v == null || v.trim().isEmpty
                                   ? 'Requerido'
@@ -346,9 +371,14 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                               hint: '0.00',
                               icon: Icons.money_off_rounded,
                               iconColor: Colors.grey.shade600,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'^\d+(\.\d{0,2})?$')),
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+(\.\d{0,2})?$'),
+                                ),
                               ],
                               optional: true,
                             ),
@@ -356,7 +386,7 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      
+
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -395,28 +425,44 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                             child: IgnorePointer(
                               child: TextFormField(
                                 key: ValueKey(_fechaFactura),
-                                initialValue: _fechaFactura != null 
-                                  ? DateFormat('dd/MM/yyyy').format(_fechaFactura!)
-                                  : '',
-                                style: const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
+                                initialValue: _fechaFactura != null
+                                    ? DateFormat(
+                                        'dd/MM/yyyy',
+                                      ).format(_fechaFactura!)
+                                    : '',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF1F2937),
+                                ),
                                 decoration: InputDecoration(
                                   hintText: 'Seleccione...',
-                                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey.shade400,
+                                    fontSize: 13,
+                                  ),
                                   prefixIcon: Container(
                                     margin: const EdgeInsets.all(10),
                                     width: 36,
                                     height: 36,
                                     decoration: BoxDecoration(
-                                      color: AppTheme.successColor.withOpacity(0.1),
+                                      color: AppTheme.successColor.withOpacity(
+                                        0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Icon(Icons.event_available_rounded, color: AppTheme.successColor, size: 18),
+                                    child: const Icon(
+                                      Icons.event_available_rounded,
+                                      color: AppTheme.successColor,
+                                      size: 18,
+                                    ),
                                   ),
                                   filled: true,
                                   fillColor: const Color(0xFFF9FAFB),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade200,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
@@ -435,7 +481,7 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                           ),
                         ],
                       ),
-                      
+
                       if (_isAdmin) ...[
                         const SizedBox(height: 16),
                         Column(
@@ -458,16 +504,24 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: AppTheme.successColor.withOpacity(0.1),
+                                    color: AppTheme.successColor.withOpacity(
+                                      0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Icon(Icons.person_pin_rounded, color: AppTheme.successColor, size: 18),
+                                  child: const Icon(
+                                    Icons.person_pin_rounded,
+                                    color: AppTheme.successColor,
+                                    size: 18,
+                                  ),
                                 ),
                                 filled: true,
                                 fillColor: const Color(0xFFF9FAFB),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
-                                  borderSide: BorderSide(color: Colors.grey.shade200),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade200,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
@@ -485,10 +539,13 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                               items: _vendedores.map((v) {
                                 return DropdownMenuItem<int>(
                                   value: v['id'],
-                                  child: Text('${v['name']} (@${v['username']})'),
+                                  child: Text(
+                                    '${v['name']} (@${v['username']})',
+                                  ),
                                 );
                               }).toList(),
-                              onChanged: (val) => setState(() => _selectedVendedorId = val),
+                              onChanged: (val) =>
+                                  setState(() => _selectedVendedorId = val),
                             ),
                           ],
                         ),
@@ -509,8 +566,13 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                           IgnorePointer(
                             child: TextFormField(
                               key: ValueKey(_fechaVencimiento),
-                              initialValue: DateFormat('dd/MM/yyyy').format(_fechaVencimiento),
-                              style: const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
+                              initialValue: DateFormat(
+                                'dd/MM/yyyy',
+                              ).format(_fechaVencimiento),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF1F2937),
+                              ),
                               decoration: InputDecoration(
                                 prefixIcon: Container(
                                   margin: const EdgeInsets.all(10),
@@ -520,13 +582,19 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                                     color: Colors.grey.shade300,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: Icon(Icons.calendar_today_rounded, color: Colors.grey.shade600, size: 18),
+                                  child: Icon(
+                                    Icons.calendar_today_rounded,
+                                    color: Colors.grey.shade600,
+                                    size: 18,
+                                  ),
                                 ),
                                 filled: true,
                                 fillColor: const Color(0xFFF3F4F6),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
-                                  borderSide: BorderSide(color: Colors.grey.shade200),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade200,
+                                  ),
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
@@ -537,7 +605,7 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 28),
 
                       // ── Buttons ─────────────────────────────────
@@ -551,7 +619,9 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.grey.shade700,
                                 side: BorderSide(color: Colors.grey.shade300),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -571,7 +641,9 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                                 backgroundColor: AppTheme.successColor,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -792,7 +864,10 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: value,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Colors.grey,
+          ),
           decoration: InputDecoration(
             prefixIcon: Container(
               margin: const EdgeInsets.all(10),
@@ -825,7 +900,10 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
           items: items.map((e) {
             return DropdownMenuItem(
               value: e,
-              child: Text(e.toUpperCase(), style: const TextStyle(fontSize: 14)),
+              child: Text(
+                e.toUpperCase(),
+                style: const TextStyle(fontSize: 14),
+              ),
             );
           }).toList(),
           onChanged: onChanged,

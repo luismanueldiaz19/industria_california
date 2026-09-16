@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/app_theme.dart';
-import '../../../../core/constants.dart';
-import '../../../../services/http_service.dart';
-import '../../../../widgets/general_header.dart';
-import '../../../../widgets/zoom_dialog.dart';
+import '../../../core/themes/app_theme.dart';
+import '../../../core/utils/constants.dart';
+import '../../../core/services/http_service.dart';
+import '../../../core/widgets/general_header.dart';
+import '../../../core/widgets/zoom_dialog.dart';
 import '../cxc/providers/cxc_provider.dart';
 import '../models/cxc_alerta_model.dart';
 import '../services/ledhouse_cxc_alerta_service.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/auth_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/ruta.dart';
 import '../providers/ruta_provider.dart';
 import 'ruta_detalle_screen.dart';
@@ -285,13 +285,18 @@ class _RutasScreenState extends State<RutasScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.remove_red_eye, color: Colors.greenAccent, size: 20),
+                            icon: const Icon(
+                              Icons.remove_red_eye,
+                              color: Colors.greenAccent,
+                              size: 20,
+                            ),
                             tooltip: 'Ver Detalle (Despacho)',
                             onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => RutaDetalleScreen(ruta: ruta),
+                                  builder: (context) =>
+                                      RutaDetalleScreen(ruta: ruta),
                                 ),
                               );
                             },

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../../core/app_theme.dart';
+import '../../../../core/themes/app_theme.dart';
 
 class LedhouseAlertasTotalsBar extends StatelessWidget {
   final double totalInformado;

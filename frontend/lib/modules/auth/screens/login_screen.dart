@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/auth_provider.dart';
-import '../../models/company.dart';
-import '../../main.dart';
-import '../vendedor/screens/vendedor_main_layout.dart';
+import '../providers/auth_provider.dart';
+import '../../../models/company.dart';
+import '../../../main.dart';
+import '../../vendedor/screens/vendedor_main_layout.dart';
 import 'forgot_password_screen.dart';
-import 'widgets/auth_text_field.dart';
-import 'widgets/auth_submit_button.dart';
+import '../widgets/auth_text_field.dart';
+import '../widgets/auth_submit_button.dart';
 // import 'widgets/auth_quick_credential_card.dart';
-import 'widgets/login_branding_panel.dart';
+import '../widgets/login_branding_panel.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

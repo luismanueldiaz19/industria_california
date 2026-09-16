@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../../core/app_theme.dart';
-import '../../../core/constants.dart';
-import '../../../services/http_service.dart';
+import '../../../core/themes/app_theme.dart';
+import '../../../core/utils/constants.dart';
+import '../../../core/services/http_service.dart';
 import '../providers/ledhouse_provider.dart';
 import '../componentes/add_registro_dialog_widget.dart';
 import '../componentes/dialog_confimacion_delete.dart';
@@ -124,7 +124,9 @@ class _LedhouseDetallesCuentasState extends State<LedhouseDetallesCuentas> {
         );
       }
 
-      final res = await HttpService().get('ledhouse/estado-resultado/pdf-url$queryString');
+      final res = await HttpService().get(
+        'ledhouse/estado-resultado/pdf-url$queryString',
+      );
       final url = Uri.parse(res['url']);
 
       if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {

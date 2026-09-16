@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../../core/app_theme.dart';
+import '../../../../../core/themes/app_theme.dart';
 import '../../models/cxc_model.dart';
 import '../../providers/cxc_provider.dart';
 import '../../widgets/cxc_form_dialog.dart';
@@ -26,7 +26,8 @@ class CxcClienteDataTable extends StatelessWidget {
   });
 
   bool _isPastDue(String fechaVencimiento, String estado) {
-    if (estado.toLowerCase() == 'pagado' || estado.toLowerCase() == 'cancelado') {
+    if (estado.toLowerCase() == 'pagado' ||
+        estado.toLowerCase() == 'cancelado') {
       return false;
     }
     try {
@@ -43,7 +44,8 @@ class CxcClienteDataTable extends StatelessWidget {
   }
 
   int _diasVencidos(String fechaVencimiento, String estado) {
-    if (estado.toLowerCase() == 'pagado' || estado.toLowerCase() == 'cancelado') {
+    if (estado.toLowerCase() == 'pagado' ||
+        estado.toLowerCase() == 'cancelado') {
       return 0;
     }
     try {
@@ -92,11 +94,21 @@ class CxcClienteDataTable extends StatelessWidget {
                 style: const TextStyle(color: Colors.white, fontSize: 13),
                 decoration: InputDecoration(
                   hintText: 'Buscar por documento...',
-                  hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 18),
+                  hintStyle: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 13,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: Colors.grey,
+                    size: 18,
+                  ),
                   filled: true,
                   fillColor: AppTheme.darkInputColor,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 0,
+                    horizontal: 12,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: AppTheme.darkBorderColor),
@@ -126,12 +138,16 @@ class CxcClienteDataTable extends StatelessWidget {
           else
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(12),
+                ),
                 child: SingleChildScrollView(
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: DataTable(
-                      headingRowColor: WidgetStateProperty.all(AppTheme.darkBgColor),
+                      headingRowColor: WidgetStateProperty.all(
+                        AppTheme.darkBgColor,
+                      ),
                       dataRowMinHeight: 45,
                       dataRowMaxHeight: 45,
                       headingRowHeight: 40,
@@ -149,34 +165,69 @@ class CxcClienteDataTable extends StatelessWidget {
                         DataColumn(label: Text('ACCIONES')),
                       ],
                       rows: cxcs.map((cxc) {
-                        final pastDue = _isPastDue(cxc.fechaVencimiento, cxc.estado);
-                        final dias = _diasVencidos(cxc.fechaVencimiento, cxc.estado);
+                        final pastDue = _isPastDue(
+                          cxc.fechaVencimiento,
+                          cxc.estado,
+                        );
+                        final dias = _diasVencidos(
+                          cxc.fechaVencimiento,
+                          cxc.estado,
+                        );
 
                         return DataRow(
                           cells: [
                             DataCell(
                               Row(
                                 children: [
-                                  if (cliente['whatsapp'] != null && cliente['whatsapp'].toString().trim().isNotEmpty)
+                                  if (cliente['whatsapp'] != null &&
+                                      cliente['whatsapp']
+                                          .toString()
+                                          .trim()
+                                          .isNotEmpty)
                                     IconButton(
-                                      icon: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.green, size: 16),
+                                      icon: const FaIcon(
+                                        FontAwesomeIcons.whatsapp,
+                                        color: Colors.green,
+                                        size: 16,
+                                      ),
                                       tooltip: 'WhatsApp',
                                       padding: const EdgeInsets.only(right: 8),
                                       constraints: const BoxConstraints(),
                                       onPressed: () async {
-                                        String mensaje = 'Hola *${cliente['nombre']}*,\n\nLe recordamos que tiene un saldo pendiente con *Ledhouse*.\n\n';
-                                        mensaje += '*Doc:* ${cxc.documento}\n*Vencimiento:* ${cxc.fechaVencimiento}\n';
-                                        if (dias > 0) mensaje += '*Días de atraso:* $dias días\n';
-                                        mensaje += '*Monto:* ${currencyFormatter.format(cxc.montoPendiente)}\n\nPor favor, contáctenos para coordinar el pago. Gracias.';
+                                        String mensaje =
+                                            'Hola *${cliente['nombre']}*,\n\nLe recordamos que tiene un saldo pendiente con *Ledhouse*.\n\n';
+                                        mensaje +=
+                                            '*Doc:* ${cxc.documento}\n*Vencimiento:* ${cxc.fechaVencimiento}\n';
+                                        if (dias > 0)
+                                          mensaje +=
+                                              '*Días de atraso:* $dias días\n';
+                                        mensaje +=
+                                            '*Monto:* ${currencyFormatter.format(cxc.montoPendiente)}\n\nPor favor, contáctenos para coordinar el pago. Gracias.';
 
-                                        String phone = cliente['whatsapp'].toString().replaceAll(RegExp(r'\D'), '');
-                                        if (!phone.startsWith('1') && phone.length == 10) phone = '1$phone';
+                                        String phone = cliente['whatsapp']
+                                            .toString()
+                                            .replaceAll(RegExp(r'\D'), '');
+                                        if (!phone.startsWith('1') &&
+                                            phone.length == 10)
+                                          phone = '1$phone';
                                         if (phone.isNotEmpty) {
-                                          final url = Uri.parse('https://wa.me/$phone?text=${Uri.encodeComponent(mensaje)}');
+                                          final url = Uri.parse(
+                                            'https://wa.me/$phone?text=${Uri.encodeComponent(mensaje)}',
+                                          );
                                           if (!await launchUrl(url)) {
                                             if (context.mounted) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('No se pudo abrir WhatsApp', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'No se pudo abrir WhatsApp',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  backgroundColor: Colors.red,
+                                                ),
                                               );
                                             }
                                           }
@@ -186,19 +237,31 @@ class CxcClienteDataTable extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: pastDue ? AppTheme.dangerColor.withOpacity(0.1) : AppTheme.ledhouseBlue.withOpacity(0.1),
+                                      color: pastDue
+                                          ? AppTheme.dangerColor.withOpacity(
+                                              0.1,
+                                            )
+                                          : AppTheme.ledhouseBlue.withOpacity(
+                                              0.1,
+                                            ),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Icon(
                                       Icons.receipt_long_rounded,
                                       size: 14,
-                                      color: pastDue ? AppTheme.dangerColor : AppTheme.ledhouseBlue,
+                                      color: pastDue
+                                          ? AppTheme.dangerColor
+                                          : AppTheme.ledhouseBlue,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
                                     cxc.documento,
-                                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.grey.shade300),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      color: Colors.grey.shade300,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -206,7 +269,10 @@ class CxcClienteDataTable extends StatelessWidget {
                             DataCell(
                               Text(
                                 currencyFormatter.format(cxc.montoFactura),
-                                style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                                style: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                             DataCell(
@@ -215,40 +281,70 @@ class CxcClienteDataTable extends StatelessWidget {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
-                                  color: pastDue ? AppTheme.dangerColor : Colors.grey.shade300,
+                                  color: pastDue
+                                      ? AppTheme.dangerColor
+                                      : Colors.grey.shade300,
                                 ),
                               ),
                             ),
                             DataCell(
                               Text(
                                 cxc.fechaVencimiento,
-                                style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                                style: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                             DataCell(
                               dias > 0
                                   ? Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.dangerColor.withOpacity(0.1),
+                                        color: AppTheme.dangerColor.withOpacity(
+                                          0.1,
+                                        ),
                                         borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: AppTheme.dangerColor.withOpacity(0.3)),
+                                        border: Border.all(
+                                          color: AppTheme.dangerColor
+                                              .withOpacity(0.3),
+                                        ),
                                       ),
                                       child: Text(
                                         '$dias d',
-                                        style: const TextStyle(color: AppTheme.dangerColor, fontSize: 10, fontWeight: FontWeight.bold),
+                                        style: const TextStyle(
+                                          color: AppTheme.dangerColor,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     )
                                   : Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: _getStatusColor(cxc.estado).withOpacity(0.1),
+                                        color: _getStatusColor(
+                                          cxc.estado,
+                                        ).withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: _getStatusColor(cxc.estado).withOpacity(0.3)),
+                                        border: Border.all(
+                                          color: _getStatusColor(
+                                            cxc.estado,
+                                          ).withOpacity(0.3),
+                                        ),
                                       ),
                                       child: Text(
                                         cxc.estado.toUpperCase(),
-                                        style: TextStyle(color: _getStatusColor(cxc.estado), fontSize: 10, fontWeight: FontWeight.bold),
+                                        style: TextStyle(
+                                          color: _getStatusColor(cxc.estado),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                             ),
@@ -257,7 +353,11 @@ class CxcClienteDataTable extends StatelessWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.edit_rounded, color: AppTheme.ledhouseBlue, size: 16),
+                                    icon: const Icon(
+                                      Icons.edit_rounded,
+                                      color: AppTheme.ledhouseBlue,
+                                      size: 16,
+                                    ),
                                     tooltip: 'Editar',
                                     padding: const EdgeInsets.all(4),
                                     constraints: const BoxConstraints(),
@@ -270,7 +370,11 @@ class CxcClienteDataTable extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 8),
                                   IconButton(
-                                    icon: const Icon(Icons.delete_rounded, color: AppTheme.dangerColor, size: 16),
+                                    icon: const Icon(
+                                      Icons.delete_rounded,
+                                      color: AppTheme.dangerColor,
+                                      size: 16,
+                                    ),
                                     tooltip: 'Eliminar',
                                     padding: const EdgeInsets.all(4),
                                     constraints: const BoxConstraints(),
@@ -279,9 +383,13 @@ class CxcClienteDataTable extends StatelessWidget {
                                         DialogConfirmacionDelete.mostrar(
                                           context,
                                           titulo: 'Eliminar Documento',
-                                          mensaje: '¿Está seguro de que desea eliminar este documento? Esta acción no se puede deshacer.',
+                                          mensaje:
+                                              '¿Está seguro de que desea eliminar este documento? Esta acción no se puede deshacer.',
                                           onConfirm: () async {
-                                            await Provider.of<CxcProvider>(context, listen: false).deleteCxc(cxc.id!);
+                                            await Provider.of<CxcProvider>(
+                                              context,
+                                              listen: false,
+                                            ).deleteCxc(cxc.id!);
                                           },
                                         );
                                       }

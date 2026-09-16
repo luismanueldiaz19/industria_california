@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/app_theme.dart';
-import '../core/constants.dart';
+import '../themes/app_theme.dart';
+import '../utils/constants.dart';
 
 class GeneralHeader extends StatelessWidget {
   final String title;
@@ -38,11 +38,7 @@ class GeneralHeader extends StatelessWidget {
               color: iconColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: iconColor,
-              size: 24,
-            ),
+            child: Icon(icon, color: iconColor, size: 24),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -67,16 +63,26 @@ class GeneralHeader extends StatelessWidget {
                     if (isDemoMode) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.amber.shade400.withValues(alpha: 0.2),
-                          border: Border.all(color: Colors.amber.shade300, width: 1),
+                          border: Border.all(
+                            color: Colors.amber.shade300,
+                            width: 1,
+                          ),
                           borderRadius: BorderRadius.circular(5),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.info_outline, size: 11, color: Colors.amberAccent),
+                            Icon(
+                              Icons.info_outline,
+                              size: 11,
+                              color: Colors.amberAccent,
+                            ),
                             SizedBox(width: 3),
                             Text(
                               'DEMO',
@@ -140,7 +146,10 @@ class HeaderButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
+              border: Border.all(
+                color: color.withValues(alpha: 0.25),
+                width: 1,
+              ),
             ),
             child: Icon(icon, color: color, size: 22),
           ),

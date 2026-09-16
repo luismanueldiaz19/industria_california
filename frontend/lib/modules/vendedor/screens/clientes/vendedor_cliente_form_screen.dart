@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../core/app_theme.dart';
+import '../../../../core/themes/app_theme.dart';
 import '../../../led_house/models/ledhouse_cliente.dart';
 import '../../../led_house/services/ledhouse_cliente_service.dart';
-import '../../../../services/gps_service.dart';
+import '../../../../core/services/gps_service.dart';
 
 class VendedorClienteFormScreen extends StatefulWidget {
   final LedhouseCliente? cliente;

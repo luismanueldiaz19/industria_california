@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../core/auth_provider.dart';
-import '../core/constants.dart';
-import '../modules/auth/login_screen.dart';
+import '../../modules/auth/providers/auth_provider.dart';
+import '../utils/constants.dart';
+import '../../modules/auth/screens/login_screen.dart';
 
 class CustomSidebar extends StatefulWidget {
   final int selectedIndex;
@@ -46,9 +46,12 @@ class _CustomSidebarState extends State<CustomSidebar> {
       _expandedSection = '11.';
     } else if (widget.selectedIndex == 8 || widget.selectedIndex == 9) {
       _expandedSection = '3. INVENTARIO';
-    } else if (widget.selectedIndex == 10 || widget.selectedIndex == 11 || widget.selectedIndex == 13) {
+    } else if (widget.selectedIndex == 10 ||
+        widget.selectedIndex == 11 ||
+        widget.selectedIndex == 13) {
       _expandedSection = '4. LOGÍSTICA Y PEDIDOS';
-    } else if (widget.selectedIndex == 12 || (widget.selectedIndex >= 19 && widget.selectedIndex <= 22)) {
+    } else if (widget.selectedIndex == 12 ||
+        (widget.selectedIndex >= 19 && widget.selectedIndex <= 22)) {
       _expandedSection = '5. PRODUCCIÓN';
     } else if (widget.selectedIndex >= 14 && widget.selectedIndex <= 18) {
       _expandedSection = '6. FLOTA Y DESPACHO';
@@ -89,222 +92,225 @@ class _CustomSidebarState extends State<CustomSidebar> {
         ],
       ),
       child: Column(
-        children: [
-          _buildHeader(accentColor),
-          const Divider(color: Colors.white10, height: 1),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              children: [
-                _buildExpansionSection(
-                  '1. GESTIÓN COBROS Y PAGOS',
-                  Icons.lightbulb_outline,
-                  [
-                    _buildMenuItem(
-                      0,
-                      Icons.bar_chart_outlined,
-                      Icons.bar_chart,
-                      'Estado de Resultado',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      1,
-                      Icons.account_balance_wallet_outlined,
-                      Icons.account_balance_wallet,
-                      'Cuentas por Cobrar',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      2,
-                      Icons.money_off_outlined,
-                      Icons.money_off,
-                      'Cuentas por Pagar',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      3,
-                      Icons.list_alt_outlined,
-                      Icons.list_alt,
-                      'Catálogo de Cuentas',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      4,
-                      Icons.people_outline,
-                      Icons.people,
-                      'Clientes',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      5,
-                      Icons.notifications_none_rounded,
-                      Icons.notifications_active_rounded,
-                      'Alertas Vendedores',
-                      accentColor,
-                    ),
-                  ],
-                ),
+        children:
+            [
+              _buildHeader(accentColor),
+              const Divider(color: Colors.white10, height: 1),
+              Expanded(
+                child:
+                    ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      children:
+                          [
+                            _buildExpansionSection(
+                              '1. GESTIÓN COBROS Y PAGOS',
+                              Icons.lightbulb_outline,
+                              [
+                                _buildMenuItem(
+                                  0,
+                                  Icons.bar_chart_outlined,
+                                  Icons.bar_chart,
+                                  'Estado de Resultado',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  1,
+                                  Icons.account_balance_wallet_outlined,
+                                  Icons.account_balance_wallet,
+                                  'Cuentas por Cobrar',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  2,
+                                  Icons.money_off_outlined,
+                                  Icons.money_off,
+                                  'Cuentas por Pagar',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  3,
+                                  Icons.list_alt_outlined,
+                                  Icons.list_alt,
+                                  'Catálogo de Cuentas',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  4,
+                                  Icons.people_outline,
+                                  Icons.people,
+                                  'Clientes',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  5,
+                                  Icons.notifications_none_rounded,
+                                  Icons.notifications_active_rounded,
+                                  'Alertas Vendedores',
+                                  accentColor,
+                                ),
+                              ],
+                            ),
 
-                _buildExpansionSection(
-                  '2. CONFIGURACIÓN',
-                  Icons.settings_outlined,
-                  [
-                    _buildMenuItem(
-                      6,
-                      Icons.admin_panel_settings_outlined,
-                      Icons.admin_panel_settings,
-                      'Roles y permisos',
-                      accentColor,
-                    ),
+                            _buildExpansionSection(
+                              '2. CONFIGURACIÓN',
+                              Icons.settings_outlined,
+                              [
+                                _buildMenuItem(
+                                  6,
+                                  Icons.admin_panel_settings_outlined,
+                                  Icons.admin_panel_settings,
+                                  'Roles y permisos',
+                                  accentColor,
+                                ),
 
-                    _buildMenuItem(
-                      7,
-                      Icons.manage_accounts_outlined,
-                      Icons.manage_accounts,
-                      'Usuarios',
-                      accentColor,
-                    ),
-                  ],
-                ),
+                                _buildMenuItem(
+                                  7,
+                                  Icons.manage_accounts_outlined,
+                                  Icons.manage_accounts,
+                                  'Usuarios',
+                                  accentColor,
+                                ),
+                              ],
+                            ),
 
-                _buildExpansionSection(
-                  '3. INVENTARIO',
-                  Icons.inventory_2_outlined,
-                  [
-                    _buildMenuItem(
-                      8,
-                      Icons.grid_view_outlined,
-                      Icons.grid_view_rounded,
-                      'Inventario',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      9,
-                      Icons.swap_vert_outlined,
-                      Icons.swap_vert_rounded,
-                      'Movimientos',
-                      accentColor,
-                    ),
-                  ],
-                ),
+                            _buildExpansionSection(
+                              '3. INVENTARIO',
+                              Icons.inventory_2_outlined,
+                              [
+                                _buildMenuItem(
+                                  8,
+                                  Icons.grid_view_outlined,
+                                  Icons.grid_view_rounded,
+                                  'Inventario',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  9,
+                                  Icons.swap_vert_outlined,
+                                  Icons.swap_vert_rounded,
+                                  'Movimientos',
+                                  accentColor,
+                                ),
+                              ],
+                            ),
 
-                _buildExpansionSection(
-                  '4. LOGÍSTICA Y PEDIDOS',
-                  Icons.local_shipping_outlined,
-                  [
-                    _buildMenuItem(
-                      10,
-                      Icons.shopping_cart_outlined,
-                      Icons.shopping_cart_rounded,
-                      'Pedidos',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      13,
-                      Icons.bar_chart_outlined,
-                      Icons.bar_chart_rounded,
-                      'Análisis de Ventas',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      11,
-                      Icons.map_outlined,
-                      Icons.map_rounded,
-                      'Rutas',
-                      accentColor,
-                    ),
-                  ],
-                ),
+                            _buildExpansionSection(
+                              '4. LOGÍSTICA Y PEDIDOS',
+                              Icons.local_shipping_outlined,
+                              [
+                                _buildMenuItem(
+                                  10,
+                                  Icons.shopping_cart_outlined,
+                                  Icons.shopping_cart_rounded,
+                                  'Pedidos',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  13,
+                                  Icons.bar_chart_outlined,
+                                  Icons.bar_chart_rounded,
+                                  'Análisis de Ventas',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  11,
+                                  Icons.map_outlined,
+                                  Icons.map_rounded,
+                                  'Rutas',
+                                  accentColor,
+                                ),
+                              ],
+                            ),
 
-                _buildExpansionSection(
-                  '5. PRODUCCIÓN',
-                  Icons.precision_manufacturing_outlined,
-                  [
-                    _buildMenuItem(
-                      12,
-                      Icons.pending_actions_outlined,
-                      Icons.pending_actions_rounded,
-                      'Pendientes (Órdenes)',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      19,
-                      Icons.inventory_2_outlined,
-                      Icons.inventory_2_rounded,
-                      'Por Producto',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      20,
-                      Icons.receipt_long_outlined,
-                      Icons.receipt_long_rounded,
-                      'Por Pedido',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      21,
-                      Icons.group_outlined,
-                      Icons.group_rounded,
-                      'Por Cliente',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      22,
-                      Icons.calendar_month_outlined,
-                      Icons.calendar_month_rounded,
-                      'Por Fecha Entrega',
-                      accentColor,
-                    ),
-                  ],
-                ),
+                            _buildExpansionSection(
+                              '5. PRODUCCIÓN',
+                              Icons.precision_manufacturing_outlined,
+                              [
+                                _buildMenuItem(
+                                  12,
+                                  Icons.pending_actions_outlined,
+                                  Icons.pending_actions_rounded,
+                                  'Pendientes (Órdenes)',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  19,
+                                  Icons.inventory_2_outlined,
+                                  Icons.inventory_2_rounded,
+                                  'Por Producto',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  20,
+                                  Icons.receipt_long_outlined,
+                                  Icons.receipt_long_rounded,
+                                  'Por Pedido',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  21,
+                                  Icons.group_outlined,
+                                  Icons.group_rounded,
+                                  'Por Cliente',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  22,
+                                  Icons.calendar_month_outlined,
+                                  Icons.calendar_month_rounded,
+                                  'Por Fecha Entrega',
+                                  accentColor,
+                                ),
+                              ],
+                            ),
 
-                _buildExpansionSection(
-                  '6. FLOTA Y DESPACHO',
-                  Icons.directions_bus_outlined,
-                  [
-                    _buildMenuItem(
-                      14,
-                      Icons.badge_outlined,
-                      Icons.badge_rounded,
-                      'Choferes',
-                      accentColor,
+                            _buildExpansionSection(
+                              '6. FLOTA Y DESPACHO',
+                              Icons.directions_bus_outlined,
+                              [
+                                _buildMenuItem(
+                                  14,
+                                  Icons.badge_outlined,
+                                  Icons.badge_rounded,
+                                  'Choferes',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  15,
+                                  Icons.directions_car_outlined,
+                                  Icons.directions_car_rounded,
+                                  'Vehículos',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  16,
+                                  Icons.route_outlined,
+                                  Icons.route_rounded,
+                                  'Despachos',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  17,
+                                  Icons.build_outlined,
+                                  Icons.build_rounded,
+                                  'Mantenimientos',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  18,
+                                  Icons.receipt_long_outlined,
+                                  Icons.receipt_long_rounded,
+                                  'Gastos y Combustible',
+                                  accentColor,
+                                ),
+                              ],
+                            ),
+                          ],
                     ),
-                    _buildMenuItem(
-                      15,
-                      Icons.directions_car_outlined,
-                      Icons.directions_car_rounded,
-                      'Vehículos',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      16,
-                      Icons.route_outlined,
-                      Icons.route_rounded,
-                      'Despachos',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      17,
-                      Icons.build_outlined,
-                      Icons.build_rounded,
-                      'Mantenimientos',
-                      accentColor,
-                    ),
-                    _buildMenuItem(
-                      18,
-                      Icons.receipt_long_outlined,
-                      Icons.receipt_long_rounded,
-                      'Gastos y Combustible',
-                      accentColor,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Divider(color: Colors.white10, height: 1),
-          _buildLogoutButton(accentColor),
-        ],
+              ),
+              const Divider(color: Colors.white10, height: 1),
+              _buildLogoutButton(accentColor),
+            ],
       ),
     );
   }

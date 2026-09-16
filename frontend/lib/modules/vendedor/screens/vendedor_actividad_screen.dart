@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/auth_provider.dart';
-import '../../../../core/constants.dart';
-import '../../../core/app_theme.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../../core/utils/constants.dart';
+import '../../../core/themes/app_theme.dart';
 import '../services/vendedor_cxc_service.dart';
 import '../widgets/vendedor_alerta_card.dart';
 import 'vendedor_cxc_detalle_screen.dart';
@@ -50,7 +50,7 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
     'anular',
     'diferencia',
     'informacion',
-    'consulta'
+    'consulta',
   ];
 
   @override
@@ -104,8 +104,12 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
         search: _searchController.text,
         estado: _estadoFiltro == 'todos' ? null : _estadoFiltro,
         tipo: _tipoFiltro == 'todos' ? null : _tipoFiltro,
-        startDate: _startDate != null ? DateFormat('yyyy-MM-dd').format(_startDate!) : null,
-        endDate: _endDate != null ? DateFormat('yyyy-MM-dd').format(_endDate!) : null,
+        startDate: _startDate != null
+            ? DateFormat('yyyy-MM-dd').format(_startDate!)
+            : null,
+        endDate: _endDate != null
+            ? DateFormat('yyyy-MM-dd').format(_endDate!)
+            : null,
       );
 
       if (mounted) {
@@ -129,7 +133,9 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
           _isLoading = false;
           _isFetchingMore = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -141,10 +147,8 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
 
   void _descargarPdf() async {
     final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
-    final queryParams = <String, String>{
-      'token': token,
-    };
-    
+    final queryParams = <String, String>{'token': token};
+
     if (_searchController.text.trim().isNotEmpty) {
       queryParams['search'] = _searchController.text.trim();
     }
@@ -161,8 +165,10 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
       queryParams['end_date'] = DateFormat('yyyy-MM-dd').format(_endDate!);
     }
 
-    final uri = Uri.parse('$host/api/v1/cxc/alertas/pdf').replace(queryParameters: queryParams);
-    
+    final uri = Uri.parse(
+      '$host/api/v1/cxc/alertas/pdf',
+    ).replace(queryParameters: queryParams);
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
@@ -201,7 +207,10 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
                     children: [
                       const Text(
                         'Filtros Avanzados',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close),
@@ -210,45 +219,89 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Text('Estado de la Alerta', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  const Text(
+                    'Estado de la Alerta',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _estadoFiltro,
                     isExpanded: true,
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       isDense: true,
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'todos', child: Text('Todos los estados', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 'pendiente', child: Text('Pendiente', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 'revisada', child: Text('Revisada', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 'procesada', child: Text('Procesada', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(
+                        value: 'todos',
+                        child: Text(
+                          'Todos los estados',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'pendiente',
+                        child: Text(
+                          'Pendiente',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'revisada',
+                        child: Text('Revisada', style: TextStyle(fontSize: 13)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'procesada',
+                        child: Text(
+                          'Procesada',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
                     ],
-                    onChanged: (val) => setModalState(() => _estadoFiltro = val!),
+                    onChanged: (val) =>
+                        setModalState(() => _estadoFiltro = val!),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Tipo de Alerta', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  const Text(
+                    'Tipo de Alerta',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _tipoFiltro,
                     isExpanded: true,
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       isDense: true,
                     ),
                     items: _tiposAlerta.map((t) {
                       return DropdownMenuItem(
                         value: t,
-                        child: Text(t.replaceAll('_', ' ').toUpperCase(), style: const TextStyle(fontSize: 13)),
+                        child: Text(
+                          t.replaceAll('_', ' ').toUpperCase(),
+                          style: const TextStyle(fontSize: 13),
+                        ),
                       );
                     }).toList(),
                     onChanged: (val) => setModalState(() => _tipoFiltro = val!),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Rango de Fechas', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  const Text(
+                    'Rango de Fechas',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -261,16 +314,21 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
                               firstDate: DateTime(2020),
                               lastDate: DateTime(2100),
                             );
-                            if (date != null) setModalState(() => _startDate = date);
+                            if (date != null)
+                              setModalState(() => _startDate = date);
                           },
                           icon: const Icon(Icons.calendar_today, size: 16),
                           label: Text(
-                            _startDate == null ? 'Inicio' : DateFormat('dd/MM/yyyy').format(_startDate!),
+                            _startDate == null
+                                ? 'Inicio'
+                                : DateFormat('dd/MM/yyyy').format(_startDate!),
                             style: const TextStyle(fontSize: 12),
                           ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                       ),
@@ -284,16 +342,21 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
                               firstDate: DateTime(2020),
                               lastDate: DateTime(2100),
                             );
-                            if (date != null) setModalState(() => _endDate = date);
+                            if (date != null)
+                              setModalState(() => _endDate = date);
                           },
                           icon: const Icon(Icons.calendar_today, size: 16),
                           label: Text(
-                            _endDate == null ? 'Fin' : DateFormat('dd/MM/yyyy').format(_endDate!),
+                            _endDate == null
+                                ? 'Fin'
+                                : DateFormat('dd/MM/yyyy').format(_endDate!),
                             style: const TextStyle(fontSize: 12),
                           ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                       ),
@@ -327,7 +390,9 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryBlue,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           child: const Text('Aplicar Filtros'),
@@ -368,10 +433,18 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
               decoration: InputDecoration(
                 hintText: 'Buscar por cliente o doc...',
                 hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 20),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: Colors.grey.shade400,
+                  size: 20,
+                ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.close_rounded, color: Colors.grey.shade400, size: 18),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: Colors.grey.shade400,
+                          size: 18,
+                        ),
                         onPressed: () {
                           _searchController.clear();
                           _load();
@@ -379,18 +452,21 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
                       )
                     : null,
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 isDense: true,
               ),
             ),
           ),
-          Container(
-            height: 30,
-            width: 1,
-            color: Colors.grey.shade200,
-          ),
+          Container(height: 30, width: 1, color: Colors.grey.shade200),
           IconButton(
-            icon: Icon(Icons.tune_rounded, color: AppTheme.primaryBlue, size: 22),
+            icon: Icon(
+              Icons.tune_rounded,
+              color: AppTheme.primaryBlue,
+              size: 22,
+            ),
             onPressed: _openFilters,
             tooltip: 'Filtros Avanzados',
           ),
@@ -408,7 +484,11 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
         appBar: AppBar(
           title: const Text(
             'Consulta de Alertas',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Colors.white,
+            ),
           ),
           backgroundColor: AppTheme.primaryBlue,
           foregroundColor: Colors.white,
@@ -433,12 +513,19 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
             ),
             if (!_isLoading && _alertas.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 4,
+                ),
                 child: Row(
                   children: [
                     Text(
                       'Mostrando $_total alertas (Pag. $_currentPage/$_lastPage)',
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -447,65 +534,76 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
               child: _isLoading
                   ? const Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(AppTheme.primaryBlue),
+                        valueColor: AlwaysStoppedAnimation(
+                          AppTheme.primaryBlue,
+                        ),
                         strokeWidth: 3,
                       ),
                     )
                   : _alertas.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.inbox_rounded, size: 48, color: Colors.grey.shade300),
-                              const SizedBox(height: 12),
-                              Text(
-                                'No se encontraron alertas.',
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 14, fontWeight: FontWeight.w500),
-                              ),
-                            ],
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.inbox_rounded,
+                            size: 48,
+                            color: Colors.grey.shade300,
                           ),
-                        )
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                          itemCount: _alertas.length + (_isFetchingMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index == _alertas.length) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 20),
-                                child: Center(
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                              );
-                            }
+                          const SizedBox(height: 12),
+                          Text(
+                            'No se encontraron alertas.',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                      itemCount: _alertas.length + (_isFetchingMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == _alertas.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        }
 
-                            final alerta = _alertas[index];
-                            return VendedorAlertaCard(
-                              alerta: alerta,
-                              onTap: () {
-                                if (alerta.cxc == null) return;
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => VendedorCxcDetalleScreen(
-                                      cxcData: {
-                                        'id': alerta.cxc!.id,
-                                        'documento': alerta.cxc!.documento,
-                                        'cliente': alerta.cxc!.cliente != null
-                                            ? {
-                                                'id': alerta.cxc!.cliente!.id,
-                                                'nombre': alerta.cxc!.cliente!.nombre,
-                                              }
-                                            : null,
-                                        'evidencias': alerta.cxc!.evidencias,
-                                      },
-                                    ),
-                                  ),
-                                );
-                              },
+                        final alerta = _alertas[index];
+                        return VendedorAlertaCard(
+                          alerta: alerta,
+                          onTap: () {
+                            if (alerta.cxc == null) return;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => VendedorCxcDetalleScreen(
+                                  cxcData: {
+                                    'id': alerta.cxc!.id,
+                                    'documento': alerta.cxc!.documento,
+                                    'cliente': alerta.cxc!.cliente != null
+                                        ? {
+                                            'id': alerta.cxc!.cliente!.id,
+                                            'nombre':
+                                                alerta.cxc!.cliente!.nombre,
+                                          }
+                                        : null,
+                                    'evidencias': alerta.cxc!.evidencias,
+                                  },
+                                ),
+                              ),
                             );
                           },
-                        ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),

@@ -9,8 +9,8 @@ import '../widgets/producto_grid_card.dart';
 import '../widgets/producto_form_dialog.dart';
 import '../widgets/movimiento_form_dialog.dart';
 import '../screens/inventario_sync_screen.dart';
-import '../../../core/auth_provider.dart';
-import '../../../widgets/general_header.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../../core/widgets/general_header.dart';
 
 class InventarioProductosScreen extends StatefulWidget {
   const InventarioProductosScreen({super.key});

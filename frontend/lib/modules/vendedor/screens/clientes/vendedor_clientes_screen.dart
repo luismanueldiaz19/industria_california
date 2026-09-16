@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../../core/app_theme.dart';
+import '../../../../core/themes/app_theme.dart';
 import '../../../led_house/models/ledhouse_cliente.dart';
 import '../../../led_house/services/ledhouse_cliente_service.dart';
 import 'vendedor_cliente_form_screen.dart';
@@ -195,20 +195,21 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
                         });
                         _fetchClientes();
                       },
-                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(
-                          value: 'recent',
-                          child: Text('Más recientes'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'name_asc',
-                          child: Text('Nombre (A-Z)'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'name_desc',
-                          child: Text('Nombre (Z-A)'),
-                        ),
-                      ],
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<String>>[
+                            const PopupMenuItem<String>(
+                              value: 'recent',
+                              child: Text('Más recientes'),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'name_asc',
+                              child: Text('Nombre (A-Z)'),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'name_desc',
+                              child: Text('Nombre (Z-A)'),
+                            ),
+                          ],
                     ),
                   ],
                 ),
@@ -482,14 +483,21 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (c.createdAt != null && DateTime.now().difference(c.createdAt!).inDays <= 7) ...[
+                          if (c.createdAt != null &&
+                              DateTime.now().difference(c.createdAt!).inDays <=
+                                  7) ...[
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.blue.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                                border: Border.all(
+                                  color: Colors.blue.withOpacity(0.3),
+                                ),
                               ),
                               child: const Text(
                                 'Nuevo',

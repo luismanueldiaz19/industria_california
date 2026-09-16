@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:industria_california/core/auth_provider.dart';
+import 'package:industria_california/modules/auth/providers/auth_provider.dart';
 import 'package:industria_california/models/company.dart';
 import 'package:provider/provider.dart';
-import '../../../core/app_theme.dart';
+import '../../../core/themes/app_theme.dart';
 import '../widgets/action_quick_vendedor.dart';
 import '../widgets/header_clipper.dart';
 import '../widgets/mini_chart_painter.dart';

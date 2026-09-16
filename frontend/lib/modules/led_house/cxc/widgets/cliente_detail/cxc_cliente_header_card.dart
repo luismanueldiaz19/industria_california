@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../../../core/app_theme.dart';
+import '../../../../../core/themes/app_theme.dart';
 
 class CxcClienteHeaderCard extends StatelessWidget {
   final Map<String, dynamic> cliente;
@@ -162,7 +162,8 @@ class CxcClienteHeaderCard extends StatelessWidget {
                             Text(
                               currencyFormatter.format(
                                 double.tryParse(
-                                      cliente['limite_credito']?.toString() ?? '0',
+                                      cliente['limite_credito']?.toString() ??
+                                          '0',
                                     ) ??
                                     0,
                               ),
@@ -196,7 +197,10 @@ class CxcClienteHeaderCard extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: onNewAccount,
                       icon: const Icon(Icons.add_rounded, size: 16),
-                      label: const Text('Nueva', style: TextStyle(fontSize: 12)),
+                      label: const Text(
+                        'Nueva',
+                        style: TextStyle(fontSize: 12),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.successColor,
                         foregroundColor: Colors.white,
@@ -226,7 +230,10 @@ class CxcClienteHeaderCard extends StatelessWidget {
                               ),
                             )
                           : const Icon(Icons.upload_file_rounded, size: 16),
-                      label: const Text('Importar', style: TextStyle(fontSize: 12)),
+                      label: const Text(
+                        'Importar',
+                        style: TextStyle(fontSize: 12),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.darkInputColor,
                         foregroundColor: Colors.white,

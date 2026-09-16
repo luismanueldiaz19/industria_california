@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../../core/auth_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../providers/ledhouse_provider.dart';
 import '../providers/cuenta_catalogo_provider.dart';
 import '../models/ledhouse_estado_resultado_model.dart';

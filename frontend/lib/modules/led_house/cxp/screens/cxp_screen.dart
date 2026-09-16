@@ -2,11 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/app_theme.dart';
+import '../../../../core/themes/app_theme.dart';
 import '../models/cxp_model.dart';
 import '../providers/cxp_provider.dart';
 import '../widgets/cxp_form_dialog.dart';
-import '../../../../widgets/hover_total_card.dart';
+import '../../../../core/widgets/hover_total_card.dart';
 
 class CxpScreen extends StatefulWidget {
   const CxpScreen({super.key});
@@ -96,7 +96,8 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
 
   List<CxpModel> _getFilteredList(List<CxpModel> list) {
     return list.where((cxp) {
-      bool matchesStatus = _statusFilter == 'Todos' ||
+      bool matchesStatus =
+          _statusFilter == 'Todos' ||
           cxp.estado.toLowerCase() == _statusFilter.toLowerCase();
       if (!matchesStatus) return false;
 
@@ -219,7 +220,8 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
           _buildHeaderButton(
             icon: Icons.refresh_rounded,
             tooltip: 'Actualizar',
-            onTap: () => Provider.of<CxpProvider>(context, listen: false).fetchCxps(),
+            onTap: () =>
+                Provider.of<CxpProvider>(context, listen: false).fetchCxps(),
           ),
           const SizedBox(width: 4),
           _buildHeaderButton(
@@ -260,11 +262,7 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
   }
 
   // ── Totales ────────────────────────────────────────────────────────────────
-  Widget _buildTotales(
-    double facturado,
-    double pendiente,
-    double vencido,
-  ) {
+  Widget _buildTotales(double facturado, double pendiente, double vencido) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -315,10 +313,18 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
         decoration: InputDecoration(
           hintText: 'Buscar proveedor o doc...',
           hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-          prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 20),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: Colors.grey.shade400,
+            size: 20,
+          ),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.close_rounded, color: Colors.grey.shade400, size: 18),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: Colors.grey.shade400,
+                    size: 18,
+                  ),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
@@ -326,7 +332,10 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
       ),
     );
@@ -351,7 +360,10 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
         child: DropdownButton<String>(
           value: _statusFilter,
           isExpanded: true,
-          icon: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey.shade500),
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Colors.grey.shade500,
+          ),
           style: const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
           items: const [
             DropdownMenuItem(value: 'Todos', child: Text('Todos')),
@@ -404,7 +416,11 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: value
-                  ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 14,
+                      color: Colors.white,
+                    )
                   : null,
             ),
             const SizedBox(width: 8),
@@ -438,7 +454,11 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off_rounded, size: 64, color: Colors.grey.shade300),
+            Icon(
+              Icons.cloud_off_rounded,
+              size: 64,
+              color: Colors.grey.shade300,
+            ),
             const SizedBox(height: 16),
             Text(
               'No se pudo cargar los datos',
@@ -551,7 +571,11 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.request_page_rounded, color: color, size: 22),
+                  child: Icon(
+                    Icons.request_page_rounded,
+                    color: color,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 14),
 
@@ -579,15 +603,21 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
                               Icon(
                                 Icons.calendar_today_rounded,
                                 size: 12,
-                                color: pastDue ? AppTheme.dangerColor : Colors.grey.shade500,
+                                color: pastDue
+                                    ? AppTheme.dangerColor
+                                    : Colors.grey.shade500,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 cxp.fechaVencimiento,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  fontWeight: pastDue ? FontWeight.bold : FontWeight.normal,
-                                  color: pastDue ? AppTheme.dangerColor : Colors.grey.shade600,
+                                  fontWeight: pastDue
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: pastDue
+                                      ? AppTheme.dangerColor
+                                      : Colors.grey.shade600,
                                 ),
                               ),
                             ],
@@ -599,7 +629,11 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
                       // Proveedor
                       Row(
                         children: [
-                          Icon(Icons.storefront_rounded, size: 14, color: Colors.grey.shade400),
+                          Icon(
+                            Icons.storefront_rounded,
+                            size: 14,
+                            color: Colors.grey.shade400,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -625,7 +659,10 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
                               children: [
                                 Text(
                                   'Factura',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500,
+                                  ),
                                 ),
                                 Text(
                                   currencyFormatter.format(cxp.montoFactura),
@@ -644,7 +681,10 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
                               children: [
                                 Text(
                                   'Pendiente',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500,
+                                  ),
                                 ),
                                 Text(
                                   currencyFormatter.format(cxp.montoPendiente),
@@ -653,7 +693,9 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
                                     fontWeight: FontWeight.bold,
                                     color: cxp.montoPendiente <= 0
                                         ? AppTheme.successColor
-                                        : (pastDue ? AppTheme.dangerColor : const Color(0xFFFB8C00)),
+                                        : (pastDue
+                                              ? AppTheme.dangerColor
+                                              : const Color(0xFFFB8C00)),
                                   ),
                                 ),
                               ],
@@ -665,7 +707,10 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
 
                       // Badge de Estado
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: color.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
@@ -686,8 +731,14 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
 
                 // Menú de acciones
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400, size: 20),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    color: Colors.grey.shade400,
+                    size: 20,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 8,
                   onSelected: (val) {
                     if (val == 'edit') _showFormDialog(cxp);
@@ -697,9 +748,16 @@ class _CxpScreenState extends State<CxpScreen> with TickerProviderStateMixin {
                       value: 'edit',
                       child: Row(
                         children: const [
-                          Icon(Icons.edit_rounded, size: 18, color: Color(0xFF1A73E8)),
+                          Icon(
+                            Icons.edit_rounded,
+                            size: 18,
+                            color: Color(0xFF1A73E8),
+                          ),
                           SizedBox(width: 10),
-                          Text('Editar / Pagar', style: TextStyle(fontSize: 14)),
+                          Text(
+                            'Editar / Pagar',
+                            style: TextStyle(fontSize: 14),
+                          ),
                         ],
                       ),
                     ),

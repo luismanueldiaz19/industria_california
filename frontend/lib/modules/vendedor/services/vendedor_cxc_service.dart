@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../models/vendedor_alerta_model.dart';
-import '../../../../core/constants.dart';
+import '../../../core/utils/constants.dart';
 
 class VendedorCxcService {
   final String _base = '$host/api/v1/ledhouse/cxc';
@@ -161,7 +161,7 @@ class VendedorCxcService {
     if (tipo != null && tipo.isNotEmpty) params['tipo'] = tipo;
 
     final uri = Uri.parse('$_base/alertas').replace(queryParameters: params);
-    
+
     final res = await http.get(uri, headers: _headers(token));
     if (res.statusCode == 200) {
       final response = json.decode(res.body);

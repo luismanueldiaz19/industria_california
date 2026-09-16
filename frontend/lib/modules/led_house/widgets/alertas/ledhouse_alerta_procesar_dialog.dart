@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/app_theme.dart';
+import '../../../../core/themes/app_theme.dart';
 import '../../models/cxc_alerta_model.dart';
 
 class LedhouseAlertaProcesarDialog extends StatefulWidget {
@@ -8,7 +8,8 @@ class LedhouseAlertaProcesarDialog extends StatefulWidget {
     bool actualizarCxc,
     double? montoPagado,
     String? estadoCxc,
-  ) onProcesar;
+  )
+  onProcesar;
 
   const LedhouseAlertaProcesarDialog({
     super.key,
@@ -67,9 +68,9 @@ class _LedhouseAlertaProcesarDialogState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Theme(
-            data: Theme.of(context).copyWith(
-              unselectedWidgetColor: Colors.grey.shade400,
-            ),
+            data: Theme.of(
+              context,
+            ).copyWith(unselectedWidgetColor: Colors.grey.shade400),
             child: SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text(
@@ -140,10 +141,7 @@ class _LedhouseAlertaProcesarDialogState
                 ),
               ),
               items: const [
-                DropdownMenuItem(
-                  value: 'pendiente',
-                  child: Text('Pendiente'),
-                ),
+                DropdownMenuItem(value: 'pendiente', child: Text('Pendiente')),
                 DropdownMenuItem(value: 'pagado', child: Text('Pagado')),
                 DropdownMenuItem(value: 'cancelado', child: Text('Cancelado')),
               ],
@@ -155,26 +153,24 @@ class _LedhouseAlertaProcesarDialogState
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text(
-            'Cancelar',
-            style: TextStyle(color: Colors.grey),
-          ),
+          child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
         ),
         ElevatedButton(
           onPressed: _isLoading
               ? null
               : () async {
                   setState(() => _isLoading = true);
-                  final monto = _actualizarCxc && _montoController.text.isNotEmpty
+                  final monto =
+                      _actualizarCxc && _montoController.text.isNotEmpty
                       ? double.tryParse(_montoController.text)
                       : null;
-                  
+
                   await widget.onProcesar(
                     _actualizarCxc,
                     monto,
                     _actualizarCxc ? _estadoCxc : null,
                   );
-                  
+
                   if (context.mounted) {
                     Navigator.pop(context);
                   }

@@ -21,6 +21,8 @@ use App\Http\Controllers\Api\RutaController;
 use App\Http\Controllers\Api\PedidoController;
 use App\Http\Controllers\Api\OrdenProduccionController;
 use App\Http\Controllers\Api\ProduccionAgrupadaController;
+// use App\Modules\Pedido\Http\Controllers\PedidoController;
+
 
 // =========================================================
 // RUTA PÚBLICA DE DOCUMENTOS SEGUROS CON TOKEN (COMPATIBLE CON APACHE)
@@ -30,6 +32,14 @@ Route::get('d/{token}', [PdfViewerController::class, 'ver'])->name('api.pdf.view
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+
+Route::prefix('api')->middleware('auth:sanctum')->group(function () {
+    Route::post('pedidos-v2', [PedidoController::class, 'store'])
+        ->name('pedidos.v2.store');
+});
+
+
 
 Route::prefix('v1')->group(function () {
 
@@ -179,3 +189,6 @@ Route::prefix('v1')->group(function () {
         }
     });
 });
+
+
+
