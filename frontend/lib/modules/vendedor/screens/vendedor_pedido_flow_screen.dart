@@ -125,7 +125,9 @@ class _VendedorPedidoFlowContentState
           onPressed: _prevStep,
         ),
         title: Text(
-          widget.pedidoOriginal != null ? 'Editar Pedido' : 'Nuevo Pedido',
+          widget.pedidoOriginal != null && widget.pedidoOriginal!.id != 0
+              ? 'Editar Pedido'
+              : 'Nuevo Pedido',
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,

@@ -67,8 +67,7 @@ class _VendedorRutasScreenState extends State<VendedorRutasScreen> {
           GestureDetector(
             onTap: _mostrarFormularioCrear,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: _accentBlue,
                 borderRadius: BorderRadius.circular(20),
@@ -137,8 +136,10 @@ class _VendedorRutasScreenState extends State<VendedorRutasScreen> {
         ],
       ),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 10,
+        ),
         leading: Container(
           width: 44,
           height: 44,
@@ -178,8 +179,7 @@ class _VendedorRutasScreenState extends State<VendedorRutasScreen> {
       children: [
         Icon(icon, size: 13, color: Colors.grey.shade500),
         const SizedBox(width: 4),
-        Text(text,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        Text(text, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
       ],
     );
   }
@@ -216,15 +216,19 @@ class _VendedorRutasScreenState extends State<VendedorRutasScreen> {
         children: [
           Icon(Icons.error_outline, size: 50, color: Colors.red.shade300),
           const SizedBox(height: 12),
-          Text(err,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade700)),
+          Text(
+            err,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey.shade700),
+          ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => context.read<RutaProvider>().fetchRutas(),
             style: ElevatedButton.styleFrom(backgroundColor: _accentBlue),
-            child: const Text('Reintentar',
-                style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Reintentar',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

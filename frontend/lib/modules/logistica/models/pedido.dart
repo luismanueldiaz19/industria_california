@@ -10,6 +10,8 @@ class Pedido {
   final String? comentario;
   final double total;
   final DateTime createdAt;
+  final DateTime? fechaEntrega;
+  final String? notaProduccion;
   
   // Relations mapped from JSON
   final String? clienteNombre;
@@ -27,6 +29,8 @@ class Pedido {
     this.comentario,
     required this.total,
     required this.createdAt,
+    this.fechaEntrega,
+    this.notaProduccion,
     this.clienteNombre,
     this.rutaNombre,
     this.vendedorNombre,
@@ -47,6 +51,8 @@ class Pedido {
       comentario: json['comentario'],
       total: double.tryParse(json['total']?.toString() ?? '0') ?? 0,
       createdAt: DateTime.parse(json['created_at']),
+      fechaEntrega: json['fecha_entrega'] != null ? DateTime.parse(json['fecha_entrega']) : null,
+      notaProduccion: json['nota_produccion'],
       clienteNombre: json['cliente']?['nombre'],
       rutaNombre: json['ruta']?['nombre'],
       vendedorNombre: json['vendedor']?['name'],

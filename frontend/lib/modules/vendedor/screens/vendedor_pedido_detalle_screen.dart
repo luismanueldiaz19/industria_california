@@ -8,6 +8,7 @@ import '../../logistica/models/pedido_detalle.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../logistica/providers/pedido_provider.dart';
+import 'vendedor_pedido_flow_screen.dart';
 
 /// Pantalla de detalle de un pedido existente.
 /// Solo muestra — no edita directamente (navega a Form para eso).
@@ -146,6 +147,13 @@ class _VendedorPedidoDetalleScreenState
   }
 
   Widget _buildHeaderCard(Color estadoColor) {
+    final faltante = pedido.detalles.fold(
+      0.0,
+      (sum, det) => sum + (det.cantidadEnProduccion * det.precioUnitario),
+    );
+    final disponible = pedido.total - faltante;
+    final hasFaltante = faltante > 0;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -158,29 +166,69 @@ class _VendedorPedidoDetalleScreenState
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'TOTAL DEL PEDIDO',
-                style: TextStyle(color: Colors.white60, fontSize: 10),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                _currencyFmt.format(pedido.total),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasFaltante) ...[
+                  const Text(
+                    'TOTAL DISPONIBLE',
+                    style: TextStyle(color: Colors.white60, fontSize: 10),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _currencyFmt.format(disponible),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        'Original: ${_currencyFmt.format(pedido.total)}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Faltante: ${_currencyFmt.format(faltante)}',
+                        style: const TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  const Text(
+                    'TOTAL DEL PEDIDO',
+                    style: TextStyle(color: Colors.white60, fontSize: 10),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _currencyFmt.format(pedido.total),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  _dateFmt.format(pedido.createdAt),
+                  style: const TextStyle(color: Colors.white70, fontSize: 10),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _dateFmt.format(pedido.createdAt),
-                style: const TextStyle(color: Colors.white70, fontSize: 10),
-              ),
-            ],
+              ],
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -226,6 +274,14 @@ class _VendedorPedidoDetalleScreenState
               'Vendedor',
               pedido.vendedorNombre ?? '—',
             ),
+            if (pedido.fechaEntrega != null) ...[
+              const Divider(height: 8, thickness: 0.5),
+              _infoRow(
+                Icons.calendar_today_outlined,
+                'Fecha de Entrega',
+                DateFormat('dd/MM/yyyy').format(pedido.fechaEntrega!),
+              ),
+            ],
           ],
         ),
       ),
@@ -259,7 +315,123 @@ class _VendedorPedidoDetalleScreenState
             }).toList(),
           ),
         ),
+        if (pedido.detalles.any((d) => d.cantidadEnProduccion > 0)) ...[
+          const SizedBox(height: 12),
+          Consumer<PedidoProvider>(
+            builder: (ctx, provider, _) {
+              final alreadyGenerated = provider.pedidos.any(
+                (p) =>
+                    p.comentario ==
+                    'Pedido generado por faltantes del Pedido #${pedido.id}',
+              );
+
+              if (alreadyGenerated) {
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: Colors.green.shade600,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Pedido por faltante ya generado',
+                        style: TextStyle(
+                          color: Colors.green.shade800,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _generarPedidoFaltante,
+                  icon: const Icon(
+                    Icons.add_shopping_cart,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  label: const Text(
+                    'Generar Pedido por Faltante',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ],
+    );
+  }
+
+  void _generarPedidoFaltante() {
+    // Collect the missing items
+    final faltantes = pedido.detalles
+        .where((d) => d.cantidadEnProduccion > 0)
+        .toList();
+    if (faltantes.isEmpty) return;
+
+    // Create a mock order with ONLY the missing quantities
+    final mockDetalles = faltantes
+        .map(
+          (f) => PedidoDetalle(
+            id: 0,
+            productoId: f.productoId,
+            cantidad: f.cantidadEnProduccion,
+            cantidadEnProduccion: 0,
+            precioUnitario: f.precioUnitario,
+            subtotal: f.cantidadEnProduccion * f.precioUnitario,
+            observacion: 'Faltante del Pedido #${pedido.id}',
+            productoNombre: f.productoNombre,
+            productoCodigo: f.productoCodigo,
+          ),
+        )
+        .toList();
+
+    final mockPedido = Pedido(
+      id: 0,
+      clienteId: pedido.clienteId,
+      rutaId: pedido.rutaId,
+      vendedorId: pedido.vendedorId,
+      estado: 'borrador',
+      total: mockDetalles.fold(0, (sum, item) => sum + item.subtotal),
+      createdAt: DateTime.now(),
+      comentario: 'Pedido generado por faltantes del Pedido #${pedido.id}',
+      detalles: mockDetalles,
+    );
+
+    // Navigating back first to prevent deep stacking (optional) or just push
+    Navigator.of(context).pop();
+
+    // We need to pass a flag to VendedorPedidoFlowScreen indicating it's a template, not an edit.
+    // By passing a pedido with id: 0, it acts as a template.
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => VendedorPedidoFlowScreen(pedidoOriginal: mockPedido),
+      ),
     );
   }
 
@@ -281,9 +453,27 @@ class _VendedorPedidoDetalleScreenState
                   ),
                 ),
                 const SizedBox(height: 1),
-                Text(
-                  '${det.cantidad % 1 == 0 ? det.cantidad.toInt() : det.cantidad.toStringAsFixed(3)} × ${_currencyFmt.format(det.precioUnitario)}',
-                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                Row(
+                  children: [
+                    Text(
+                      '${det.cantidad % 1 == 0 ? det.cantidad.toInt() : det.cantidad.toStringAsFixed(3)} × ${_currencyFmt.format(det.precioUnitario)}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    if (det.cantidadEnProduccion > 0) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        '(Faltante: ${det.cantidadEnProduccion % 1 == 0 ? det.cantidadEnProduccion.toInt() : det.cantidadEnProduccion.toStringAsFixed(3)})',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 if (det.observacion != null && det.observacion!.isNotEmpty)
                   Text(
@@ -311,28 +501,94 @@ class _VendedorPedidoDetalleScreenState
   }
 
   Widget _buildTotalRow() {
+    final faltante = pedido.detalles.fold(
+      0.0,
+      (sum, det) => sum + (det.cantidadEnProduccion * det.precioUnitario),
+    );
+    final disponible = pedido.total - faltante;
+    final hasFaltante = faltante > 0;
+
     return _card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Column(
           children: [
-            const Text(
-              'TOTAL',
-              style: TextStyle(
-                color: _primaryBlue,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
+            if (hasFaltante) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Total Original',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                  Text(
+                    _currencyFmt.format(pedido.total),
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
               ),
-            ),
-            Text(
-              _currencyFmt.format(pedido.total),
-              style: const TextStyle(
-                color: _accentBlue,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Diferencia (Faltante)',
+                    style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                  ),
+                  Text(
+                    '- ${_currencyFmt.format(faltante)}',
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
-            ),
+              const Divider(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'TOTAL A DESPACHAR',
+                    style: TextStyle(
+                      color: _primaryBlue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    _currencyFmt.format(disponible),
+                    style: const TextStyle(
+                      color: _accentBlue,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'TOTAL',
+                    style: TextStyle(
+                      color: _primaryBlue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    _currencyFmt.format(pedido.total),
+                    style: const TextStyle(
+                      color: _accentBlue,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

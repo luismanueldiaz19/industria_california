@@ -20,6 +20,7 @@ class PedidoProvider extends ChangeNotifier {
   String? _estado;
   String? _startDate;
   String? _endDate;
+  bool? _faltantes;
 
   List<Pedido> get pedidos => _pedidos;
   bool get isLoading => _isLoading;
@@ -37,6 +38,7 @@ class PedidoProvider extends ChangeNotifier {
     String? estado,
     String? startDate,
     String? endDate,
+    bool? faltantes,
   }) {
     _clienteId = clienteId;
     _rutaId = rutaId;
@@ -44,6 +46,7 @@ class PedidoProvider extends ChangeNotifier {
     _estado = estado;
     _startDate = startDate;
     _endDate = endDate;
+    _faltantes = faltantes;
   }
 
   Future<void> fetchPedidos() async {
@@ -60,6 +63,7 @@ class PedidoProvider extends ChangeNotifier {
         estado: _estado,
         startDate: _startDate,
         endDate: _endDate,
+        faltantes: _faltantes,
         page: _currentPage,
       );
       _pedidos = result['data'];
@@ -89,6 +93,7 @@ class PedidoProvider extends ChangeNotifier {
         estado: _estado,
         startDate: _startDate,
         endDate: _endDate,
+        faltantes: _faltantes,
         page: page,
       );
       _pedidos = result['data'];
@@ -117,6 +122,7 @@ class PedidoProvider extends ChangeNotifier {
         estado: _estado,
         startDate: _startDate,
         endDate: _endDate,
+        faltantes: _faltantes,
         page: _currentPage + 1,
       );
       _pedidos.addAll(result['data']);

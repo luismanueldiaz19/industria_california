@@ -9,12 +9,14 @@ class PedidoFormProvider extends ChangeNotifier {
   LedhouseCliente? _cliente;
   Ruta? _ruta;
   String _comentario = '';
+  DateTime? _fechaEntrega;
+  String _notaProduccion = '';
   final List<CartItem> _carrito = [];
 
   // En caso de edición
   Pedido? _pedidoOriginal;
-  bool get isEditing => _pedidoOriginal != null;
-  int? get originalId => _pedidoOriginal?.id;
+  bool get isEditing => _pedidoOriginal != null && _pedidoOriginal!.id != 0;
+  int? get originalId => isEditing ? _pedidoOriginal?.id : null;
 
   // GPS Override
   bool _usarUbicacionCliente = true;
@@ -28,6 +30,8 @@ class PedidoFormProvider extends ChangeNotifier {
   LedhouseCliente? get cliente => _cliente;
   Ruta? get ruta => _ruta;
   String get comentario => _comentario;
+  DateTime? get fechaEntrega => _fechaEntrega;
+  String get notaProduccion => _notaProduccion;
   List<CartItem> get carrito => _carrito;
 
   double get total => _carrito.fold(0, (sum, item) => sum + item.subtotal);
@@ -41,6 +45,8 @@ class PedidoFormProvider extends ChangeNotifier {
   ) {
     _pedidoOriginal = pedido;
     _comentario = pedido.comentario ?? '';
+    _fechaEntrega = pedido.fechaEntrega;
+    _notaProduccion = pedido.notaProduccion ?? '';
 
     try {
       _cliente = clientes.firstWhere((c) => c.id == pedido.clienteId);
@@ -100,6 +106,15 @@ class PedidoFormProvider extends ChangeNotifier {
   void setComentario(String text) {
     _comentario = text;
     // No hace falta notifyListeners si solo actualiza el modelo en textchange
+  }
+
+  void setFechaEntrega(DateTime? date) {
+    _fechaEntrega = date;
+    notifyListeners();
+  }
+
+  void setNotaProduccion(String text) {
+    _notaProduccion = text;
   }
 
   void toggleUsarUbicacionCliente(bool val) {
@@ -165,6 +180,8 @@ class PedidoFormProvider extends ChangeNotifier {
       'ruta_id': _ruta?.id,
       'estado': estado,
       'comentario': _comentario.isEmpty ? null : _comentario,
+      'nota_produccion': _notaProduccion.isEmpty ? null : _notaProduccion,
+      'fecha_entrega': _fechaEntrega?.toIso8601String().split('T').first,
       'detalles': _carrito.map((i) => i.toJson()).toList(),
     };
 

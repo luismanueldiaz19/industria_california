@@ -33,12 +33,26 @@ import 'modules/inventario/providers/inventario_producto_provider.dart';
 import 'modules/inventario/providers/inventario_movimiento_provider.dart';
 import 'modules/inventario/screens/inventario_productos_screen.dart';
 import 'modules/inventario/screens/inventario_movimientos_screen.dart';
+
+// Módulo Flota y Despacho
+import 'modules/flota/screens/choferes_screen.dart';
+import 'modules/flota/screens/vehiculos_screen.dart';
+import 'modules/flota/screens/despachos_screen.dart';
+import 'modules/flota/screens/mantenimientos_screen.dart';
+import 'modules/flota/screens/gastos_vehiculos_screen.dart';
+import 'modules/flota/providers/chofer_provider.dart';
+import 'modules/flota/providers/vehiculo_provider.dart';
+import 'modules/flota/providers/despacho_provider.dart';
+import 'modules/flota/providers/mantenimiento_provider.dart';
+import 'modules/flota/providers/gasto_vehiculo_provider.dart';
 // Módulo Logística
 import 'modules/logistica/providers/ruta_provider.dart';
 import 'modules/logistica/providers/pedido_provider.dart';
 import 'modules/logistica/screens/pedidos_screen.dart';
 import 'modules/logistica/screens/rutas_screen.dart';
 import 'modules/logistica/screens/admin_ordenes_produccion_screen.dart';
+import 'modules/logistica/screens/reporte_vendedores_screen.dart';
+import 'modules/logistica/providers/reporte_vendedores_provider.dart';
 
 import 'modules/logistica/providers/orden_produccion_provider.dart';
 
@@ -66,6 +80,13 @@ void main() async {
         ChangeNotifierProvider(create: (_) => RutaProvider()),
         ChangeNotifierProvider(create: (_) => PedidoProvider()),
         ChangeNotifierProvider(create: (_) => OrdenProduccionProvider()),
+        ChangeNotifierProvider(create: (_) => ReporteVendedoresProvider()),
+        // Módulo Flota y Despacho
+        ChangeNotifierProvider(create: (_) => ChoferProvider()),
+        ChangeNotifierProvider(create: (_) => VehiculoProvider()),
+        ChangeNotifierProvider(create: (_) => DespachoProvider()),
+        ChangeNotifierProvider(create: (_) => MantenimientoProvider()),
+        ChangeNotifierProvider(create: (_) => GastoVehiculoProvider()),
       ],
       child: const ConstruccionERP(),
     ),
@@ -146,10 +167,17 @@ class _MainLayoutState extends State<MainLayout> {
     // Módulo Inventario (8-9)
     const InventarioProductosScreen(), // 8
     const InventarioMovimientosScreen(), // 9
-    // Módulo Logística y Pedidos (10-12)
+    // Módulo Logística y Pedidos (10-13)
     const PedidosScreen(), // 10
     const RutasScreen(), // 11
     const AdminOrdenesProduccionScreen(), // 12
+    const ReporteVendedoresScreen(), // 13
+    // Módulo Flota y Despacho (14-18)
+    const ChoferesScreen(), // 14
+    const VehiculosScreen(), // 15
+    const DespachosScreen(), // 16
+    const MantenimientosScreen(), // 17
+    const GastosVehiculosScreen(), // 18
   ];
 
   @override

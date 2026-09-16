@@ -241,44 +241,116 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Total
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Container(
+                    // Totals
+                    Builder(
+                      builder: (context) {
+                        double faltanteTotal = 0;
+                        for (var det in pedido.detalles) {
+                          faltanteTotal += (det.cantidadEnProduccion * det.precioUnitario);
+                        }
+                        double realTotal = pedido.total - faltanteTotal;
+
+                        return Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
-                            vertical: 8,
+                            vertical: 12,
                           ),
                           decoration: BoxDecoration(
                             color: _cardColor,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.white10),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const Text(
-                                'TOTAL:',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  const Text(
+                                    'TOTAL ORIGINAL:',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    width: 100,
+                                    child: Text(
+                                      _currencyFmt.format(pedido.total),
+                                      textAlign: TextAlign.right,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 12),
-                              Text(
-                                _currencyFmt.format(pedido.total),
-                                style: const TextStyle(
-                                  color: Colors.greenAccent,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
+                              if (faltanteTotal > 0) ...[
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    const Text(
+                                      'FALTANTE:',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    SizedBox(
+                                      width: 100,
+                                      child: Text(
+                                        _currencyFmt.format(faltanteTotal),
+                                        textAlign: TextAlign.right,
+                                        style: const TextStyle(
+                                          color: Colors.redAccent,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                              ],
+                              const SizedBox(height: 8),
+                              const Divider(height: 1, color: Colors.white10),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  const Text(
+                                    'TOTAL REAL:',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    width: 100,
+                                    child: Text(
+                                      _currencyFmt.format(realTotal),
+                                      textAlign: TextAlign.right,
+                                      style: const TextStyle(
+                                        color: Colors.greenAccent,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                        );
+                      }
                     ),
 
                     if (pedido.comentario != null &&
@@ -385,6 +457,18 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
             ),
           ),
           Expanded(
+            flex: 1,
+            child: Text(
+              'FALT',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
             flex: 2,
             child: Text(
               'PRECIO',
@@ -449,6 +533,21 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                   : det.cantidad.toStringAsFixed(3),
               textAlign: TextAlign.right,
               style: const TextStyle(color: Colors.white70, fontSize: 11),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              det.cantidadEnProduccion > 0
+                  ? (det.cantidadEnProduccion % 1 == 0
+                      ? det.cantidadEnProduccion.toInt().toString()
+                      : det.cantidadEnProduccion.toStringAsFixed(3))
+                  : '-',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: det.cantidadEnProduccion > 0 ? Colors.redAccent : Colors.white24,
+                fontSize: 11,
+              ),
             ),
           ),
           Expanded(

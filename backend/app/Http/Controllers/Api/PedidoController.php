@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Services\PdfSecurityService;
 
+
+
 class PedidoController extends Controller
 {
     public function index(Request $request)
@@ -40,6 +42,12 @@ class PedidoController extends Controller
         }
         if ($request->filled('end_date')) {
             $query->whereDate('created_at', '<=', $request->input('end_date'));
+        }
+
+        if ($request->input('has_faltantes') == '1' || $request->input('has_faltantes') == 'true') {
+            $query->whereHas('detalles', function ($q) {
+                $q->where('cantidad_en_produccion', '>', 0);
+            });
         }
 
         // Vendedor can only see their own orders unless they are admin
@@ -70,15 +78,8 @@ class PedidoController extends Controller
             'detalles.*.cantidad' => 'required|numeric|min:0.01',
             'detalles.*.precio_unitario' => 'required|numeric|min:0',
             'detalles.*.observacion' => 'nullable|string',
-            'detalles.*.observacion' => 'nullable|string',
             'latitud' => 'nullable|numeric',
             'longitud' => 'nullable|numeric',
-            'orden_produccion' => 'nullable|array',
-            'orden_produccion.fecha_estimada_entrega' => 'nullable|date',
-            'orden_produccion.notas' => 'nullable|string',
-            'orden_produccion.detalles' => 'nullable|array',
-            'orden_produccion.detalles.*.producto_id' => 'required_with:orden_produccion.detalles|exists:inventario_productos,id',
-            'orden_produccion.detalles.*.cantidad_faltante' => 'required_with:orden_produccion.detalles|numeric|min:0.01',
         ]);
 
         try {
@@ -107,14 +108,18 @@ class PedidoController extends Controller
                 $subtotal = $precioEnviado * $detalle['cantidad'];
                 $total += $subtotal;
 
+                // Calculamos un faltante estimado para mostrar en borrador (sin lock aún)
+                $stockActual = (float) $producto->stock;
+                $cantidadSolicitada = (float) $detalle['cantidad'];
+                $faltanteEstimado = max(0, $cantidadSolicitada - $stockActual);
+
                 $detallesToInsert[] = [
                     'producto_id' => $producto->id,
                     'cantidad' => $detalle['cantidad'],
                     'precio_unitario' => $precioEnviado,
                     'subtotal' => $subtotal,
                     'observacion' => $detalle['observacion'] ?? null,
-                    // Inicializar temporalmente a 0, se actualizará si hay orden de producción
-                    'cantidad_en_produccion' => 0,
+                    'cantidad_en_produccion' => $faltanteEstimado,
                 ];
             }
 
@@ -135,41 +140,8 @@ class PedidoController extends Controller
                 $pedidoDetallesModels[$det['producto_id']] = PedidoDetalle::create($det);
             }
 
-            // Procesar orden de producción si existe
-            if ($request->filled('orden_produccion')) {
-                $produccionData = $request->input('orden_produccion');
-                
-                $ordenProduccion = OrdenProduccion::create([
-                    'pedido_id' => $pedido->id,
-                    'cliente_id' => $request->cliente_id,
-                    'vendedor_id' => Auth::id(),
-                    'estado' => 'pendiente',
-                    'fecha_estimada_entrega' => $produccionData['fecha_estimada_entrega'] ?? null,
-                    'notas' => $produccionData['notas'] ?? null,
-                ]);
-
-                if (!empty($produccionData['detalles'])) {
-                    foreach ($produccionData['detalles'] as $prodDetalle) {
-                        $pId = $prodDetalle['producto_id'];
-                        $cFaltante = $prodDetalle['cantidad_faltante'];
-
-                        $pdId = null;
-                        if (isset($pedidoDetallesModels[$pId])) {
-                            $pdId = $pedidoDetallesModels[$pId]->id;
-                            // Actualizar la cantidad en producción del detalle del pedido original
-                            $pedidoDetallesModels[$pId]->update(['cantidad_en_produccion' => $cFaltante]);
-                        }
-
-                        OrdenProduccionDetalle::create([
-                            'orden_produccion_id' => $ordenProduccion->id,
-                            'producto_id' => $pId,
-                            'pedido_detalle_id' => $pdId,
-                            'cantidad_faltante' => $cFaltante,
-                            'estado' => 'pendiente',
-                        ]);
-                    }
-                }
-            }
+            // Eliminada la lógica de creación automática de OrdenProduccion desde el JSON.
+            // Los faltantes se manejan automáticamente al pasar a estado "enviado".
 
             if ($request->estado === 'enviado') {
                 $this->_deducirInventario($pedido->load('detalles'));
@@ -202,6 +174,8 @@ class PedidoController extends Controller
             'detalles.*.observacion' => 'nullable|string',
             'latitud' => 'nullable|numeric',
             'longitud' => 'nullable|numeric',
+            'fecha_entrega' => 'nullable|date',
+            'nota_produccion' => 'nullable|string',
         ]);
 
         try {
@@ -230,6 +204,10 @@ class PedidoController extends Controller
                 $subtotal = $precioEnviado * $detalle['cantidad'];
                 $total += $subtotal;
 
+                $stockActual = (float) $producto->stock;
+                $cantidadSolicitada = (float) $detalle['cantidad'];
+                $faltanteEstimado = max(0, $cantidadSolicitada - $stockActual);
+
                 PedidoDetalle::create([
                     'pedido_id' => $pedido->id,
                     'producto_id' => $producto->id,
@@ -237,6 +215,7 @@ class PedidoController extends Controller
                     'precio_unitario' => $precioEnviado,
                     'subtotal' => $subtotal,
                     'observacion' => $detalle['observacion'] ?? null,
+                    'cantidad_en_produccion' => $faltanteEstimado,
                 ]);
             }
 
@@ -248,6 +227,8 @@ class PedidoController extends Controller
                 'total' => $total,
                 'latitud' => $request->latitud,
                 'longitud' => $request->longitud,
+                'fecha_entrega' => $request->fecha_entrega,
+                'nota_produccion' => $request->nota_produccion,
             ]);
 
             if ($originalEstado === 'borrador' && $request->estado === 'enviado') {
@@ -445,28 +426,200 @@ class PedidoController extends Controller
         return $angle * $earthRadius;
     }
 
+    // ── Reporte agrupado por vendedor ─────────────────────────────────────
+    public function reporteVendedores(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate   = $request->input('end_date');
+        $search    = $request->input('search');
+        $mesFmt    = $this->_mesFmtExpr('pedidos.created_at');
+
+        // ── Scope base reutilizable usando el modelo Pedido ──
+        $scope = Pedido::query()
+            ->with('vendedor:id,name')
+            ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+            ->when($endDate,   fn($q) => $q->whereDate('created_at', '<=', $endDate))
+            ->when($search, fn($q) =>
+                $q->whereHas('vendedor', fn($vq) =>
+                    $vq->whereRaw('LOWER(name) LIKE ?', ['%' . mb_strtolower($search) . '%'])
+                )
+            )
+            ->when(!Auth::user()->hasRole('admin'), fn($q) =>
+                $q->where('vendedor_id', Auth::id())
+            );
+
+        // ── Totales agrupados por vendedor (paginados) ──
+        $perPage = min(max((int) $request->input('per_page', 10), 3), 50);
+
+        $paginated = (clone $scope)
+            ->select(
+                'vendedor_id',
+                DB::raw('COUNT(id) as total_pedidos'),
+                DB::raw('SUM(total) as total_monto'),
+                DB::raw("SUM(CASE WHEN estado = 'borrador'  THEN 1 ELSE 0 END) as borrador"),
+                DB::raw("SUM(CASE WHEN estado = 'enviado'   THEN 1 ELSE 0 END) as enviado"),
+                DB::raw("SUM(CASE WHEN estado = 'facturado' THEN 1 ELSE 0 END) as facturado"),
+                DB::raw("SUM(CASE WHEN estado = 'cancelado' THEN 1 ELSE 0 END) as cancelado")
+            )
+            ->groupBy('vendedor_id')
+            ->orderByDesc('total_monto')
+            ->with('vendedor:id,name')
+            ->paginate($perPage);
+
+        // Enriquecer cada item con el nombre del vendedor
+        $paginated->getCollection()->transform(function ($item) use ($scope) {
+            $item->vendedor_nombre = $item->vendedor?->name ?? 'Sin asignar';
+            
+            // Calculate real faltante for this vendor based on the same scope
+            $faltante = (clone $scope)
+                ->where('pedidos.vendedor_id', $item->vendedor_id)
+                ->join('pedido_detalles', 'pedidos.id', '=', 'pedido_detalles.pedido_id')
+                ->sum(\DB::raw('pedido_detalles.cantidad_en_produccion * pedido_detalles.precio_unitario'));
+
+            $item->total_faltante = (float)$faltante;
+            $item->total_real = $item->total_monto - (float)$faltante;
+
+            unset($item->vendedor);
+            return $item;
+        });
+
+        // ── Gráfico 1: pedidos totales por mes ──
+        $graficoMeses = (clone $scope)
+            ->selectRaw("{$mesFmt} as mes, COUNT(id) as total_pedidos, SUM(total) as total_monto")
+            ->groupBy('mes')
+            ->orderBy('mes')
+            ->get()
+            ->map(fn($row) => [
+                'mes'           => $row->mes,
+                'mes_label'     => \Carbon\Carbon::parse($row->mes . '-01')->translatedFormat('M Y'),
+                'total_pedidos' => (int)   $row->total_pedidos,
+                'total_monto'   => (float) $row->total_monto,
+            ]);
+
+        // ── Gráfico 2: pedidos por vendedor × mes ──
+        // Query propia con columnas calificadas para evitar ambigüedad al hacer join.
+        $graficoVendedoresMeses = Pedido::query()
+            ->join('users as v', 'pedidos.vendedor_id', '=', 'v.id')
+            ->when($startDate, fn($q) => $q->whereDate('pedidos.created_at', '>=', $startDate))
+            ->when($endDate,   fn($q) => $q->whereDate('pedidos.created_at', '<=', $endDate))
+            ->when($search, fn($q) =>
+                $q->whereRaw('LOWER(v.name) LIKE ?', ['%' . mb_strtolower($search) . '%'])
+            )
+            ->when(!Auth::user()->hasRole('admin'), fn($q) =>
+                $q->where('pedidos.vendedor_id', Auth::id())
+            )
+            ->selectRaw("v.name as vendedor_nombre, {$mesFmt} as mes, COUNT(pedidos.id) as total_pedidos, SUM(pedidos.total) as total_monto")
+            ->groupBy('v.name', 'mes')
+            ->orderBy('mes')
+            ->get();
+
+        // ── Resumen general ──
+        $resumen = (clone $scope)
+            ->selectRaw('COUNT(id) as total_pedidos, SUM(total) as total_monto, COUNT(DISTINCT vendedor_id) as total_vendedores')
+            ->first();
+
+        $totalFaltanteGeneral = (clone $scope)
+            ->join('pedido_detalles', 'pedidos.id', '=', 'pedido_detalles.pedido_id')
+            ->sum(\DB::raw('pedido_detalles.cantidad_en_produccion * pedido_detalles.precio_unitario'));
+
+        return response()->json([
+            'vendedores'               => $paginated,
+            'grafico_meses'            => $graficoMeses,
+            'grafico_vendedores_meses' => $graficoVendedoresMeses,
+            'resumen' => [
+                'total_pedidos'    => (int)   ($resumen->total_pedidos    ?? 0),
+                'total_monto'      => (float) ($resumen->total_monto      ?? 0),
+                'total_faltante'   => (float) $totalFaltanteGeneral,
+                'total_real'       => (float) (($resumen->total_monto ?? 0) - $totalFaltanteGeneral),
+                'total_vendedores' => (int)   ($resumen->total_vendedores ?? 0),
+            ],
+        ]);
+    }
+
+    public function getReporteVendedoresPdfUrl(Request $request)
+    {
+        $params = $request->only(['start_date', 'end_date', 'search']);
+        if (!Auth::user()->hasRole('admin')) {
+            $params['vendedor_id'] = Auth::id();
+        }
+        $url = PdfSecurityService::generarUrl('pedidos_vendedores', $params, Auth::id(), 30);
+        return response()->json(['url' => $url]);
+    }
+
     private function _deducirInventario(Pedido $pedido)
     {
+        $detallesFaltantes = [];
+
         foreach ($pedido->detalles as $detalle) {
             $producto = InventarioProducto::lockForUpdate()->find($detalle->producto_id);
             if ($producto) {
-                $stockAnterior = (float) $producto->stock;
-                $cantidad = (float) $detalle->cantidad;
-                $stockResultante = $stockAnterior - $cantidad;
+                $stockReal = (float) $producto->stock;
+                $cantidadSolicitada = (float) $detalle->cantidad;
+                
+                // Calculamos el faltante exacto bloqueando el registro en el momento del envío
+                $cantidadFaltante = max(0, $cantidadSolicitada - $stockReal);
+                $cantidadAEntregar = $cantidadSolicitada - $cantidadFaltante;
+                
+                // Actualizamos permanentemente la cantidad faltante en el detalle del pedido
+                $detalle->update(['cantidad_en_produccion' => $cantidadFaltante]);
 
-                $producto->update(['stock' => $stockResultante]);
+                if ($cantidadFaltante > 0) {
+                    $detallesFaltantes[] = [
+                        'producto_id'       => $detalle->producto_id,
+                        'pedido_detalle_id' => $detalle->id,
+                        'cantidad_faltante' => $cantidadFaltante,
+                    ];
+                }
 
-                InventarioMovimiento::create([
-                    'producto_id'      => $producto->id,
-                    'user_id'          => Auth::id(),
-                    'tipo'             => 'VENTA',
-                    'subtipo'          => 'VENTA A PEDIDO',
-                    'cantidad'         => -$cantidad,
-                    'stock_anterior'   => $stockAnterior,
-                    'stock_resultante' => $stockResultante,
-                    'nota'             => "Pedido #{$pedido->id}",
-                ]);
+                if ($cantidadAEntregar > 0) {
+                    $stockResultante = $stockReal - $cantidadAEntregar;
+                    $producto->update(['stock' => $stockResultante]);
+
+                    InventarioMovimiento::create([
+                        'producto_id'      => $producto->id,
+                        'user_id'          => Auth::id(),
+                        'tipo'             => 'VENTA',
+                        'subtipo'          => 'VENTA A PEDIDO',
+                        'cantidad'         => -$cantidadAEntregar,
+                        'stock_anterior'   => $stockReal,
+                        'stock_resultante' => $stockResultante,
+                        'nota'             => "Pedido #{$pedido->id}",
+                    ]);
+                }
             }
         }
+
+        // Si hubieron faltantes, generamos la Orden de Producción automáticamente
+        if (count($detallesFaltantes) > 0) {
+            $notaExtra = $pedido->nota_produccion ? "\nNota de vendedor: {$pedido->nota_produccion}" : '';
+            $ordenProduccion = \App\Models\OrdenProduccion::create([
+                'pedido_id'   => $pedido->id,
+                'cliente_id'  => $pedido->cliente_id,
+                'vendedor_id' => $pedido->vendedor_id,
+                'estado'      => 'pendiente',
+                'fecha_estimada_entrega' => $pedido->fecha_entrega,
+                'notas'       => "Orden automática generada por faltantes del Pedido #{$pedido->id}{$notaExtra}",
+            ]);
+
+            foreach ($detallesFaltantes as $df) {
+                $df['orden_produccion_id'] = $ordenProduccion->id;
+                \App\Models\OrdenProduccionDetalle::create($df);
+            }
+        }
+    }
+
+    /**
+     * Retorna la expresión SQL de año-mes compatible con el driver activo.
+     * - SQLite  → strftime('%Y-%m', col)
+     * - MySQL   → DATE_FORMAT(col, '%Y-%m')
+     * - PgSQL   → TO_CHAR(col, 'YYYY-MM')
+     */
+    private function _mesFmtExpr(string $columna): string
+    {
+        return match (DB::getDriverName()) {
+            'sqlite' => "strftime('%Y-%m', {$columna})",
+            'pgsql'  => "TO_CHAR({$columna}, 'YYYY-MM')",
+            default  => "DATE_FORMAT({$columna}, '%Y-%m')",
+        };
     }
 }

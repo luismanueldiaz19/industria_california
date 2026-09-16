@@ -10,6 +10,7 @@ class PedidoService {
     int? rutaId,
     int? vendedorId,
     String? estado,
+    bool? faltantes,
     String? startDate,
     String? endDate,
     int page = 1,
@@ -19,6 +20,7 @@ class PedidoService {
       if (rutaId != null) 'ruta_id': rutaId.toString(),
       if (vendedorId != null) 'vendedor_id': vendedorId.toString(),
       if (estado != null) 'estado': estado,
+      if (faltantes == true) 'has_faltantes': '1',
       if (startDate != null) 'start_date': startDate,
       if (endDate != null) 'end_date': endDate,
       'page': page.toString(),
@@ -95,6 +97,47 @@ class PedidoService {
     // Ojo: la ruta de backend es /industria-california/pedidos-pdf-url
     final response = await _http.get(
       'industria-california/pedidos-pdf-url',
+      params: queryParams,
+    );
+    return response['url'] as String;
+  }
+
+  /// Obtiene los datos del reporte agrupado por vendedor (paginado).
+  /// El parámetro [search] aplica búsqueda insensible a mayúsculas sobre el nombre del vendedor.
+  Future<Map<String, dynamic>> getReporteVendedores({
+    String? startDate,
+    String? endDate,
+    String? search,
+    int page = 1,
+    int perPage = 10,
+  }) async {
+    final queryParams = {
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      // Se envía el texto tal cual; el backend hace mb_strtolower()
+      if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      'page': page.toString(),
+      'per_page': perPage.toString(),
+    };
+    return await _http.get(
+      'industria-california/pedidos/reporte-vendedores',
+      params: queryParams,
+    );
+  }
+
+  /// Genera URL segura con token para el PDF del reporte por vendedor.
+  Future<String> getReporteVendedoresPdfUrl({
+    String? startDate,
+    String? endDate,
+    String? search,
+  }) async {
+    final queryParams = {
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+    };
+    final response = await _http.get(
+      'industria-california/pedidos-vendedores-pdf-url',
       params: queryParams,
     );
     return response['url'] as String;

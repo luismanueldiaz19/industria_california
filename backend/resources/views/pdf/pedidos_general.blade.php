@@ -83,30 +83,51 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th style="width: 8%;">ID</th>
-                    <th style="width: 15%;">FECHA</th>
-                    <th style="width: 25%;">CLIENTE</th>
-                    <th style="width: 17%;">VENDEDOR</th>
-                    <th style="width: 15%;" class="center">ESTADO</th>
-                    <th class="right" style="width: 20%;">TOTAL</th>
+                    <th style="width: 6%;">ID</th>
+                    <th style="width: 12%;">FECHA</th>
+                    <th style="width: 20%;">CLIENTE</th>
+                    <th style="width: 15%;">VENDEDOR</th>
+                    <th style="width: 11%;" class="center">ESTADO</th>
+                    <th class="right" style="width: 12%;">T. ORIG</th>
+                    <th class="right" style="width: 12%;">FALTANTE</th>
+                    <th class="right" style="width: 12%;">REAL</th>
                 </tr>
             </thead>
             <tbody>
-                @php $granTotal = 0; @endphp
+                @php 
+                    $granTotalOriginal = 0; 
+                    $granTotalFaltante = 0;
+                    $granTotalReal = 0;
+                @endphp
                 @foreach($pedidos as $pedido)
-                    @php $granTotal += $pedido->total; @endphp
+                    @php 
+                        $totalOriginal = $pedido->total;
+                        $faltante = 0;
+                        if($pedido->detalles) {
+                            foreach($pedido->detalles as $det) {
+                                $faltante += ($det->cantidad_en_produccion * $det->precio_unitario);
+                            }
+                        }
+                        $totalReal = $totalOriginal - $faltante;
+
+                        $granTotalOriginal += $totalOriginal;
+                        $granTotalFaltante += $faltante;
+                        $granTotalReal += $totalReal;
+                    @endphp
                     <tr>
                         <td>#{{ $pedido->id }}</td>
                         <td>{{ \Carbon\Carbon::parse($pedido->created_at)->format('d/m/Y H:i') }}</td>
                         <td>{{ $pedido->cliente->nombre ?? 'N/A' }}</td>
                         <td>{{ $pedido->vendedor->name ?? 'N/A' }}</td>
                         <td class="center">{{ strtoupper($pedido->estado) }}</td>
-                        <td class="right">${{ number_format($pedido->total, 2) }}</td>
+                        <td class="right">${{ number_format($totalOriginal, 2) }}</td>
+                        <td class="right" style="color: {{ $faltante > 0 ? '#d32f2f' : 'inherit' }}">${{ number_format($faltante, 2) }}</td>
+                        <td class="right" style="font-weight: bold;">${{ number_format($totalReal, 2) }}</td>
                     </tr>
                 @endforeach
                 @if($pedidos->isEmpty())
                     <tr>
-                        <td colspan="6" class="center">No se encontraron pedidos en el rango seleccionado.</td>
+                        <td colspan="8" class="center">No se encontraron pedidos en el rango seleccionado.</td>
                     </tr>
                 @endif
             </tbody>
@@ -114,9 +135,17 @@
 
         @if($pedidos->isNotEmpty())
             <table class="totals">
+                <tr>
+                    <th>TOTAL ORIGINAL:</th>
+                    <td>${{ number_format($granTotalOriginal, 2) }}</td>
+                </tr>
+                <tr>
+                    <th>TOTAL FALTANTES:</th>
+                    <td style="color: #d32f2f;">${{ number_format($granTotalFaltante, 2) }}</td>
+                </tr>
                 <tr class="grand-total">
-                    <th>TOTAL GENERAL:</th>
-                    <td>${{ number_format($granTotal, 2) }}</td>
+                    <th>TOTAL REAL:</th>
+                    <td>${{ number_format($granTotalReal, 2) }}</td>
                 </tr>
             </table>
         @endif

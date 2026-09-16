@@ -3,6 +3,7 @@ class PedidoDetalle {
   final int? pedidoId;
   final int productoId;
   final double cantidad;
+  final double cantidadEnProduccion;
   final double precioUnitario;
   final double subtotal;
   final String? observacion;
@@ -16,6 +17,7 @@ class PedidoDetalle {
     this.pedidoId,
     required this.productoId,
     required this.cantidad,
+    required this.cantidadEnProduccion,
     required this.precioUnitario,
     required this.subtotal,
     this.observacion,
@@ -29,6 +31,7 @@ class PedidoDetalle {
       pedidoId: json['pedido_id'],
       productoId: json['producto_id'],
       cantidad: double.tryParse(json['cantidad']?.toString() ?? '0') ?? 0,
+      cantidadEnProduccion: double.tryParse(json['cantidad_en_produccion']?.toString() ?? '0') ?? 0,
       precioUnitario: double.tryParse(json['precio_unitario']?.toString() ?? '0') ?? 0,
       subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0,
       observacion: json['observacion'],

@@ -49,4 +49,11 @@ class Pedido extends Model
     {
         return $this->hasMany(PedidoDetalle::class, 'pedido_id');
     }
+
+    public function despachos()
+    {
+        return $this->belongsToMany(Despacho::class, 'despacho_pedido')
+            ->withPivot(['orden_entrega', 'estado_entrega', 'comentario_entrega'])
+            ->withTimestamps();
+    }
 }

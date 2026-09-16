@@ -49,4 +49,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function chofer()
+    {
+        return $this->hasOne(Chofer::class);
+    }
 }

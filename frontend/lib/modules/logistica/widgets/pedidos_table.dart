@@ -452,7 +452,27 @@ class _PedidosTableState extends State<PedidosTable> {
                     ),
                     DataColumn(
                       label: Text(
-                        'Total',
+                        'T. Orig',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Faltante',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Real',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -493,6 +513,11 @@ class _PedidosTableState extends State<PedidosTable> {
                   ],
                   rows: provider.pedidos.map((pedido) {
                     final colorEstado = _getColorForEstado(pedido.estado);
+                    double faltante = 0;
+                    for (var det in pedido.detalles) {
+                      faltante +=
+                          (det.cantidadEnProduccion * det.precioUnitario);
+                    }
                     return DataRow(
                       selected: _selectedIds.contains(pedido.id),
                       onSelectChanged: isAdmin
@@ -563,6 +588,28 @@ class _PedidosTableState extends State<PedidosTable> {
                         DataCell(
                           Text(
                             _currencyFmt.format(pedido.total),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            _currencyFmt.format(faltante),
+                            style: TextStyle(
+                              color: faltante > 0
+                                  ? Colors.redAccent
+                                  : Colors.white70,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            _currencyFmt.format(pedido.total - faltante),
                             style: const TextStyle(
                               color: Colors.greenAccent,
                               fontWeight: FontWeight.bold,

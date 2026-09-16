@@ -162,6 +162,8 @@ Route::prefix('v1')->group(function () {
                 Route::patch('pedidos/{pedido}/estado', [PedidoController::class, 'changeStatus']);
                 Route::get('pedidos-pdf-url', [PedidoController::class, 'getGeneralPdfUrl']);
                 Route::get('pedidos/{id}/pdf-url', [PedidoController::class, 'getPdfUrl']);
+                Route::get('pedidos/reporte-vendedores', [PedidoController::class, 'reporteVendedores']);
+                Route::get('pedidos-vendedores-pdf-url', [PedidoController::class, 'getReporteVendedoresPdfUrl']);
                 Route::apiResource('pedidos', PedidoController::class)->except(['show']);
                 
                 // Órdenes de Producción

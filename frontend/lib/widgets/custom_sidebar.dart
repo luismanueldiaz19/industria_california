@@ -46,8 +46,10 @@ class _CustomSidebarState extends State<CustomSidebar> {
       _expandedSection = '11.';
     } else if (widget.selectedIndex == 8 || widget.selectedIndex == 9) {
       _expandedSection = '3. INVENTARIO';
-    } else if (widget.selectedIndex == 10 || widget.selectedIndex == 11) {
+    } else if (widget.selectedIndex >= 10 && widget.selectedIndex <= 13) {
       _expandedSection = '4. LOGÍSTICA Y PEDIDOS';
+    } else if (widget.selectedIndex >= 14 && widget.selectedIndex <= 18) {
+      _expandedSection = '5. FLOTA Y DESPACHO';
     }
   }
 
@@ -196,6 +198,13 @@ class _CustomSidebarState extends State<CustomSidebar> {
                       accentColor,
                     ),
                     _buildMenuItem(
+                      13,
+                      Icons.bar_chart_outlined,
+                      Icons.bar_chart_rounded,
+                      'Análisis de Ventas',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
                       11,
                       Icons.map_outlined,
                       Icons.map_rounded,
@@ -207,6 +216,48 @@ class _CustomSidebarState extends State<CustomSidebar> {
                       Icons.factory_outlined,
                       Icons.factory_rounded,
                       'Producción',
+                      accentColor,
+                    ),
+                  ],
+                ),
+
+                _buildExpansionSection(
+                  '5. FLOTA Y DESPACHO',
+                  Icons.directions_bus_outlined,
+                  [
+                    _buildMenuItem(
+                      14,
+                      Icons.badge_outlined,
+                      Icons.badge_rounded,
+                      'Choferes',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
+                      15,
+                      Icons.directions_car_outlined,
+                      Icons.directions_car_rounded,
+                      'Vehículos',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
+                      16,
+                      Icons.route_outlined,
+                      Icons.route_rounded,
+                      'Despachos',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
+                      17,
+                      Icons.build_outlined,
+                      Icons.build_rounded,
+                      'Mantenimientos',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
+                      18,
+                      Icons.receipt_long_outlined,
+                      Icons.receipt_long_rounded,
+                      'Gastos y Combustible',
                       accentColor,
                     ),
                   ],

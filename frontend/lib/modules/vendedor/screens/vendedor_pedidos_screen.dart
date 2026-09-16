@@ -26,6 +26,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
 
   static const _estados = [
     'todos',
+    'pendientes',
     'borrador',
     'enviado',
     'facturado',
@@ -62,7 +63,11 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
   void _loadData() {
     final provider = context.read<PedidoProvider>();
     final estado = _estados[_estadoIndex];
-    provider.setFiltros(estado: estado == 'todos' ? null : estado);
+    if (estado == 'pendientes') {
+      provider.setFiltros(estado: null, faltantes: true);
+    } else {
+      provider.setFiltros(estado: estado == 'todos' ? null : estado, faltantes: false);
+    }
     provider.fetchPedidos();
   }
 
@@ -320,6 +325,13 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
       'es',
     ).format(pedido.createdAt);
 
+    final faltante = pedido.detalles.fold(
+      0.0,
+      (sum, det) => sum + (det.cantidadEnProduccion * det.precioUnitario),
+    );
+    final disponible = pedido.total - faltante;
+    final hasFaltante = faltante > 0;
+
     return GestureDetector(
       onTap: () => _goToDetalle(pedido),
       child: Container(
@@ -355,13 +367,21 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      'Pedido #${pedido.id}',
-                      style: const TextStyle(
-                        color: _bgPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Pedido #${pedido.id}',
+                          style: const TextStyle(
+                            color: _bgPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (hasFaltante) ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.warning_rounded, color: Colors.redAccent, size: 16),
+                        ],
+                      ],
                     ),
                   ),
                   Container(
@@ -434,14 +454,37 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                           fontSize: 12,
                         ),
                       ),
-                      Text(
-                        _currencyFmt.format(pedido.total),
-                        style: const TextStyle(
-                          color: _bgSecondary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      if (hasFaltante)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              _currencyFmt.format(pedido.total),
+                              style: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontSize: 12,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                            Text(
+                              _currencyFmt.format(disponible),
+                              style: const TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Text(
+                          _currencyFmt.format(pedido.total),
+                          style: const TextStyle(
+                            color: _bgSecondary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ],

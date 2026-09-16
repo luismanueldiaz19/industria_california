@@ -131,11 +131,23 @@
                         <strong>Información Adicional</strong>
                         <span class="label">Vendedor:</span> {{ $pedido->vendedor->name ?? 'N/A' }}<br>
                         <span class="label">Ruta:</span> {{ $pedido->ruta->nombre ?? 'N/A' }}<br>
+                        @if($pedido->fecha_entrega)
+                        <span class="label">Entrega:</span> {{ \Carbon\Carbon::parse($pedido->fecha_entrega)->format('d/m/Y') }}<br>
+                        @endif
                         <span class="label">Comentario:</span> {{ $pedido->comentario ?? 'Ninguno' }}
                     </div>
                 </td>
             </tr>
         </table>
+
+        @php
+            $totalFaltante = 0;
+            foreach($pedido->detalles as $det) {
+                $totalFaltante += $det->cantidad_en_produccion * $det->precio_unitario;
+            }
+            $totalDisponible = $pedido->total - $totalFaltante;
+            $hasFaltante = $totalFaltante > 0;
+        @endphp
 
         <!-- Detalles de Productos -->
         <table class="table">
@@ -160,6 +172,9 @@
                     </td>
                     <td class="center">
                         {{ fmod($det->cantidad, 1) == 0 ? number_format($det->cantidad, 0) : number_format($det->cantidad, 3) }}
+                        @if($det->cantidad_en_produccion > 0)
+                            <br><small style="color: #E53935; font-weight: bold;">(Faltante: {{ fmod($det->cantidad_en_produccion, 1) == 0 ? number_format($det->cantidad_en_produccion, 0) : number_format($det->cantidad_en_produccion, 3) }})</small>
+                        @endif
                     </td>
                     <td class="right">${{ number_format($det->precio_unitario, 2) }}</td>
                     <td class="right">${{ number_format($det->subtotal, 2) }}</td>
@@ -170,10 +185,25 @@
 
         <!-- Totales -->
         <table class="totals">
-            <tr class="grand-total">
-                <th>TOTAL:</th>
-                <td>${{ number_format($pedido->total, 2) }}</td>
-            </tr>
+            @if($hasFaltante)
+                <tr>
+                    <th style="font-size: 11px; color: #666; border-bottom: none;">Total Original:</th>
+                    <td style="font-size: 11px; color: #666; border-bottom: none;">${{ number_format($pedido->total, 2) }}</td>
+                </tr>
+                <tr>
+                    <th style="font-size: 11px; color: #E53935; border-bottom: none;">Diferencia (Faltante):</th>
+                    <td style="font-size: 11px; color: #E53935; border-bottom: none;">- ${{ number_format($totalFaltante, 2) }}</td>
+                </tr>
+                <tr class="grand-total">
+                    <th>TOTAL A DESPACHAR:</th>
+                    <td>${{ number_format($totalDisponible, 2) }}</td>
+                </tr>
+            @else
+                <tr class="grand-total">
+                    <th>TOTAL:</th>
+                    <td>${{ number_format($pedido->total, 2) }}</td>
+                </tr>
+            @endif
         </table>
 
         <!-- Footer -->
