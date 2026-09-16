@@ -380,6 +380,7 @@ class _PedidosTableState extends State<PedidosTable> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
+                  showCheckboxColumn: false,
                   columnSpacing: 20,
                   dataRowMinHeight: 40,
                   dataRowMaxHeight: 50,

@@ -37,11 +37,20 @@ class PedidoController extends Controller
         if ($request->filled('estado')) {
             $query->where('estado', $request->input('estado'));
         }
-        if ($request->filled('start_date')) {
-            $query->whereDate('created_at', '>=', $request->input('start_date'));
-        }
-        if ($request->filled('end_date')) {
-            $query->whereDate('created_at', '<=', $request->input('end_date'));
+        if ($request->filled('start_date') || $request->filled('end_date')) {
+            if ($request->filled('start_date')) {
+                $query->whereDate('created_at', '>=', $request->input('start_date'));
+            }
+            if ($request->filled('end_date')) {
+                $query->whereDate('created_at', '<=', $request->input('end_date'));
+            }
+        } else {
+            // Default filter if no date is selected:
+            // Only today's records OR pending/draft records
+            $query->where(function ($q) {
+                $q->whereDate('created_at', now()->toDateString())
+                  ->orWhereIn('estado', ['borrador', 'enviado']);
+            });
         }
 
         if ($request->input('has_faltantes') == '1' || $request->input('has_faltantes') == 'true') {
