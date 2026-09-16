@@ -437,8 +437,8 @@ class PedidoController extends Controller
         // ── Scope base reutilizable usando el modelo Pedido ──
         $scope = Pedido::query()
             ->with('vendedor:id,name')
-            ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
-            ->when($endDate,   fn($q) => $q->whereDate('created_at', '<=', $endDate))
+            ->when($startDate, fn($q) => $q->whereDate('pedidos.created_at', '>=', $startDate))
+            ->when($endDate,   fn($q) => $q->whereDate('pedidos.created_at', '<=', $endDate))
             ->when($search, fn($q) =>
                 $q->whereHas('vendedor', fn($vq) =>
                     $vq->whereRaw('LOWER(name) LIKE ?', ['%' . mb_strtolower($search) . '%'])
