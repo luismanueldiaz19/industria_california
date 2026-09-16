@@ -1,5 +1,5 @@
 import 'package:url_launcher/url_launcher.dart';
-import '../core/constants.dart';
+import '../utils/constants.dart';
 import 'http_service.dart';
 
 /// NominaExportService — Descarga de reportes Excel del módulo de nómina.

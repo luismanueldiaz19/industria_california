@@ -60,9 +60,7 @@ class CartItem {
   double get maxPrecio => precioBase * 1.75;
 
   bool get precioEsValido {
-    final p = precioActual;
-    if (precioBase <= 0) return p >= 0;
-    return p >= minPrecio && p <= maxPrecio;
+    return true; // Restricción desactivada temporalmente a petición del usuario
   }
 
   Map<String, dynamic> toJson() => {

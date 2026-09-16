@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 import '../models/inventario_producto.dart';
 import '../models/inventario_categoria.dart';
 import '../providers/inventario_producto_provider.dart';

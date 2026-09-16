@@ -1,6 +1,6 @@
 import 'package:http/http.dart' as http;
 import '../models/inventario_producto.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 
 class InventarioProductoService {
   final HttpService _http = HttpService();
@@ -25,7 +25,8 @@ class InventarioProductoService {
     };
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (categoriaId != null) params['categoria_id'] = categoriaId.toString();
-    if (estadoStock != null && estadoStock.isNotEmpty) params['estado_stock'] = estadoStock;
+    if (estadoStock != null && estadoStock.isNotEmpty)
+      params['estado_stock'] = estadoStock;
     if (soloNegativos) params['solo_negativos'] = 'true';
 
     final response = await _http.get(_base, params: params);
@@ -49,7 +50,10 @@ class InventarioProductoService {
   }
 
   Future<InventarioProducto> updateProducto(InventarioProducto producto) async {
-    final response = await _http.put('$_base/${producto.id}', producto.toJson());
+    final response = await _http.put(
+      '$_base/${producto.id}',
+      producto.toJson(),
+    );
     return InventarioProducto.fromJson(response as Map<String, dynamic>);
   }
 
@@ -58,9 +62,20 @@ class InventarioProductoService {
   }
 
   /// Sube imagen del producto (comprimida en el backend a JPEG 80%, max 800x800)
-  Future<Map<String, dynamic>> uploadImagen(int productoId, List<int> bytes, String filename) async {
-    final file = http.MultipartFile.fromBytes('imagen', bytes, filename: filename);
-    final response = await _http.multipart('$_base/$productoId/imagen', files: [file]);
+  Future<Map<String, dynamic>> uploadImagen(
+    int productoId,
+    List<int> bytes,
+    String filename,
+  ) async {
+    final file = http.MultipartFile.fromBytes(
+      'imagen',
+      bytes,
+      filename: filename,
+    );
+    final response = await _http.multipart(
+      '$_base/$productoId/imagen',
+      files: [file],
+    );
     return response as Map<String, dynamic>;
   }
 
@@ -68,8 +83,15 @@ class InventarioProductoService {
     await _http.delete('$_base/$productoId/imagen');
   }
 
-  Future<Map<String, dynamic>> importExcel(List<int> bytes, String filename) async {
-    final file = http.MultipartFile.fromBytes('file', bytes, filename: filename);
+  Future<Map<String, dynamic>> importExcel(
+    List<int> bytes,
+    String filename,
+  ) async {
+    final file = http.MultipartFile.fromBytes(
+      'file',
+      bytes,
+      filename: filename,
+    );
     final response = await _http.multipart(
       'industria-california/inventario/productos/import',
       files: [file],
@@ -87,7 +109,8 @@ class InventarioProductoService {
     final params = <String, String>{'order_by': orderBy, 'order_dir': orderDir};
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (categoriaId != null) params['categoria_id'] = categoriaId.toString();
-    if (estadoStock != null && estadoStock.isNotEmpty) params['estado_stock'] = estadoStock;
+    if (estadoStock != null && estadoStock.isNotEmpty)
+      params['estado_stock'] = estadoStock;
 
     final response = await _http.get(
       'industria-california/inventario/productos-pdf-url',

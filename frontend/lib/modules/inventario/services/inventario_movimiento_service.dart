@@ -1,5 +1,5 @@
 import '../models/inventario_movimiento.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 
 class InventarioMovimientoService {
   final HttpService _http = HttpService();
@@ -38,7 +38,9 @@ class InventarioMovimientoService {
     };
   }
 
-  Future<InventarioMovimiento> registrarMovimiento(InventarioMovimiento movimiento) async {
+  Future<InventarioMovimiento> registrarMovimiento(
+    InventarioMovimiento movimiento,
+  ) async {
     final response = await _http.post(_base, movimiento.toJson());
     return InventarioMovimiento.fromJson(response as Map<String, dynamic>);
   }

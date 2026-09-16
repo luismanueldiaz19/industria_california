@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:industria_california/core/constants.dart';
+import 'package:industria_california/core/utils/constants.dart';
 
 const timeout = Duration(seconds: 15);
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/auth_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../logistica/models/orden_produccion.dart';
 import '../../logistica/providers/orden_produccion_provider.dart';
 

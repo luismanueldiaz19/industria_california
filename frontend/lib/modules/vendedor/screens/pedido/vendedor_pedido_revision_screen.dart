@@ -393,13 +393,16 @@ class _VendedorPedidoRevisionScreenState
                         children: [
                           const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
                           const SizedBox(width: 8),
-                          Text(
-                            provider.fechaEntrega == null
-                                ? 'Seleccionar Fecha de Entrega del Pedido'
-                                : 'Entrega: ${DateFormat('dd/MM/yyyy').format(provider.fechaEntrega!)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: provider.fechaEntrega == null ? Colors.grey : Colors.black87,
+                          Expanded(
+                            child: Text(
+                              provider.fechaEntrega == null
+                                  ? 'Seleccionar Fecha de Entrega'
+                                  : 'Entrega: ${DateFormat('dd/MM/yyyy').format(provider.fechaEntrega!)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: provider.fechaEntrega == null ? Colors.grey : Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],

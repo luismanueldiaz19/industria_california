@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import '../../../../core/constants.dart';
+import '../../../core/utils/constants.dart';
 
 /// Servicio para sincronizar inventario desde Excel (2 fases: preview → confirm).
 /// Mismo patrón que VendedorCxcService.

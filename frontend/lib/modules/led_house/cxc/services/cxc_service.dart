@@ -1,4 +1,4 @@
-import '../../../../services/http_service.dart';
+import '../../../../core/services/http_service.dart';
 import '../models/cxc_model.dart';
 import '../models/cxc_soporte_model.dart';
 
@@ -45,7 +45,10 @@ class CxcService {
     return CxcSoporteModel.fromJson(response);
   }
 
-  Future<List<Map<String, dynamic>>> getGroupedByCliente({int? vendedorId, bool? vencidos}) async {
+  Future<List<Map<String, dynamic>>> getGroupedByCliente({
+    int? vendedorId,
+    bool? vencidos,
+  }) async {
     String query = '';
     if (vendedorId != null || (vencidos ?? false)) {
       query = '?';
@@ -56,7 +59,11 @@ class CxcService {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  Future<Map<String, dynamic>> importarExcel(int clienteId, List<int> bytes, String filename) async {
+  Future<Map<String, dynamic>> importarExcel(
+    int clienteId,
+    List<int> bytes,
+    String filename,
+  ) async {
     final response = await _http.uploadFile(
       'ledhouse/cxc/import-by-cliente/$clienteId',
       bytes,

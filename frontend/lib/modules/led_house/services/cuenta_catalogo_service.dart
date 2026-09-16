@@ -1,6 +1,6 @@
 import 'package:http/http.dart' as http;
 import '../models/cuenta_catalogo_model.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 
 class CuentaCatalogoService {
   final HttpService _http = HttpService();

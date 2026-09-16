@@ -75,8 +75,7 @@ class PedidoController extends Controller
         return response()->json($query->paginate($perPage));
     }
 
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
         $request->validate([
             'cliente_id' => 'required|exists:ledhouse_clientes,id',
             'ruta_id' => 'nullable|exists:rutas,id',
@@ -102,7 +101,8 @@ class PedidoController extends Controller
                 $precioEnviado = (float) $detalle['precio_unitario'];
                 $precioBase = (float) $producto->venta;
 
-                // Validate ±20% constraint
+                // Validate ±20% constraint (Desactivado a petición del usuario)
+                /*
                 if ($precioBase > 0) {
                     $minPrice = $precioBase * 0.8;
                     $maxPrice = $precioBase * 1.2;
@@ -113,6 +113,7 @@ class PedidoController extends Controller
                         ], 422);
                     }
                 }
+                */
 
                 $subtotal = $precioEnviado * $detalle['cantidad'];
                 $total += $subtotal;
@@ -200,6 +201,8 @@ class PedidoController extends Controller
                 $precioEnviado = (float) $detalle['precio_unitario'];
                 $precioBase = (float) $producto->venta;
 
+                // Restricción desactivada
+                /*
                 if ($precioBase > 0) {
                     $minPrice = $precioBase * 0.8;
                     $maxPrice = $precioBase * 1.2;
@@ -209,6 +212,7 @@ class PedidoController extends Controller
                         ], 422);
                     }
                 }
+                */
 
                 $subtotal = $precioEnviado * $detalle['cantidad'];
                 $total += $subtotal;

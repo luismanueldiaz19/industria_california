@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 import '../models/ledhouse_proveedor.dart';
 
 class LedhouseProveedorProvider with ChangeNotifier {

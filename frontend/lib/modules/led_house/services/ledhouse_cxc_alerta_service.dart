@@ -1,4 +1,4 @@
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 import '../models/cxc_alerta_model.dart';
 
 class LedhouseCxcAlertaService {
@@ -29,7 +29,10 @@ class LedhouseCxcAlertaService {
       if (montoPagado != null) 'monto_pagado': montoPagado,
       if (estadoCxc != null) 'estado_cxc': estadoCxc,
     };
-    final res = await _http.patch('ledhouse/cxc/alertas/$alertaId/resolver', body);
+    final res = await _http.patch(
+      'ledhouse/cxc/alertas/$alertaId/resolver',
+      body,
+    );
     return res as Map<String, dynamic>;
   }
 

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import 'package:industria_california/services/http_service.dart';
-import '../constants.dart';
+import 'package:industria_california/core/services/http_service.dart';
+import '../utils/constants.dart';
 
 class ProfileService {
   final String _base = '$host/api/v1';

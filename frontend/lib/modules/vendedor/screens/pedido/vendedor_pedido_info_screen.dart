@@ -4,7 +4,7 @@ import '../../providers/pedido_form_provider.dart';
 import '../../widgets/pedido_cliente_selector.dart';
 import '../../widgets/pedido_ruta_selector.dart';
 
-import '../../../../services/gps_service.dart';
+import '../../../../core/services/gps_service.dart';
 
 class VendedorPedidoInfoScreen extends StatefulWidget {
   final VoidCallback onNext;
@@ -73,7 +73,10 @@ class _VendedorPedidoInfoScreenState extends State<VendedorPedidoInfoScreen> {
               filled: true,
               fillColor: Colors.white,
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 10,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
@@ -171,7 +174,10 @@ class _VendedorPedidoInfoScreenState extends State<VendedorPedidoInfoScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Usar ubicación del cliente (Predeterminado)', style: TextStyle(fontSize: 12)),
+                    const Text(
+                      'Usar ubicación del cliente (Predeterminado)',
+                      style: TextStyle(fontSize: 12),
+                    ),
                     if (tieneGpsCliente)
                       Text(
                         '${provider.cliente!.latitud}, ${provider.cliente!.longitud}',
@@ -220,13 +226,18 @@ class _VendedorPedidoInfoScreenState extends State<VendedorPedidoInfoScreen> {
                               builder: (ctx) => AlertDialog(
                                 title: const Row(
                                   children: [
-                                    Icon(Icons.info_outline, color: Colors.blue),
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: Colors.blue,
+                                    ),
                                     SizedBox(width: 8),
                                     Text('¿Cómo llenar el GPS?'),
                                   ],
                                 ),
                                 content: Container(
-                                  constraints: const BoxConstraints(maxWidth: 300),
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 300,
+                                  ),
                                   child: const Text(
                                     '• Si está en la oficina (Windows): Ignore el botón "Capturar". Busque la dirección en Google Maps, copie la Latitud y Longitud y péguela en las casillas.\n\n'
                                     '• Si está en la calle (Móvil): Presione "Capturar" para que el sistema obtenga su ubicación actual automáticamente.',
@@ -242,7 +253,11 @@ class _VendedorPedidoInfoScreenState extends State<VendedorPedidoInfoScreen> {
                               ),
                             );
                           },
-                          child: const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                          child: const Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
@@ -253,9 +268,10 @@ class _VendedorPedidoInfoScreenState extends State<VendedorPedidoInfoScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: _latitudCtrl,
-                              keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true,
-                              ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               style: const TextStyle(fontSize: 12),
                               decoration: InputDecoration(
                                 hintText: 'Latitud',
@@ -280,9 +296,10 @@ class _VendedorPedidoInfoScreenState extends State<VendedorPedidoInfoScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: _longitudCtrl,
-                              keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true,
-                              ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               style: const TextStyle(fontSize: 12),
                               decoration: InputDecoration(
                                 hintText: 'Longitud',
@@ -351,7 +368,7 @@ class _VendedorPedidoInfoScreenState extends State<VendedorPedidoInfoScreen> {
         provider.setUbicacionPersonalizada(pos.latitude, pos.longitude);
         _latitudCtrl.text = pos.latitude.toString();
         _longitudCtrl.text = pos.longitude.toString();
-        
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

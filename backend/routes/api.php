@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\InventarioMovimientoController;
 use App\Http\Controllers\Api\RutaController;
 use App\Http\Controllers\Api\PedidoController;
 use App\Http\Controllers\Api\OrdenProduccionController;
+use App\Http\Controllers\Api\ProduccionAgrupadaController;
 
 // =========================================================
 // RUTA PÚBLICA DE DOCUMENTOS SEGUROS CON TOKEN (COMPATIBLE CON APACHE)
@@ -168,6 +169,10 @@ Route::prefix('v1')->group(function () {
                 
                 // Órdenes de Producción
                 Route::get('produccion', [OrdenProduccionController::class, 'index']);
+                Route::get('produccion/agrupada/producto', [ProduccionAgrupadaController::class, 'porProducto']);
+                Route::get('produccion/agrupada/pedido', [ProduccionAgrupadaController::class, 'porPedido']);
+                Route::get('produccion/agrupada/cliente', [ProduccionAgrupadaController::class, 'porCliente']);
+                Route::get('produccion/agrupada/fecha', [ProduccionAgrupadaController::class, 'porFecha']);
                 Route::get('produccion/{id}', [OrdenProduccionController::class, 'show']);
                 Route::patch('produccion/detalles/{detalleId}/listo', [OrdenProduccionController::class, 'marcarDetalleListo']);
             });

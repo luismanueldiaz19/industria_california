@@ -18,7 +18,9 @@ class Pedido extends Model
         'comentario',
         'total',
         'latitud',
-        'longitud'
+        'longitud',
+        'fecha_entrega',
+        'nota_produccion',
     ];
 
     protected $casts = [

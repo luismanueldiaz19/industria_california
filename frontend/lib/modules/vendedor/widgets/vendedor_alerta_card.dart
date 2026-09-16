@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/constants.dart';
+import '../../../core/utils/constants.dart';
 import '../models/vendedor_alerta_model.dart';
 
 class CxcEvidencia {

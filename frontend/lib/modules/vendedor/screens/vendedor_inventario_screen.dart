@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 import '../../inventario/providers/inventario_producto_provider.dart';
 import '../../inventario/models/inventario_producto.dart';
 

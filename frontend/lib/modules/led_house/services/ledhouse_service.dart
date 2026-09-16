@@ -1,6 +1,6 @@
 import 'package:http/http.dart' as http;
 import '../models/ledhouse_estado_resultado_model.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 
 class LedhouseService {
   final HttpService _http = HttpService();

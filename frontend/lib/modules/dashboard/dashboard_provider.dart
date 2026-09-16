@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/dashboard_service.dart';
+import '../../core/services/dashboard_service.dart';
 
 class DashboardProvider extends ChangeNotifier {
   final DashboardService _dashboardService = DashboardService();

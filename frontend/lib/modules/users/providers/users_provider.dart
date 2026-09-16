@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 
 class UsersProvider extends ChangeNotifier {
   final HttpService _httpService = HttpService();
-  
+
   List<dynamic> _users = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -48,12 +48,19 @@ class UsersProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateUser(int id, String name, String username, String? password, String? role) async {
+  Future<bool> updateUser(
+    int id,
+    String name,
+    String username,
+    String? password,
+    String? role,
+  ) async {
     try {
       final response = await _httpService.put('users/$id', {
         'name': name.trim(),
         'username': username.trim(),
-        if (password != null && password.isNotEmpty) 'password': password.trim(),
+        if (password != null && password.isNotEmpty)
+          'password': password.trim(),
         if (role != null) 'role': role,
       });
 

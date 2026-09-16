@@ -1,4 +1,4 @@
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 import '../models/pedido.dart';
 
 class PedidoService {

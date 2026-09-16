@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 import '../screens/ledhouse_detalles_cuentas.dart';
 
 class ReportePorCuentasWidget extends StatefulWidget {

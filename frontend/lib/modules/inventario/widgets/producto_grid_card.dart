@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 import '../models/inventario_producto.dart';
 import 'stock_badge_widget.dart';
 
@@ -164,7 +164,9 @@ class _ProductoGridCardState extends State<ProductoGridCard>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              p.stock.toStringAsFixed(2).replaceAll(RegExp(r'([.]*0+)(?!.*\d)'), ''),
+                              p.stock
+                                  .toStringAsFixed(2)
+                                  .replaceAll(RegExp(r'([.]*0+)(?!.*\d)'), ''),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,

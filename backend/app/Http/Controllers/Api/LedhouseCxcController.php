@@ -485,12 +485,7 @@ class LedhouseCxcController extends Controller
         ]);
 
         $vendedor   = $request->user();
-        if ($request->has('vendedor_id') && $vendedor->hasRole('admin')) {
-            $vendedor = \App\Models\User::find($request->vendedor_id);
-            if (!$vendedor) {
-                return response()->json(['message' => 'Vendedor no encontrado'], 404);
-            }
-        }
+        // Ya no dependemos de vendedor_id del request general, se lee por fila
         $file       = $request->file('file');
         $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
         $rows        = $spreadsheet->getActiveSheet()->toArray();
@@ -506,9 +501,21 @@ class LedhouseCxcController extends Controller
             $documento = isset($row[1]) ? trim((string)$row[1]) : null;
             $monto    = isset($row[2]) ? trim((string)$row[2]) : null;
             $fecha    = isset($row[3]) ? trim((string)$row[3]) : null;
+            $vendedor_id_excel = isset($row[4]) ? trim((string)$row[4]) : null;
 
-            if (empty($id_ext) || empty($documento)) {
-                $errores[] = ['fila' => $fila, 'razon' => 'ID externo o documento vacío'];
+            if (empty($id_ext) || empty($documento) || empty($vendedor_id_excel)) {
+                $errores[] = ['fila' => $fila, 'razon' => 'ID externo, documento o ID Vendedor vacío'];
+                continue;
+            }
+
+            // Validar vendedor
+            $vendedor_fila = \App\Models\User::find($vendedor_id_excel);
+            if (!$vendedor_fila) {
+                $errores[] = [
+                    'fila'  => $fila,
+                    'id_ext'=> $id_ext,
+                    'razon' => "Vendedor con ID '{$vendedor_id_excel}' no encontrado.",
+                ];
                 continue;
             }
 
@@ -572,12 +579,6 @@ class LedhouseCxcController extends Controller
         ]);
 
         $vendedor    = $request->user();
-        if ($request->has('vendedor_id') && $vendedor->hasRole('admin')) {
-            $vendedor = \App\Models\User::find($request->vendedor_id);
-            if (!$vendedor) {
-                return response()->json(['message' => 'Vendedor no encontrado'], 404);
-            }
-        }
         $file        = $request->file('file');
         $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
         $rows        = $spreadsheet->getActiveSheet()->toArray();
@@ -596,8 +597,16 @@ class LedhouseCxcController extends Controller
                     $documento = isset($row[1]) ? trim((string)$row[1]) : null;
                     $monto    = isset($row[2]) ? trim((string)$row[2]) : null;
                     $fecha    = isset($row[3]) ? trim((string)$row[3]) : null;
+                    $vendedor_id_excel = isset($row[4]) ? trim((string)$row[4]) : null;
 
-                    if (empty($id_ext) || empty($documento)) {
+                    if (empty($id_ext) || empty($documento) || empty($vendedor_id_excel)) {
+                        $omitidos++;
+                        continue;
+                    }
+
+                    $vendedor_fila = \App\Models\User::find($vendedor_id_excel);
+                    if (!$vendedor_fila) {
+                        $errores[] = ['fila' => $fila, 'id_ext' => $id_ext, 'razon' => 'Vendedor no encontrado'];
                         $omitidos++;
                         continue;
                     }
@@ -632,14 +641,14 @@ class LedhouseCxcController extends Controller
                             'fecha_factura'    => $fecha_factura_db,
                             'fecha_vencimiento'=> $fecha_vencimiento,
                             'estado'           => $estado,
-                            'vendedor_id'      => $vendedor->id,
+                            'vendedor_id'      => $vendedor_fila->id,
                         ]);
                         $actualizados++;
                     } else {
                         LedhouseCxc::create([
                             'documento'        => $documento,
                             'cliente_id'       => $cliente->id,
-                            'vendedor_id'      => $vendedor->id,
+                            'vendedor_id'      => $vendedor_fila->id,
                             'monto_factura'    => $monto,
                             'monto_pagado'     => 0,
                             'monto_pendiente'  => $monto,

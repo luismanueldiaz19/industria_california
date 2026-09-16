@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
-import '../core/app_theme.dart';
+import '../themes/app_theme.dart';
 
 class SearchSelectorDialog extends StatefulWidget {
   final String title;

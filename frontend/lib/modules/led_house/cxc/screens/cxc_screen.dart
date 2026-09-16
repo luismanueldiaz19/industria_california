@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../../core/app_theme.dart';
+import '../../../../core/themes/app_theme.dart';
 import '../models/cxc_model.dart';
 import '../providers/cxc_provider.dart';
 import '../widgets/cxc_form_dialog.dart';
@@ -12,8 +12,8 @@ import '../widgets/cxc_soporte_dialog.dart';
 import '../widgets/cxc_modern_totals_bar.dart';
 import 'cxc_cliente_detail_screen.dart';
 import '../../../vendedor/screens/vendedor_cxc_sync_screen.dart';
-import '../../../../widgets/general_header.dart';
-import '../../../../services/http_service.dart';
+import '../../../../core/widgets/general_header.dart';
+import '../../../../core/services/http_service.dart';
 import '../../../users/providers/users_provider.dart';
 
 class CxcScreen extends StatefulWidget {
@@ -1402,12 +1402,13 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
     int endIndex,
   ) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.fromLTRB(16, 6, 16, 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF24262A),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Colors.grey.shade800),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1423,7 +1424,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                     : '0 registros',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade700,
+                  color: Colors.grey.shade400,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1432,30 +1433,21 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                 children: [
                   Text(
                     'Por pág:',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
                   ),
                   const SizedBox(width: 6),
                   DropdownButton<int>(
                     value: _rowsPerPage,
                     isDense: true,
+                    dropdownColor: const Color(0xFF24262A),
+                    iconEnabledColor: Colors.grey.shade400,
+                    style: const TextStyle(fontSize: 12, color: Colors.white70),
                     underline: const SizedBox(),
                     items: const [
-                      DropdownMenuItem(
-                        value: 10,
-                        child: Text('10', style: TextStyle(fontSize: 12)),
-                      ),
-                      DropdownMenuItem(
-                        value: 25,
-                        child: Text('25', style: TextStyle(fontSize: 12)),
-                      ),
-                      DropdownMenuItem(
-                        value: 50,
-                        child: Text('50', style: TextStyle(fontSize: 12)),
-                      ),
-                      DropdownMenuItem(
-                        value: 100,
-                        child: Text('100', style: TextStyle(fontSize: 12)),
-                      ),
+                      DropdownMenuItem(value: 10, child: Text('10')),
+                      DropdownMenuItem(value: 25, child: Text('25')),
+                      DropdownMenuItem(value: 50, child: Text('50')),
+                      DropdownMenuItem(value: 100, child: Text('100')),
                     ],
                     onChanged: (val) {
                       if (val != null) {
@@ -1469,6 +1461,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                   const SizedBox(width: 12),
                   IconButton(
                     icon: const Icon(Icons.first_page_rounded),
+                    color: Colors.grey.shade400,
+                    disabledColor: Colors.grey.shade700,
                     iconSize: 20,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
@@ -1482,6 +1476,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                   ),
                   IconButton(
                     icon: const Icon(Icons.chevron_left_rounded),
+                    color: Colors.grey.shade400,
+                    disabledColor: Colors.grey.shade700,
                     iconSize: 20,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
@@ -1500,11 +1496,14 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white70,
                       ),
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.chevron_right_rounded),
+                    color: Colors.grey.shade400,
+                    disabledColor: Colors.grey.shade700,
                     iconSize: 20,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
@@ -1518,6 +1517,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                   ),
                   IconButton(
                     icon: const Icon(Icons.last_page_rounded),
+                    color: Colors.grey.shade400,
+                    disabledColor: Colors.grey.shade700,
                     iconSize: 20,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(

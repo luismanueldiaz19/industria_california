@@ -1,0 +1,61 @@
+app/
+├── Http/
+│   ├── Controllers/
+│   │   └── PedidoController.php          # Solo orquesta, sin lógica de negocio
+│   ├── Requests/
+│   │   └── StorePedidoRequest.php        # Validación + authorize()
+│   └── Resources/
+│       ├── PedidoResource.php            # Forma de la respuesta
+│       └── PedidoDetalleResource.php     # Resource anidado para los detalles
+│
+├── Models/
+│   ├── Pedido.php
+│   └── PedidoDetalle.php
+│
+├── Services/
+│   └── PedidoService.php                 # Transacción + reglas de negocio + idempotencia
+│
+├── Repositories/
+│   ├── Contracts/
+│   │   └── PedidoRepositoryInterface.php # Para poder mockear en tests
+│   └── PedidoRepository.php
+│
+├── Policies/
+│   └── PedidoPolicy.php                  # create(), update(), delete()
+│
+└── Exceptions/
+    └── StockInsuficienteException.php    # Excepción de dominio, no un array genérico
+
+database/
+├── migrations/
+│   └── 2026_xx_xx_create_pedidos_table.php
+└── factories/
+    ├── PedidoFactory.php
+    └── PedidoDetalleFactory.php
+
+tests/
+└── Feature/
+    └── PedidoControllerTest.php          # El contrato real del endpoint
+
+
+
+
+
+Cada carpeta de módulo repite exactamente 
+el patrón que ya armamos para Pedido 
+(Http/Controllers, Http/Requests, Models, Services, Repositories, Policies). 
+No es una estructura nueva — es la misma, replicada por dominio:
+
+app/Modules/
+├── Vehiculo/
+│   ├── Http/{Controllers,Requests,Resources}/
+│   ├── Models/
+│   ├── Services/
+│   ├── Repositories/
+│   └── Policies/
+├── Mantenimiento/     ← mismo patrón
+├── Pedido/             ← mismo patrón (el que ya armamos)
+├── Inventario/         ← mismo patrón
+└── Shared/
+    ├── Enums/          # Ej: EstadoPedido, si otros módulos lo necesitan
+    └── Traits/

@@ -413,7 +413,7 @@ class _PedidosTableState extends State<PedidosTable> {
                   columns: const [
                     DataColumn(
                       label: Text(
-                        'Num de Pedido',
+                        '#',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -424,6 +424,16 @@ class _PedidosTableState extends State<PedidosTable> {
                     DataColumn(
                       label: Text(
                         'Fecha',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'F. Entrega',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -547,9 +557,24 @@ class _PedidosTableState extends State<PedidosTable> {
                           Text(
                             DateFormat(
                               'dd/MM/yyyy HH:mm',
-                            ).format(pedido.createdAt ?? DateTime.now()),
+                            ).format(pedido.createdAt),
                             style: const TextStyle(
                               color: Colors.white70,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            pedido.fechaEntrega != null
+                                ? DateFormat(
+                                    'dd/MM/yyyy',
+                                  ).format(pedido.fechaEntrega!)
+                                : 'No def.',
+                            style: TextStyle(
+                              color: pedido.fechaEntrega != null
+                                  ? Colors.amberAccent
+                                  : Colors.white38,
                               fontSize: 11,
                             ),
                           ),

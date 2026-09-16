@@ -46,10 +46,12 @@ class _CustomSidebarState extends State<CustomSidebar> {
       _expandedSection = '11.';
     } else if (widget.selectedIndex == 8 || widget.selectedIndex == 9) {
       _expandedSection = '3. INVENTARIO';
-    } else if (widget.selectedIndex >= 10 && widget.selectedIndex <= 13) {
+    } else if (widget.selectedIndex == 10 || widget.selectedIndex == 11 || widget.selectedIndex == 13) {
       _expandedSection = '4. LOGÍSTICA Y PEDIDOS';
+    } else if (widget.selectedIndex == 12 || (widget.selectedIndex >= 19 && widget.selectedIndex <= 22)) {
+      _expandedSection = '5. PRODUCCIÓN';
     } else if (widget.selectedIndex >= 14 && widget.selectedIndex <= 18) {
-      _expandedSection = '5. FLOTA Y DESPACHO';
+      _expandedSection = '6. FLOTA Y DESPACHO';
     }
   }
 
@@ -211,18 +213,53 @@ class _CustomSidebarState extends State<CustomSidebar> {
                       'Rutas',
                       accentColor,
                     ),
+                  ],
+                ),
+
+                _buildExpansionSection(
+                  '5. PRODUCCIÓN',
+                  Icons.precision_manufacturing_outlined,
+                  [
                     _buildMenuItem(
                       12,
-                      Icons.factory_outlined,
-                      Icons.factory_rounded,
-                      'Producción',
+                      Icons.pending_actions_outlined,
+                      Icons.pending_actions_rounded,
+                      'Pendientes (Órdenes)',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
+                      19,
+                      Icons.inventory_2_outlined,
+                      Icons.inventory_2_rounded,
+                      'Por Producto',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
+                      20,
+                      Icons.receipt_long_outlined,
+                      Icons.receipt_long_rounded,
+                      'Por Pedido',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
+                      21,
+                      Icons.group_outlined,
+                      Icons.group_rounded,
+                      'Por Cliente',
+                      accentColor,
+                    ),
+                    _buildMenuItem(
+                      22,
+                      Icons.calendar_month_outlined,
+                      Icons.calendar_month_rounded,
+                      'Por Fecha Entrega',
                       accentColor,
                     ),
                   ],
                 ),
 
                 _buildExpansionSection(
-                  '5. FLOTA Y DESPACHO',
+                  '6. FLOTA Y DESPACHO',
                   Icons.directions_bus_outlined,
                   [
                     _buildMenuItem(

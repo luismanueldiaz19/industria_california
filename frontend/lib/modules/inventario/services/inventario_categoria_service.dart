@@ -1,10 +1,13 @@
 import '../models/inventario_categoria.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 
 class InventarioCategoriaService {
   final HttpService _http = HttpService();
 
-  Future<List<InventarioCategoria>> getCategorias({String? search, bool soloActivas = true}) async {
+  Future<List<InventarioCategoria>> getCategorias({
+    String? search,
+    bool soloActivas = true,
+  }) async {
     final params = <String, String>{};
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (!soloActivas) params['solo_activas'] = 'false';
@@ -15,12 +18,16 @@ class InventarioCategoriaService {
     );
 
     if (response is List) {
-      return response.map((e) => InventarioCategoria.fromJson(e as Map<String, dynamic>)).toList();
+      return response
+          .map((e) => InventarioCategoria.fromJson(e as Map<String, dynamic>))
+          .toList();
     }
     return [];
   }
 
-  Future<InventarioCategoria> createCategoria(InventarioCategoria categoria) async {
+  Future<InventarioCategoria> createCategoria(
+    InventarioCategoria categoria,
+  ) async {
     final response = await _http.post(
       'industria-california/inventario/categorias',
       categoria.toJson(),
@@ -28,7 +35,9 @@ class InventarioCategoriaService {
     return InventarioCategoria.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<InventarioCategoria> updateCategoria(InventarioCategoria categoria) async {
+  Future<InventarioCategoria> updateCategoria(
+    InventarioCategoria categoria,
+  ) async {
     final response = await _http.put(
       'industria-california/inventario/categorias/${categoria.id}',
       categoria.toJson(),

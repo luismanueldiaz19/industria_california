@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../core/app_theme.dart';
+import '../../../../core/themes/app_theme.dart';
 import '../../models/ledhouse_cliente.dart';
 import '../../services/ledhouse_cliente_service.dart';
-import '../../../../services/gps_service.dart';
+import '../../../../core/services/gps_service.dart';
 
 class LedhouseClienteFormScreen extends StatefulWidget {
   final LedhouseCliente? cliente;
@@ -348,29 +348,46 @@ class _LedhouseClienteFormScreenState extends State<LedhouseClienteFormScreen> {
                                               builder: (ctx) => AlertDialog(
                                                 title: const Row(
                                                   children: [
-                                                    Icon(Icons.info_outline, color: Colors.blue),
+                                                    Icon(
+                                                      Icons.info_outline,
+                                                      color: Colors.blue,
+                                                    ),
                                                     SizedBox(width: 8),
-                                                    Text('¿Cómo llenar el GPS?'),
+                                                    Text(
+                                                      '¿Cómo llenar el GPS?',
+                                                    ),
                                                   ],
                                                 ),
                                                 content: Container(
-                                                  constraints: const BoxConstraints(maxWidth: 300),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                        maxWidth: 300,
+                                                      ),
                                                   child: const Text(
                                                     '• Si está en la oficina (Windows): Ignore el botón "Capturar". Busque el cliente en Google Maps, copie la Latitud y Longitud y péguela en las casillas.\n\n'
                                                     '• Si está en la calle (Móvil): Presione "Capturar" para que el sistema obtenga su ubicación actual automáticamente.',
-                                                    style: TextStyle(height: 1.4),
+                                                    style: TextStyle(
+                                                      height: 1.4,
+                                                    ),
                                                   ),
                                                 ),
                                                 actions: [
                                                   TextButton(
-                                                    onPressed: () => Navigator.pop(ctx),
-                                                    child: const Text('Entendido'),
+                                                    onPressed: () =>
+                                                        Navigator.pop(ctx),
+                                                    child: const Text(
+                                                      'Entendido',
+                                                    ),
                                                   ),
                                                 ],
                                               ),
                                             );
                                           },
-                                          child: const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                                          child: const Icon(
+                                            Icons.info_outline,
+                                            size: 16,
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                       ],
                                     ),

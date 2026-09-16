@@ -1,19 +1,22 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'core/app_theme.dart';
-import 'core/auth_provider.dart';
+import 'package:flutter/gestures.dart';
+import 'package:provider/provider.dart';
+import 'core/themes/app_theme.dart';
+import 'modules/auth/providers/auth_provider.dart';
+import 'modules/logistica/providers/produccion_agrupada_provider.dart';
+import 'modules/logistica/screens/produccion_agrupada_screen.dart';
 import 'models/company.dart';
-import 'modules/auth/splash_screen.dart';
+import 'modules/auth/screens/splash_screen.dart';
 import 'modules/led_house/providers/ledhouse_cliente_provider.dart';
 import 'modules/led_house/screens/ledhouse_detalles_screen.dart';
-
 import 'package:provider/provider.dart';
 import 'modules/dashboard/dashboard_provider.dart';
 import 'modules/users/providers/users_provider.dart';
 import 'modules/users/users_screen.dart';
 import 'modules/users/roles_screen.dart';
 
-import 'widgets/custom_sidebar.dart';
+import 'core/widgets/custom_sidebar.dart';
 import 'modules/led_house/providers/ledhouse_provider.dart';
 import 'modules/led_house/cxc/screens/cxc_screen.dart';
 import 'modules/led_house/cxp/screens/cxp_screen.dart';
@@ -80,6 +83,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => RutaProvider()),
         ChangeNotifierProvider(create: (_) => PedidoProvider()),
         ChangeNotifierProvider(create: (_) => OrdenProduccionProvider()),
+        ChangeNotifierProvider(create: (_) => ProduccionAgrupadaProvider()),
         ChangeNotifierProvider(create: (_) => ReporteVendedoresProvider()),
         // Módulo Flota y Despacho
         ChangeNotifierProvider(create: (_) => ChoferProvider()),
@@ -178,6 +182,11 @@ class _MainLayoutState extends State<MainLayout> {
     const DespachosScreen(), // 16
     const MantenimientosScreen(), // 17
     const GastosVehiculosScreen(), // 18
+    // Módulo Producción Agrupada (19-22)
+    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.producto), // 19
+    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.pedido), // 20
+    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.cliente), // 21
+    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.fecha), // 22
   ];
 
   @override

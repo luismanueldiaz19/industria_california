@@ -42,7 +42,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($vendedores as $v) {
-            $user = \App\Models\User::firstOrCreate(
+            $user = User::firstOrCreate(
                 ['username' => $v['username']],
                 [
                     'name' => $v['name'],
@@ -52,5 +52,9 @@ class DatabaseSeeder extends Seeder
             );
             $user->assignRole('vendedor');
         }
+
+        $this->call([
+            TestDataSeeder::class,
+        ]);
     }
 }

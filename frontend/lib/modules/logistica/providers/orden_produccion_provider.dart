@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/orden_produccion.dart';
-import '../../../services/http_service.dart';
+import '../../../core/services/http_service.dart';
 
 class OrdenProduccionProvider extends ChangeNotifier {
   final HttpService _http = HttpService();
@@ -12,6 +12,8 @@ class OrdenProduccionProvider extends ChangeNotifier {
   // Pagination
   int _currentPage = 1;
   int _lastPage = 1;
+  int _totalRows = 0;
+  int _rowsPerPage = 10;
   bool _hasMore = true;
 
   // Filters
@@ -21,6 +23,10 @@ class OrdenProduccionProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get hasMore => _hasMore;
+  int get currentPage => _currentPage;
+  int get lastPage => _lastPage;
+  int get totalRows => _totalRows;
+  int get rowsPerPage => _rowsPerPage;
 
   OrdenProduccionProvider();
 
@@ -29,21 +35,38 @@ class OrdenProduccionProvider extends ChangeNotifier {
     fetchOrdenes(refresh: true);
   }
 
-  Future<void> fetchOrdenes({bool refresh = false, int? vendedorId}) async {
+  void setRowsPerPage(int rows) {
+    _rowsPerPage = rows;
+    fetchOrdenes(refresh: true);
+  }
+
+  Future<void> fetchOrdenes({
+    bool refresh = false,
+    int? vendedorId,
+    int? page,
+  }) async {
+    if (page != null) {
+      _currentPage = page;
+      refresh = true;
+    }
+
     if (refresh) {
-      _currentPage = 1;
+      if (page == null) _currentPage = 1;
       _ordenes.clear();
       _hasMore = true;
     }
 
-    if (!_hasMore) return;
+    if (!_hasMore && !refresh) return;
 
     _isLoading = true;
     _error = null;
-    if (refresh) notifyListeners();
+    notifyListeners();
 
     try {
-      final query = {'page': _currentPage.toString(), 'per_page': '20'};
+      final query = {
+        'page': _currentPage.toString(),
+        'per_page': _rowsPerPage.toString(),
+      };
 
       if (_estadoFiltro != null && _estadoFiltro!.isNotEmpty) {
         query['estado'] = _estadoFiltro!;
@@ -57,6 +80,7 @@ class OrdenProduccionProvider extends ChangeNotifier {
         'industria-california/produccion',
         params: query,
       );
+
       final data = response['data'] as List;
       final nuevas = data
           .map((json) => OrdenProduccion.fromJson(json))
@@ -68,9 +92,9 @@ class OrdenProduccionProvider extends ChangeNotifier {
         _ordenes.addAll(nuevas);
       }
 
-      _lastPage = response['last_page'];
+      _lastPage = response['last_page'] ?? 1;
+      _totalRows = response['total'] ?? _ordenes.length;
       _hasMore = _currentPage < _lastPage;
-      if (_hasMore) _currentPage++;
     } catch (e) {
       _error = _handleError(e);
     } finally {

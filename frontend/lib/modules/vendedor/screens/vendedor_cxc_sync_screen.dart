@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../../../core/auth_provider.dart';
-import '../../../../core/app_theme.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../../core/themes/app_theme.dart';
 import '../services/vendedor_cxc_service.dart';
 
 /// Wizard de Sincronización CXC en 2 fases: Preview → Confirmar
@@ -27,7 +27,6 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
 
   bool _isAdmin = false;
   List<dynamic> _vendedores = [];
-  int? _selectedVendedorId;
 
   static const _blue = Color(0xFF1565C0);
   static const _blueDark = Color(0xFF0D47A1);
@@ -91,7 +90,6 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
         fileBytes: bytes, // 3. Pasamos los bytes extraídos
         fileName: _file!.name,
         token: token,
-        vendedorId: _isAdmin ? _selectedVendedorId : null,
       );
 
       setState(() {
@@ -127,7 +125,6 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
         fileBytes: bytes, // 3. Pasamos los bytes leídos de forma segura
         fileName: _file!.name,
         token: token,
-        vendedorId: _isAdmin ? _selectedVendedorId : null,
       );
 
       setState(() {
@@ -260,7 +257,7 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
   // ── Paso 0: Seleccionar archivo ──────────────────────────────
   Widget _buildStep0() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
@@ -268,11 +265,11 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStepIndicator(active: 0),
-              const SizedBox(height: 28),
+              const SizedBox(height: 16),
               const Text(
                 'Selecciona tu archivo Excel',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1A1A2E),
                 ),
@@ -282,16 +279,16 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
                 'El archivo debe tener 4 columnas:',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               _buildColumnasTarjeta(),
-              const SizedBox(height: 28),
+              const SizedBox(height: 16),
               // Zona de carga
               InkWell(
                 onTap: _pickFile,
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: double.infinity,
-                  height: 140,
+                  height: 90,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -313,7 +310,7 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
                         color: _file != null
                             ? Colors.green
                             : Colors.blue.shade300,
-                        size: 44,
+                        size: 32,
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -321,7 +318,7 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
                             ? _file!.name
                             : 'Toca para seleccionar archivo',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: _file != null ? _blue : Colors.grey.shade600,
                         ),
@@ -379,51 +376,74 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
                   ),
                 ),
               ],
-              if (_isAdmin) ...[
-                const SizedBox(height: 24),
-                const Text(
-                  'Asignar a Vendedor',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Color(0xFF1A1A2E),
-                  ),
+              const SizedBox(height: 16),
+              const Text(
+                'Tabla de Vendedores (Referencia para Columna E)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF1A1A2E),
                 ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: _selectedVendedorId,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                  hint: const Text('Selecciona el vendedor...'),
-                  items: _vendedores.map((v) {
-                    return DropdownMenuItem<int>(
-                      value: v['id'],
-                      child: Text('${v['name']} (@${v['username']})'),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 150),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _vendedores.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final v = _vendedores[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'ID: ${v['id']}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: _blue,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '${v['name']} (@${v['username']})',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
-                  }).toList(),
-                  onChanged: (val) => setState(() => _selectedVendedorId = val),
+                  },
                 ),
-              ],
-              const SizedBox(height: 32),
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
-                height: 54,
+                height: 44,
                 child: ElevatedButton(
-                  onPressed:
-                      _file == null ||
-                          _isLoading ||
-                          (_isAdmin && _selectedVendedorId == null)
-                      ? null
-                      : _runPreview,
+                  onPressed: _file == null || _isLoading ? null : _runPreview,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _blue,
                     foregroundColor: Colors.white,
@@ -443,7 +463,7 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
                       : const Text(
                           'Analizar archivo',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -904,18 +924,18 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
               Column(
                 children: [
                   CircleAvatar(
-                    radius: 16,
+                    radius: 12,
                     backgroundColor: isActive || isDone
                         ? _blue
                         : Colors.grey.shade200,
                     child: isDone
-                        ? const Icon(Icons.check, color: Colors.white, size: 14)
+                        ? const Icon(Icons.check, color: Colors.white, size: 12)
                         : Text(
                             '${i + 1}',
                             style: TextStyle(
                               color: isActive ? Colors.white : Colors.grey,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                              fontSize: 10,
                             ),
                           ),
                   ),
@@ -945,6 +965,7 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
       ('B', 'Documento/Factura', true),
       ('C', 'Monto Pendiente', true),
       ('D', 'Fecha Factura', true),
+      ('E', 'ID Vendedor', true),
     ];
     return Container(
       decoration: BoxDecoration(
@@ -954,37 +975,52 @@ class _VendedorCxcSyncScreenState extends State<VendedorCxcSyncScreen> {
       child: Column(
         children: cols
             .map(
-              (c) => ListTile(
-                dense: true,
-                leading: CircleAvatar(
-                  radius: 14,
-                  backgroundColor: _blue,
-                  child: Text(
-                    c.$1,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+              (c) => Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
                 ),
-                title: Text(
-                  c.$2,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                trailing: c.$3
-                    ? const Chip(
-                        label: Text(
-                          'Requerido',
-                          style: TextStyle(fontSize: 10),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 10,
+                      backgroundColor: _blue,
+                      child: Text(
+                        c.$1,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
                         ),
-                        padding: EdgeInsets.zero,
-                        backgroundColor: Color(0xFFE3F2FD),
-                      )
-                    : null,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        c.$2,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    if (c.$3)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE3F2FD),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'Requerido',
+                          style: TextStyle(fontSize: 9, color: Colors.black54),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             )
             .toList(),
