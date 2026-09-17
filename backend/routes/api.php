@@ -33,10 +33,10 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 
-Route::prefix('api')->middleware('auth:sanctum')->group(function () {
-    Route::post('pedidos-v2', [PedidoController::class, 'store'])
-        ->name('pedidos.v2.store');
-});
+// Route::prefix('api')->middleware('auth:sanctum')->group(function () {
+//     Route::post('pedidos-v2', [PedidoController::class, 'store'])
+//         ->name('pedidos.v2.store');
+// });
 
 
 
