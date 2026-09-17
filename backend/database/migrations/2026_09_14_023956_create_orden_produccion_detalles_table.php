@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('orden_produccion_detalles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('orden_produccion_id')->constrained('orden_produccions')->onDelete('cascade');
-            $table->foreignId('producto_id')->constrained('inventario_productos');
+            $table->foreignId('product_id')->constrained('products');
             $table->foreignId('pedido_detalle_id')->nullable()->constrained('pedido_detalles')->onDelete('set null');
             $table->decimal('cantidad_faltante', 10, 3);
             $table->decimal('cantidad_producida', 10, 3)->default(0);

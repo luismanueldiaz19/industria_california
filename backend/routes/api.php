@@ -12,10 +12,10 @@ use App\Http\Controllers\Api\LedhouseCxcController;
 use App\Http\Controllers\Api\LedhouseCuentaCatalogoController;
 use App\Http\Controllers\Api\LedhouseClienteController;
 use App\Http\Controllers\Api\LedhouseProveedorController;
-// Módulo Inventario
-use App\Http\Controllers\Api\InventarioCategoriaController;
-use App\Http\Controllers\Api\InventarioProductoController;
-use App\Http\Controllers\Api\InventarioMovimientoController;
+// Módulo Inventario (COMENTADO - MIGRADO A MODULES)
+// use App\Http\Controllers\Api\InventarioCategoriaController;
+// use App\Http\Controllers\Api\InventarioProductoController;
+// use App\Http\Controllers\Api\InventarioMovimientoController;
 // Módulo Logística/Ventas
 use App\Http\Controllers\Api\RutaController;
 use App\Http\Controllers\Api\PedidoController;
@@ -148,23 +148,23 @@ Route::prefix('v1')->group(function () {
                 // Proveedores
                 Route::apiResource('proveedores', LedhouseProveedorController::class);
 
-                // ── MÓDULO INVENTARIO ─────────────────────────────────
+                // ── MÓDULO INVENTARIO (COMENTADO - MIGRADO A MODULES) ─────────────────────────────────
                 // Categorías
-                Route::apiResource('inventario/categorias', InventarioCategoriaController::class)->except(['show']);
+                // Route::apiResource('inventario/categorias', InventarioCategoriaController::class)->except(['show']);
 
                 // Productos
-                Route::get('inventario/productos-pdf-url', [InventarioProductoController::class, 'getInventarioPdfUrl']);
-                Route::post('inventario/productos/import', [InventarioProductoController::class, 'import']);
-                // Sync masivo inventario (fase 1 preview + fase 2 confirm) — deben ir ANTES del apiResource
-                Route::post('inventario/productos/sync-preview', [InventarioProductoController::class, 'inventarioSyncPreview']);
-                Route::post('inventario/productos/sync-confirm', [InventarioProductoController::class, 'inventarioSyncConfirm']);
-                Route::post('inventario/productos/{id}/imagen', [InventarioProductoController::class, 'uploadImagen']);
-                Route::delete('inventario/productos/{id}/imagen', [InventarioProductoController::class, 'deleteImagen']);
-                Route::apiResource('inventario/productos', InventarioProductoController::class);
+                // Route::get('inventario/productos-pdf-url', [InventarioProductoController::class, 'getInventarioPdfUrl']);
+                // Route::post('inventario/productos/import', [InventarioProductoController::class, 'import']);
+                // // Sync masivo inventario (fase 1 preview + fase 2 confirm) — deben ir ANTES del apiResource
+                // Route::post('inventario/productos/sync-preview', [InventarioProductoController::class, 'inventarioSyncPreview']);
+                // Route::post('inventario/productos/sync-confirm', [InventarioProductoController::class, 'inventarioSyncConfirm']);
+                // Route::post('inventario/productos/{id}/imagen', [InventarioProductoController::class, 'uploadImagen']);
+                // Route::delete('inventario/productos/{id}/imagen', [InventarioProductoController::class, 'deleteImagen']);
+                // Route::apiResource('inventario/productos', InventarioProductoController::class);
 
                 // Movimientos de inventario
-                Route::get('inventario/movimientos-pdf-url', [InventarioMovimientoController::class, 'getMovimientoPdfUrl']);
-                Route::apiResource('inventario/movimientos', InventarioMovimientoController::class)->only(['index', 'store']);
+                // Route::get('inventario/movimientos-pdf-url', [InventarioMovimientoController::class, 'getMovimientoPdfUrl']);
+                // Route::apiResource('inventario/movimientos', InventarioMovimientoController::class)->only(['index', 'store']);
 
                 // ── MÓDULO LOGÍSTICA / PEDIDOS ────────────────────────
                 Route::apiResource('rutas', RutaController::class)->except(['show']);

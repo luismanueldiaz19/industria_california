@@ -45,7 +45,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
     } else if (widget.selectedIndex >= 48 && widget.selectedIndex <= 52) {
       _expandedSection = '11.';
     } else if (widget.selectedIndex == 8 || widget.selectedIndex == 9) {
-      _expandedSection = '3. INVENTARIO';
+      _expandedSection = '3. PRODUCTOS Y CATEGORÍAS';
     } else if (widget.selectedIndex == 10 ||
         widget.selectedIndex == 11 ||
         widget.selectedIndex == 13) {
@@ -174,21 +174,21 @@ class _CustomSidebarState extends State<CustomSidebar> {
                             ),
 
                             _buildExpansionSection(
-                              '3. INVENTARIO',
+                              '3. PRODUCTOS Y CATEGORÍAS',
                               Icons.inventory_2_outlined,
                               [
                                 _buildMenuItem(
                                   8,
                                   Icons.grid_view_outlined,
                                   Icons.grid_view_rounded,
-                                  'Inventario',
+                                  'Productos',
                                   accentColor,
                                 ),
                                 _buildMenuItem(
                                   9,
-                                  Icons.swap_vert_outlined,
-                                  Icons.swap_vert_rounded,
-                                  'Movimientos',
+                                  Icons.category_outlined,
+                                  Icons.category_rounded,
+                                  'Categorías',
                                   accentColor,
                                 ),
                               ],

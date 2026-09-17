@@ -1,0 +1,158 @@
+=======================================================
+DOCUMENTACIÓN API - MÓDULO PRODUCTOS (industria_california)
+=======================================================
+Base URL: http://localhost:8000/api
+(o el dominio de tu servidor local)
+
+NOTA: Si tus rutas globales agregan automáticamente 
+el prefijo "api/v1", deberás usar "http://localhost:8000/api/v1/productos".
+ Si solo es "api", usa "http://localhost:8000/api/productos".
+
+---
+1. LISTAR TODOS LOS PRODUCTOS (Y SUS VARIANTES)
+---
+Método: GET
+URL: /api/productos
+Descripción: Retorna todos los productos agrupadores (donde parent_id es null). Incluye la categoría y el arreglo "variants" (hijos).
+
+Ejemplo de respuesta (JSON):
+[
+  {
+    "id": 1,
+    "codigo": null,
+    "descripcion": "Codos",
+    "parent_id": null,
+    "imagen_producto": "path/to/codo.jpg",
+    "categoria": { "id": 1, "nombre": "Plomeria" },
+    "variants": [
+      {
+         "id": 2,
+         "descripcion": "Codo 1/2 X 90",
+         "parent_id": 1,
+         "cant_x_packages": 600,
+         "precio": 5.50
+      }
+    ]
+  }
+]
+
+
+---
+2. CREAR UN PRODUCTO PADRE (AGRUPADOR)
+---
+Método: POST
+URL: /api/productos
+Content-Type: application/json
+
+Body (JSON):
+{
+    "descripcion": "Codos",
+    "imagen_producto": "storage/app/public/codos.jpg",
+    "category_id": 1,
+    "activo": true
+}
+
+
+---
+3. CREAR UN PRODUCTO VARIANTE (HIJO)
+---
+Método: POST
+URL: /api/productos
+Content-Type: application/json
+
+Body (JSON):
+{
+    "descripcion": "Codo 1/2 X 90",
+    "parent_id": 1, 
+    "cant_x_packages": 600,
+    "medidas": "1/2 X 90",
+    "capacidad": "presion",
+    "unidad": "UNIDAD",
+    "precio": 5.50,
+    "costo": 2.00,
+    "stock": 100,
+    "category_id": 1,
+    "activo": true
+}
+(NOTA: parent_id = 1 corresponde al ID del "Codos" creado anteriormente)
+
+
+---
+4. OBTENER UN PRODUCTO ESPECÍFICO
+---
+Método: GET
+URL: /api/productos/{id}
+Ejemplo: /api/productos/1
+
+
+---
+5. ACTUALIZAR UN PRODUCTO
+---
+Método: PUT o PATCH
+URL: /api/productos/{id}
+Ejemplo: /api/productos/2
+Content-Type: application/json
+
+Body (JSON):
+{
+    "precio": 6.00,
+    "stock": 95
+}
+
+
+---
+6. ELIMINAR UN PRODUCTO
+---
+Método: DELETE
+URL: /api/productos/{id}
+Ejemplo: /api/productos/2
+
+=======================================================
+DOCUMENTACIÓN API - CATEGORÍAS
+=======================================================
+
+---
+1. LISTAR CATEGORÍAS
+---
+Método: GET
+URL: /api/categorias
+
+Ejemplo de respuesta (JSON):
+[
+  {
+    "id": 1,
+    "nombre": "Plomeria",
+    "imagen_path": "storage/app/public/categorias/plomeria.jpg"
+  }
+]
+
+---
+2. CREAR CATEGORÍA
+---
+Método: POST
+URL: /api/categorias
+Content-Type: application/json
+
+Body (JSON):
+{
+    "nombre": "Ferretería",
+    "imagen_path": null
+}
+
+---
+3. ACTUALIZAR CATEGORÍA
+---
+Método: PUT o PATCH
+URL: /api/categorias/{id}
+Content-Type: application/json
+
+Body (JSON):
+{
+    "nombre": "Ferretería General"
+}
+
+---
+4. ELIMINAR CATEGORÍA
+---
+Método: DELETE
+URL: /api/categorias/{id}

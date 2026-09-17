@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../inventario/models/inventario_producto.dart';
+import '../../producto/models/producto.dart';
 
 /// Representa un ítem dentro del carrito de pedido.
 /// Encapsula los controladores de texto y la lógica de subtotal.
@@ -11,7 +11,7 @@ class CartItem {
   final String unidad;
   final double stock; // Nuevo campo para control de producción
 
-  /// Precio base tomado de inventario_producto.venta
+  /// Precio base tomado de producto.venta
   final double precioBase;
 
   final TextEditingController precioController;
@@ -31,16 +31,16 @@ class CartItem {
   });
 
   /// Crea un CartItem a partir de un producto de inventario con valores por defecto.
-  factory CartItem.fromProducto(InventarioProducto producto) {
+  factory CartItem.fromProducto(Producto producto) {
     return CartItem(
       productoId: producto.id!,
-      productoNombre: producto.nombre,
-      productoCodigo: producto.codigo,
+      productoNombre: producto.descripcion,
+      productoCodigo: producto.codigo ?? '',
       unidad: producto.unidad,
       stock: producto.stock,
-      precioBase: producto.venta,
+      precioBase: producto.precio,
       precioController: TextEditingController(
-        text: producto.venta.toStringAsFixed(2),
+        text: producto.precio.toStringAsFixed(2),
       ),
       cantidadController: TextEditingController(text: '1'),
       observacionController: TextEditingController(),
@@ -64,13 +64,13 @@ class CartItem {
   }
 
   Map<String, dynamic> toJson() => {
-        'producto_id': productoId,
-        'cantidad': double.tryParse(cantidadController.text) ?? 1,
-        'precio_unitario': precioActual,
-        'observacion': observacionController.text.isEmpty
-            ? null
-            : observacionController.text,
-      };
+    'producto_id': productoId,
+    'cantidad': double.tryParse(cantidadController.text) ?? 1,
+    'precio_unitario': precioActual,
+    'observacion': observacionController.text.isEmpty
+        ? null
+        : observacionController.text,
+  };
 
   void dispose() {
     precioController.dispose();

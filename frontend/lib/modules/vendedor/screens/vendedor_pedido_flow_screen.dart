@@ -8,7 +8,7 @@ import 'pedido/vendedor_pedido_catalogo_screen.dart';
 import 'pedido/vendedor_pedido_revision_screen.dart';
 import '../../led_house/providers/ledhouse_cliente_provider.dart';
 import '../../logistica/providers/ruta_provider.dart';
-import '../../inventario/providers/inventario_producto_provider.dart';
+import '../../producto/providers/producto_provider.dart';
 
 /// Pantalla Orquestadora del Flujo de Creación de Pedido (Multi-paso)
 /// Aquí se inyecta el Provider compartido para los 3 pasos.
@@ -52,7 +52,7 @@ class _VendedorPedidoFlowContentState
     final futures = [
       context.read<LedhouseClienteProvider>().fetchClientes(),
       context.read<RutaProvider>().fetchRutas(),
-      context.read<InventarioProductoProvider>().fetchProductos(),
+      context.read<ProductoProvider>().fetchProductos(),
     ];
     await Future.wait(futures);
 
@@ -62,7 +62,7 @@ class _VendedorPedidoFlowContentState
         widget.pedidoOriginal!,
         context.read<LedhouseClienteProvider>().clientes,
         context.read<RutaProvider>().rutas,
-        context.read<InventarioProductoProvider>().productos,
+        context.read<ProductoProvider>().productos,
       );
     }
 

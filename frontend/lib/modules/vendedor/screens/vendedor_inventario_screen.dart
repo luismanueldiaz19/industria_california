@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/services/http_service.dart';
-import '../../inventario/providers/inventario_producto_provider.dart';
-import '../../inventario/models/inventario_producto.dart';
+import '../../producto/providers/producto_provider.dart';
+import '../../producto/models/producto.dart';
 
 class VendedorInventarioScreen extends StatefulWidget {
   const VendedorInventarioScreen({super.key});
@@ -28,7 +28,7 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final prov = context.read<InventarioProductoProvider>();
+      final prov = context.read<ProductoProvider>();
       if (prov.productos.isEmpty) {
         prov.fetchProductos();
       }
@@ -36,7 +36,7 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
   }
 
   List<String> get _categorias {
-    final prods = context.read<InventarioProductoProvider>().productos;
+    final prods = context.read<ProductoProvider>().productos;
     final cats = prods
         .map((p) => p.categoria?.nombre ?? 'Sin categoría')
         .toSet()
@@ -45,15 +45,15 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
     return ['Todas', ...cats];
   }
 
-  List<InventarioProducto> get _productosFiltrados {
-    final prods = context.watch<InventarioProductoProvider>().productos;
+  List<Producto> get _productosFiltrados {
+    final prods = context.watch<ProductoProvider>().productos;
     return prods.where((p) {
       if (!p.activo) return false;
 
       final matchesSearch =
           _searchQuery.isEmpty ||
-          p.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          p.codigo.toLowerCase().contains(_searchQuery.toLowerCase());
+          p.descripcion.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          (p.codigo ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
 
       final cat = p.categoria?.nombre ?? 'Sin categoría';
       final matchesCat =
@@ -91,10 +91,7 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
   }
 
   Widget _buildTopBar() {
-    final totalProductos = context
-        .watch<InventarioProductoProvider>()
-        .productos
-        .length;
+    final totalProductos = context.watch<ProductoProvider>().productos.length;
     final mostrando = _productosFiltrados.length;
 
     return Container(
@@ -187,8 +184,7 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
                 ),
               ),
               InkWell(
-                onTap: () =>
-                    context.read<InventarioProductoProvider>().fetchProductos(),
+                onTap: () => context.read<ProductoProvider>().fetchProductos(),
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -258,7 +254,7 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
     );
   }
 
-  Widget _buildProductoCard(InventarioProducto producto) {
+  Widget _buildProductoCard(Producto producto) {
     final hasStock = producto.stock > 0;
 
     return Card(
@@ -348,7 +344,7 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    producto.codigo,
+                    producto.codigo ?? '',
                     style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -356,7 +352,7 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
                   const SizedBox(height: 2),
                   Expanded(
                     child: Text(
-                      producto.nombre,
+                      producto.descripcion,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
@@ -367,7 +363,7 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
                     ),
                   ),
                   Text(
-                    _currencyFmt.format(producto.venta),
+                    _currencyFmt.format(producto.precio),
                     style: const TextStyle(
                       color: _accentBlue,
                       fontWeight: FontWeight.bold,

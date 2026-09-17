@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/http_service.dart';
-import '../../../inventario/providers/inventario_producto_provider.dart';
-import '../../../inventario/models/inventario_producto.dart';
+import '../../../producto/providers/producto_provider.dart';
+import '../../../producto/models/producto.dart';
 import '../../providers/pedido_form_provider.dart';
 
 class VendedorPedidoCatalogoScreen extends StatefulWidget {
@@ -38,7 +38,7 @@ class _VendedorPedidoCatalogoScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final prov = context.read<InventarioProductoProvider>();
+      final prov = context.read<ProductoProvider>();
       if (prov.productos.isEmpty) {
         prov.fetchProductos();
       }
@@ -46,7 +46,7 @@ class _VendedorPedidoCatalogoScreenState
   }
 
   List<String> get _categorias {
-    final prods = context.read<InventarioProductoProvider>().productos;
+    final prods = context.read<ProductoProvider>().productos;
     final cats = prods
         .map((p) => p.categoria?.nombre ?? 'Sin categoría')
         .toSet()
@@ -55,15 +55,15 @@ class _VendedorPedidoCatalogoScreenState
     return ['Todas', ...cats];
   }
 
-  List<InventarioProducto> get _productosFiltrados {
-    final prods = context.watch<InventarioProductoProvider>().productos;
+  List<Producto> get _productosFiltrados {
+    final prods = context.watch<ProductoProvider>().productos;
     return prods.where((p) {
       if (!p.activo) return false;
 
       final matchesSearch =
           _searchQuery.isEmpty ||
-          p.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          p.codigo.toLowerCase().contains(_searchQuery.toLowerCase());
+          p.descripcion.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          (p.codigo ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
 
       final cat = p.categoria?.nombre ?? 'Sin categoría';
       final matchesCat =
@@ -85,10 +85,7 @@ class _VendedorPedidoCatalogoScreenState
   }
 
   Widget _buildTopBar() {
-    final totalProductos = context
-        .watch<InventarioProductoProvider>()
-        .productos
-        .length;
+    final totalProductos = context.watch<ProductoProvider>().productos.length;
     final mostrando = _productosFiltrados.length;
 
     return Container(
@@ -219,8 +216,7 @@ class _VendedorPedidoCatalogoScreenState
                 ),
               ),
               InkWell(
-                onTap: () =>
-                    context.read<InventarioProductoProvider>().fetchProductos(),
+                onTap: () => context.read<ProductoProvider>().fetchProductos(),
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -286,7 +282,7 @@ class _VendedorPedidoCatalogoScreenState
     );
   }
 
-  Widget _buildProductoCard(InventarioProducto producto) {
+  Widget _buildProductoCard(Producto producto) {
     final hasStock = producto.stock > 0;
 
     return Card(
@@ -378,7 +374,7 @@ class _VendedorPedidoCatalogoScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      producto.codigo,
+                      producto.codigo ?? 'Sin código',
                       style: TextStyle(
                         fontSize: 9,
                         color: Colors.grey.shade600,
@@ -389,7 +385,7 @@ class _VendedorPedidoCatalogoScreenState
                     const SizedBox(height: 2),
                     Expanded(
                       child: Text(
-                        producto.nombre,
+                        producto.descripcion,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 11, // Letra más chica
@@ -404,7 +400,7 @@ class _VendedorPedidoCatalogoScreenState
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          _currencyFmt.format(producto.venta),
+                          _currencyFmt.format(producto.precio),
                           style: const TextStyle(
                             color: _accentBlue,
                             fontWeight: FontWeight.bold,
@@ -435,7 +431,7 @@ class _VendedorPedidoCatalogoScreenState
     );
   }
 
-  void _mostrarDialogoAgregar(InventarioProducto producto) {
+  void _mostrarDialogoAgregar(Producto producto) {
     showDialog(
       context: context,
       builder: (_) => Center(
@@ -994,7 +990,7 @@ class _VendedorPedidoCatalogoScreenState
 
 /// Diálogo flotante para ingresar Cantidad y Precio al tocar un producto.
 class _AddProductDialog extends StatefulWidget {
-  final InventarioProducto producto;
+  final Producto producto;
   final void Function(double cantidad, double precio) onConfirm;
 
   const _AddProductDialog({required this.producto, required this.onConfirm});
@@ -1012,7 +1008,7 @@ class _AddProductDialogState extends State<_AddProductDialog> {
   void initState() {
     super.initState();
     _precioCtrl = TextEditingController(
-      text: widget.producto.venta.toStringAsFixed(2),
+      text: widget.producto.precio.toStringAsFixed(2),
     );
   }
 
@@ -1079,7 +1075,7 @@ class _AddProductDialogState extends State<_AddProductDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          p.nombre,
+                          p.descripcion,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,

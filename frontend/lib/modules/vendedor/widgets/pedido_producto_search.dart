@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../inventario/providers/inventario_producto_provider.dart';
-import '../../inventario/models/inventario_producto.dart';
+
+import '../../producto/models/producto.dart';
+import '../../producto/providers/producto_provider.dart';
 
 /// Buscador de productos del catálogo.
 /// Responsabilidad única: buscar y seleccionar un producto del inventario.
 class PedidoProductoSearch extends StatefulWidget {
   final Set<int> productosEnCarrito; // IDs ya agregados
-  final ValueChanged<InventarioProducto> onAgregar;
+  final ValueChanged<Producto> onAgregar;
 
   const PedidoProductoSearch({
     super.key,
@@ -22,20 +23,22 @@ class PedidoProductoSearch extends StatefulWidget {
 
 class _PedidoProductoSearchState extends State<PedidoProductoSearch> {
   static const _accentBlue = Color(0xFF1976D2);
-  static final _currencyFmt =
-      NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+  static final _currencyFmt = NumberFormat.currency(
+    symbol: '\$',
+    decimalDigits: 2,
+  );
 
   String _search = '';
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<InventarioProductoProvider>(
+    return Consumer<ProductoProvider>(
       builder: (ctx, provider, _) {
         final filtrados = provider.productos.where((p) {
           if (!p.activo || _search.isEmpty) return false;
           final q = _search.toLowerCase();
-          return p.nombre.toLowerCase().contains(q) ||
-              p.codigo.toLowerCase().contains(q);
+          return p.descripcion.toLowerCase().contains(q) ||
+              (p.codigo ?? '').toLowerCase().contains(q);
         }).toList();
 
         return Column(
@@ -53,8 +56,7 @@ class _PedidoProductoSearchState extends State<PedidoProductoSearch> {
       onChanged: (v) => setState(() => _search = v),
       decoration: InputDecoration(
         hintText: 'Buscar producto por nombre o código...',
-        prefixIcon:
-            const Icon(Icons.search, size: 20, color: _accentBlue),
+        prefixIcon: const Icon(Icons.search, size: 20, color: _accentBlue),
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
@@ -65,8 +67,10 @@ class _PedidoProductoSearchState extends State<PedidoProductoSearch> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: _accentBlue, width: 1.5),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         suffixIcon: _search.isNotEmpty
             ? IconButton(
                 icon: const Icon(Icons.close, size: 18),
@@ -77,7 +81,7 @@ class _PedidoProductoSearchState extends State<PedidoProductoSearch> {
     );
   }
 
-  Widget _buildResultList(List<InventarioProducto> productos) {
+  Widget _buildResultList(List<Producto> productos) {
     return Container(
       margin: const EdgeInsets.only(top: 4),
       decoration: BoxDecoration(
@@ -97,15 +101,14 @@ class _PedidoProductoSearchState extends State<PedidoProductoSearch> {
           shrinkWrap: true,
           physics: const ClampingScrollPhysics(),
           itemCount: productos.length,
-          separatorBuilder: (_, __) =>
-              const Divider(height: 1, indent: 16),
+          separatorBuilder: (_, __) => const Divider(height: 1, indent: 16),
           itemBuilder: (ctx, i) => _buildProductoTile(productos[i]),
         ),
       ),
     );
   }
 
-  Widget _buildProductoTile(InventarioProducto producto) {
+  Widget _buildProductoTile(Producto producto) {
     final yaAgregado = widget.productosEnCarrito.contains(producto.id);
 
     return ListTile(
@@ -114,9 +117,9 @@ class _PedidoProductoSearchState extends State<PedidoProductoSearch> {
         radius: 18,
         backgroundColor: _accentBlue.withValues(alpha: 0.1),
         child: Text(
-          producto.codigo.length > 2
-              ? producto.codigo.substring(0, 2)
-              : producto.codigo,
+          producto.codigo!.length > 2
+              ? producto.codigo!.substring(0, 2)
+              : producto.codigo!,
           style: const TextStyle(
             color: _accentBlue,
             fontSize: 10,
@@ -125,19 +128,17 @@ class _PedidoProductoSearchState extends State<PedidoProductoSearch> {
         ),
       ),
       title: Text(
-        producto.nombre,
-        style:
-            const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        producto.descripcion,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
       ),
       subtitle: Text(
-        '${producto.codigo} · ${_currencyFmt.format(producto.venta)} / ${producto.unidad}',
+        '${producto.codigo ?? 'Sin código'} · ${_currencyFmt.format(producto.precio)} / ${producto.unidad}',
         style: const TextStyle(fontSize: 11),
       ),
       trailing: yaAgregado
           ? Icon(Icons.check_circle, color: Colors.green.shade400, size: 20)
           : IconButton(
-              icon: const Icon(Icons.add_circle,
-                  color: _accentBlue, size: 24),
+              icon: const Icon(Icons.add_circle, color: _accentBlue, size: 24),
               onPressed: () {
                 widget.onAgregar(producto);
                 setState(() => _search = '');

@@ -1,7 +1,7 @@
 import 'package:industria_california/modules/led_house/models/cxc_alerta_model.dart';
 
 import '../../led_house/models/ledhouse_cliente.dart';
-import '../../inventario/models/inventario_producto.dart';
+import '../../producto/models/producto.dart';
 import 'pedido.dart';
 
 class OrdenProduccionDetalle {
@@ -12,7 +12,7 @@ class OrdenProduccionDetalle {
   final double cantidadFaltante;
   final double cantidadProducida;
   final String estado;
-  final InventarioProducto? producto;
+  final Producto? producto;
 
   OrdenProduccionDetalle({
     required this.id,
@@ -35,7 +35,7 @@ class OrdenProduccionDetalle {
       cantidadProducida: double.parse(json['cantidad_producida'].toString()),
       estado: json['estado'],
       producto: json['producto'] != null
-          ? InventarioProducto.fromJson(json['producto'])
+          ? Producto.fromJson(json['producto'])
           : null,
     );
   }

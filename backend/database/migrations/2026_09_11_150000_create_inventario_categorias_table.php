@@ -8,17 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('inventario_categorias', function (Blueprint $table) {
+        Schema::create('categories', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre')->unique(); // Almacenado en UPPERCASE
-            $table->text('descripcion')->nullable();
-            $table->boolean('activo')->default(true);
+            $table->string('nombre');          // codos, coupling, tee, yee...
+            $table->string('imagen_path')->nullable(); // "IMAGEN PATH"
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('inventario_categorias');
+        Schema::dropIfExists('categories');
     }
 };

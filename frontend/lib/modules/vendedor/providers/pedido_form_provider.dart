@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../led_house/models/ledhouse_cliente.dart';
 import '../../logistica/models/ruta.dart';
 import '../../logistica/models/pedido.dart';
-import '../../inventario/models/inventario_producto.dart';
+import '../../producto/models/producto.dart';
 import '../models/cart_item.dart';
 
 class PedidoFormProvider extends ChangeNotifier {
@@ -41,7 +41,7 @@ class PedidoFormProvider extends ChangeNotifier {
     Pedido pedido,
     List<LedhouseCliente> clientes,
     List<Ruta> rutas,
-    List<InventarioProducto> productos,
+    List<Producto> productos,
   ) {
     _pedidoOriginal = pedido;
     _comentario = pedido.comentario ?? '';
@@ -60,7 +60,7 @@ class PedidoFormProvider extends ChangeNotifier {
 
     _carrito.clear();
     for (final det in pedido.detalles) {
-      InventarioProducto? prod;
+      Producto? prod;
       try {
         prod = productos.firstWhere((p) => p.id == det.productoId);
       } catch (_) {}
@@ -68,11 +68,11 @@ class PedidoFormProvider extends ChangeNotifier {
       final item = CartItem(
         productoId: det.productoId,
         productoNombre:
-            det.productoNombre ?? prod?.nombre ?? 'Producto #${det.productoId}',
+            det.productoNombre ?? prod?.descripcion ?? 'Producto #${det.productoId}',
         productoCodigo: det.productoCodigo ?? prod?.codigo ?? '',
         unidad: prod?.unidad ?? 'UN',
         stock: prod?.stock ?? 0,
-        precioBase: prod?.venta ?? det.precioUnitario,
+        precioBase: prod?.precio ?? det.precioUnitario,
         precioController: TextEditingController(
           text: det.precioUnitario.toStringAsFixed(2),
         ),
@@ -129,7 +129,7 @@ class PedidoFormProvider extends ChangeNotifier {
   }
 
   void agregarProducto(
-    InventarioProducto producto,
+    Producto producto,
     double cantidad,
     double precioUnitario,
   ) {

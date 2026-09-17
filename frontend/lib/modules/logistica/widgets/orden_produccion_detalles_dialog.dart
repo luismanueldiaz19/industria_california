@@ -39,9 +39,7 @@ class OrdenProduccionDetallesDialog extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white70,
-                  ),
+                  style: TextButton.styleFrom(foregroundColor: Colors.white70),
                   child: const Text('Cerrar'),
                 ),
               ),
@@ -73,10 +71,7 @@ class OrdenProduccionDetallesDialog extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Pedido Asociado: #${orden.pedidoId ?? "N/A"}',
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: Colors.white54, fontSize: 13),
                 ),
               ],
             ),
@@ -92,7 +87,10 @@ class OrdenProduccionDetallesDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildDetalleItem(BuildContext context, OrdenProduccionDetalle detalle) {
+  Widget _buildDetalleItem(
+    BuildContext context,
+    OrdenProduccionDetalle detalle,
+  ) {
     final isListo = detalle.estado == 'listo';
     final color = isListo ? Colors.green : Colors.orange;
 
@@ -111,7 +109,7 @@ class OrdenProduccionDetallesDialog extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  detalle.producto?.nombre ?? 'Producto Desconocido',
+                  detalle.producto?.descripcion ?? 'Producto Desconocido',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -170,7 +168,7 @@ class OrdenProduccionDetallesDialog extends StatelessWidget {
                 ),
               ),
             ),
-          ]
+          ],
         ],
       ),
     );

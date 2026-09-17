@@ -31,11 +31,10 @@ import 'modules/led_house/screens/ledhouse_alertas_screen.dart';
 import 'modules/led_house/providers/ledhouse_proveedor_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 // Módulo Inventario
-import 'modules/inventario/providers/inventario_categoria_provider.dart';
-import 'modules/inventario/providers/inventario_producto_provider.dart';
-import 'modules/inventario/providers/inventario_movimiento_provider.dart';
-import 'modules/inventario/screens/inventario_productos_screen.dart';
-import 'modules/inventario/screens/inventario_movimientos_screen.dart';
+import 'modules/producto/providers/categoria_provider.dart';
+import 'modules/producto/providers/producto_provider.dart';
+import 'modules/producto/screens/productos_screen.dart';
+import 'modules/producto/screens/categorias_screen.dart';
 
 // Módulo Flota y Despacho
 import 'modules/flota/screens/choferes_screen.dart';
@@ -76,9 +75,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LedhouseClienteProvider()),
         ChangeNotifierProvider(create: (_) => LedhouseProveedorProvider()),
         // Módulo Inventario
-        ChangeNotifierProvider(create: (_) => InventarioCategoriaProvider()),
-        ChangeNotifierProvider(create: (_) => InventarioProductoProvider()),
-        ChangeNotifierProvider(create: (_) => InventarioMovimientoProvider()),
+        ChangeNotifierProvider(create: (_) => CategoriaProvider()),
+        ChangeNotifierProvider(create: (_) => ProductoProvider()),
         // Módulo Logística
         ChangeNotifierProvider(create: (_) => RutaProvider()),
         ChangeNotifierProvider(create: (_) => PedidoProvider()),
@@ -168,9 +166,9 @@ class _MainLayoutState extends State<MainLayout> {
     // Configuración (6-7)
     const RolesScreen(), // 6
     const UsersScreen(), // 7
-    // Módulo Inventario (8-9)
-    const InventarioProductosScreen(), // 8
-    const InventarioMovimientosScreen(), // 9
+    // Módulo Inventario (8)
+    const ProductosScreen(), // 8
+    const CategoriasScreen(), // 9
     // Módulo Logística y Pedidos (10-13)
     const PedidosScreen(), // 10
     const RutasScreen(), // 11
