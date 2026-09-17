@@ -253,7 +253,7 @@ class PdfSecurityService
                 break;
 
             case 'inventario_movimientos':
-                $query = InventarioMovimiento::with(['producto:id,codigo,nombre,unidad', 'user:id,name,username']);
+                $query = InventarioMovimiento::with(['producto:id,codigo,descripcion,unidad', 'user:id,name,username']);
                 if (!empty($params['producto_id'])) {
                     $query->where('producto_id', $params['producto_id']);
                 }
@@ -323,7 +323,7 @@ class PdfSecurityService
                     'cliente:id,nombre,direccion,whatsapp,documento', 
                     'ruta:id,nombre', 
                     'vendedor:id,name', 
-                    'detalles.producto:id,codigo,nombre,unidad'
+                    'detalles.producto:id,codigo,descripcion,unidad'
                 ])->findOrFail($id);
                 $pdf = Pdf::loadView('pdf.pedido_factura', compact('pedido'));
                 $filename = "pedido_{$pedido->id}.pdf";

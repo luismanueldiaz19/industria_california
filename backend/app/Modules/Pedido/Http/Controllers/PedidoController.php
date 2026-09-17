@@ -24,7 +24,7 @@ class PedidoController extends Controller
             'ruta:id,nombre',
             'vendedor:id,name',
             'facturador:id,name',
-            'detalles.producto:id,codigo,descripcion as nombre,imagen_producto,unidad'
+            'detalles.producto:id,codigo,descripcion,imagen_producto,unidad'
         ]);
 
         if ($request->filled('cliente_id')) {
@@ -148,7 +148,7 @@ class PedidoController extends Controller
             'cliente:id,nombre,direccion,telefono,rnc', 
             'ruta:id,nombre', 
             'vendedor:id,name', 
-            'detalles.producto:id,codigo,descripcion as nombre,unidad'
+            'detalles.producto:id,codigo,descripcion,unidad'
         ])->findOrFail($id);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.pedido_factura', compact('pedido'));

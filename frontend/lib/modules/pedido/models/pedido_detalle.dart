@@ -35,7 +35,7 @@ class PedidoDetalle {
       precioUnitario: double.tryParse(json['precio_unitario']?.toString() ?? '0') ?? 0,
       subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0,
       observacion: json['observacion'],
-      productoNombre: json['producto']?['nombre'],
+      productoNombre: json['producto']?['descripcion'] ?? json['producto']?['nombre'],
       productoCodigo: json['producto']?['codigo'],
     );
   }

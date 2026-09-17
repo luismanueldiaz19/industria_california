@@ -165,7 +165,7 @@
                 <tr>
                     <td>{{ $det->producto->codigo ?? '' }}</td>
                     <td>
-                        {{ $det->producto->nombre ?? 'Producto #' . $det->producto_id }}
+                        {{ $det->producto->descripcion ?? 'Producto #' . $det->producto_id }}
                         @if($det->observacion)
                             <br><small style="color: #666; font-style: italic;">Nota: {{ $det->observacion }}</small>
                         @endif

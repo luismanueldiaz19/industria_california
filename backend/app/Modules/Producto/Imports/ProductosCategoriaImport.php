@@ -37,7 +37,7 @@ class ProductosCategoriaImport implements ToModel, WithHeadingRow
             ],
             [
                 'cant_x_packages' => $row['cant_x_packages'] ?? null,
-                'unidad' => !empty($row['unidad']) ? $row['unidad'] : 'UNIDAD',
+                'unidad' => !empty($row['unidad']) ? strtoupper(trim($row['unidad'])) : 'UNIDAD',
                 'precio' => $precio,
             ]
         );

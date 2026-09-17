@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import '../models/producto.dart';
 import '../models/categoria.dart';
 import '../providers/producto_provider.dart';
@@ -442,11 +444,23 @@ class _ProductoFormDialogState extends State<ProductoFormDialog> {
     required String label,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
   }) {
+    List<TextInputFormatter> formatters = inputFormatters ?? [];
+    if (inputFormatters == null && keyboardType != null) {
+      if (keyboardType == TextInputType.number) {
+        formatters = [FilteringTextInputFormatter.digitsOnly];
+      } else if (keyboardType ==
+          const TextInputType.numberWithOptions(decimal: true)) {
+        formatters = [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))];
+      }
+    }
+
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      inputFormatters: formatters,
       style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
@@ -471,6 +485,7 @@ class _ProductoFormDialogState extends State<ProductoFormDialog> {
 
   Widget _buildCategoryDropdown(List<Categoria> categorias) {
     return DropdownButtonFormField<int>(
+      isExpanded: true,
       value: _selectedCategoriaId,
       dropdownColor: const Color(0xFF2C2F33),
       style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -493,7 +508,10 @@ class _ProductoFormDialogState extends State<ProductoFormDialog> {
         ),
       ),
       items: categorias.map((cat) {
-        return DropdownMenuItem<int>(value: cat.id, child: Text(cat.nombre));
+        return DropdownMenuItem<int>(
+          value: cat.id,
+          child: Text(cat.nombre, overflow: TextOverflow.ellipsis),
+        );
       }).toList(),
       onChanged: (val) {
         setState(() {

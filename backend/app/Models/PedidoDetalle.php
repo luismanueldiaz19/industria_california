@@ -33,6 +33,6 @@ class PedidoDetalle extends Model
 
     public function producto()
     {
-        return $this->belongsTo(InventarioProducto::class, 'producto_id');
+        return $this->belongsTo(\App\Modules\Producto\Models\Producto::class, 'producto_id');
     }
 }

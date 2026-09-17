@@ -11,6 +11,15 @@ class UpdateProductoRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation()
+    {
+        if ($this->has('unidad') && $this->unidad !== null) {
+            $this->merge([
+                'unidad' => strtoupper(trim($this->unidad)),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         $productoId = $this->route('producto');
@@ -23,7 +32,7 @@ class UpdateProductoRequest extends FormRequest
             'cant_x_packages' => 'nullable|integer',
             'medidas' => 'nullable|string|max:255',
             'capacidad' => 'nullable|string|max:255',
-            'unidad' => 'nullable|string|in:UNIDAD,LIBRA,KG,OTRO,MTS,LB,PIES',
+            'unidad' => 'nullable|string|max:50',
             'precio' => 'nullable|numeric|min:0',
             'costo' => 'nullable|numeric|min:0',
             'stock' => 'nullable|numeric|min:0',

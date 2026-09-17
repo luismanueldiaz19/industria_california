@@ -29,10 +29,7 @@ class ZoomDialog extends StatelessWidget {
       transitionDuration: const Duration(milliseconds: 300),
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         return ScaleTransition(
-          scale: CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutBack,
-          ),
+          scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
           child: FadeTransition(
             opacity: animation,
             child: AlertDialog(
@@ -78,11 +75,7 @@ class ZoomDialog extends StatelessWidget {
                 color: (iconColor ?? Colors.blue).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                size: 32,
-                color: iconColor ?? Colors.blue,
-              ),
+              child: Icon(icon, size: 32, color: iconColor ?? Colors.blue),
             ),
             const SizedBox(height: 16),
           ],
@@ -119,7 +112,10 @@ class ZoomDialog extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text('Cerrar', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Cerrar',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ],
