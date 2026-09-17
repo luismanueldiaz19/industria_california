@@ -161,7 +161,7 @@
                 @endphp
                 <tr>
                     <td class="monospace">{{ $p->codigo }}</td>
-                    <td style="font-weight:600">{{ $p->nombre }}</td>
+                    <td style="font-weight:600">{{ $p->nombre_completo }}</td>
                     <td class="text-center">{{ $p->unidad }}</td>
                     <td>{{ $p->categoria?->nombre ?? '—' }}</td>
                     <td class="text-right" style="{{ (float)$p->stock < 0 ? 'color:#E31E24; font-weight:bold;' : '' }}">
@@ -174,7 +174,7 @@
                         {{ $p->stock_maximo !== null ? number_format((float)$p->stock_maximo, 2) : '—' }}
                     </td>
                     <td class="text-right">${{ number_format((float)$p->costo, 2) }}</td>
-                    <td class="text-right">${{ number_format((float)$p->venta, 2) }}</td>
+                    <td class="text-right">${{ number_format((float)$p->precio, 2) }}</td>
                     <td class="text-center">
                         <span class="badge {{ $badgeClass }}">{{ $estadoLabel }}</span>
                     </td>

@@ -7,7 +7,9 @@ use App\Modules\Producto\Http\Requests\StoreProductoRequest;
 use App\Modules\Producto\Http\Requests\UpdateProductoRequest;
 use App\Modules\Producto\Http\Resources\ProductoResource;
 use App\Modules\Producto\Services\ProductoService;
+use App\Services\PdfSecurityService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ProductoController extends Controller
 {
@@ -46,5 +48,27 @@ class ProductoController extends Controller
     {
         $this->productoService->deleteProducto($id);
         return response()->json(null, 204);
+    }
+
+    /**
+     * Genera URL segura (token) para PDF de inventario.
+     */
+    public function getInventarioPdfUrl(Request $request)
+    {
+        $params = [];
+        foreach (['search', 'categoria_id', 'estado_stock', 'order_by', 'order_dir', 'solo_negativos'] as $key) {
+            if ($request->filled($key)) {
+                $params[$key] = $request->input($key);
+            }
+        }
+
+        $url = PdfSecurityService::generarUrl(
+            'inventario_productos',
+            $params,
+            $request->user()->id,
+            30
+        );
+
+        return response()->json(['url' => $url]);
     }
 }

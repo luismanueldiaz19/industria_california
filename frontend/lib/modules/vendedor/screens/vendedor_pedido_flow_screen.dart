@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:industria_california/core/themes/app_theme.dart';
 import 'package:provider/provider.dart';
-import '../../logistica/models/pedido.dart';
+import '../../pedido/models/pedido.dart';
 import '../providers/pedido_form_provider.dart';
 import 'pedido/vendedor_pedido_info_screen.dart';
 import 'pedido/vendedor_pedido_catalogo_screen.dart';
 import 'pedido/vendedor_pedido_revision_screen.dart';
 import '../../led_house/providers/ledhouse_cliente_provider.dart';
-import '../../logistica/providers/ruta_provider.dart';
+import '../../ruta/providers/ruta_provider.dart';
 import '../../producto/providers/producto_provider.dart';
+import '../../producto/providers/categoria_provider.dart';
 
 /// Pantalla Orquestadora del Flujo de Creación de Pedido (Multi-paso)
 /// Aquí se inyecta el Provider compartido para los 3 pasos.
@@ -53,6 +54,7 @@ class _VendedorPedidoFlowContentState
       context.read<LedhouseClienteProvider>().fetchClientes(),
       context.read<RutaProvider>().fetchRutas(),
       context.read<ProductoProvider>().fetchProductos(),
+      context.read<CategoriaProvider>().fetchCategorias(),
     ];
     await Future.wait(futures);
 

@@ -28,6 +28,6 @@ class PedidoServiceProvider extends ServiceProvider {
 
     public function boot(): void {
         Gate::policy(Pedido::class, PedidoPolicy::class);
-        $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        // $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
     }
 }

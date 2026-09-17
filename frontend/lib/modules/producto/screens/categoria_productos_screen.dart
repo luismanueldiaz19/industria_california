@@ -140,9 +140,9 @@ class _CategoriaProductosScreenState extends State<CategoriaProductosScreen> {
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 220,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.65,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 1.15,
                   ),
                   itemCount: provider.productos.length + (provider.isLoadingMore ? 1 : 0),
                   itemBuilder: (ctx, i) {

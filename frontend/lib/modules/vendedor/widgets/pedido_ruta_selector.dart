@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../logistica/providers/ruta_provider.dart';
-import '../../logistica/models/ruta.dart';
+import '../../ruta/providers/ruta_provider.dart';
+import '../../ruta/models/ruta.dart';
 import '../screens/vendedor_rutas_screen.dart';
 
 /// Selector de ruta (opcional) con enlace rápido a gestión de rutas.

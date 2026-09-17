@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import '../../logistica/models/pedido.dart';
-import '../../logistica/providers/pedido_provider.dart';
+import '../../pedido/models/pedido.dart';
+import '../../pedido/providers/pedido_provider.dart';
+import '../../../core/utils/formatters.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'vendedor_pedido_flow_screen.dart';
 import 'vendedor_pedido_detalle_screen.dart';
@@ -18,7 +18,6 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
-  final _currencyFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
 
   // Colores del home (VentaFlow / Industria California)
   static const _bgPrimary = Color(0xFF1E2F4C);
@@ -33,6 +32,8 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
     'cancelado',
   ];
   int _estadoIndex = 0;
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   static final Map<String, Color> _estadoColor = {
     'borrador': const Color(0xFFFF9800),
@@ -63,12 +64,64 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
   void _loadData() {
     final provider = context.read<PedidoProvider>();
     final estado = _estados[_estadoIndex];
+    final startDateStr = _startDate?.toIso8601String().split('T')[0];
+    final endDateStr = _endDate?.toIso8601String().split('T')[0];
+
     if (estado == 'pendientes') {
-      provider.setFiltros(estado: null, faltantes: true);
+      provider.setFiltros(
+        estado: null,
+        faltantes: true,
+        startDate: startDateStr,
+        endDate: endDateStr,
+      );
     } else {
-      provider.setFiltros(estado: estado == 'todos' ? null : estado, faltantes: false);
+      provider.setFiltros(
+        estado: estado == 'todos' ? null : estado,
+        faltantes: false,
+        startDate: startDateStr,
+        endDate: endDateStr,
+      );
     }
     provider.fetchPedidos();
+  }
+
+  Future<void> _selectDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _startDate != null && _endDate != null
+          ? DateTimeRange(start: _startDate!, end: _endDate!)
+          : null,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: _bgPrimary,
+              onPrimary: Colors.white,
+              onSurface: _bgPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _startDate = picked.start;
+        _endDate = picked.end;
+      });
+      _loadData();
+    }
+  }
+
+  void _clearDateFilter() {
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+    });
+    _loadData();
   }
 
   @override
@@ -215,6 +268,20 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (_startDate != null)
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.redAccent),
+                        tooltip: 'Limpiar Fechas',
+                        onPressed: _clearDateFilter,
+                      ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.date_range,
+                        color: _startDate != null ? Colors.amber : Colors.white,
+                      ),
+                      tooltip: 'Rango de Fechas',
+                      onPressed: _selectDateRange,
+                    ),
                     IconButton(
                       icon: const Icon(
                         Icons.picture_as_pdf_rounded,
@@ -320,10 +387,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
 
   Widget _buildPedidoCard(Pedido pedido) {
     final estadoColor = _estadoColor[pedido.estado] ?? Colors.grey;
-    final fecha = DateFormat(
-      'dd MMM yyyy, HH:mm',
-      'es',
-    ).format(pedido.createdAt);
+    final fecha = Formatters.date(pedido.createdAt);
 
     final faltante = pedido.detalles.fold(
       0.0,
@@ -379,7 +443,11 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                         ),
                         if (hasFaltante) ...[
                           const SizedBox(width: 6),
-                          const Icon(Icons.warning_rounded, color: Colors.redAccent, size: 16),
+                          const Icon(
+                            Icons.warning_rounded,
+                            color: Colors.redAccent,
+                            size: 16,
+                          ),
                         ],
                       ],
                     ),
@@ -459,7 +527,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              _currencyFmt.format(pedido.total),
+                              Formatters.currency.format(pedido.total),
                               style: TextStyle(
                                 color: Colors.grey.shade400,
                                 fontSize: 12,
@@ -467,7 +535,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                               ),
                             ),
                             Text(
-                              _currencyFmt.format(disponible),
+                              Formatters.currency.format(disponible),
                               style: const TextStyle(
                                 color: Colors.redAccent,
                                 fontSize: 18,
@@ -478,7 +546,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                         )
                       else
                         Text(
-                          _currencyFmt.format(pedido.total),
+                          Formatters.currency.format(pedido.total),
                           style: const TextStyle(
                             color: _bgSecondary,
                             fontSize: 18,

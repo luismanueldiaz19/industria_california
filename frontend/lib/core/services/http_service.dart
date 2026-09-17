@@ -16,6 +16,8 @@ class HttpService {
     };
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
+
+      print('TOKEN: $token');
     }
     return headers;
   }

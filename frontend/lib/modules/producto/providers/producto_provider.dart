@@ -74,7 +74,7 @@ class ProductoProvider with ChangeNotifier {
 
     try {
       final result = await _service.getProductos(
-        search: _search.isNotEmpty ? _search : null,
+        search: _search.isNotEmpty ? _search.toUpperCase() : null,
         categoriaId: _categoriaId,
         estadoStock: _estadoStock.isNotEmpty ? _estadoStock : null,
         soloNegativos: _soloNegativos,
@@ -166,7 +166,11 @@ class ProductoProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> uploadImagen(int productoId, List<int> bytes, String filename) async {
+  Future<bool> uploadImagen(
+    int productoId,
+    List<int> bytes,
+    String filename,
+  ) async {
     try {
       final data = await _service.uploadImagen(productoId, bytes, filename);
       final idx = _productos.indexWhere((p) => p.id == productoId);
@@ -190,7 +194,10 @@ class ProductoProvider with ChangeNotifier {
       await _service.deleteImagen(productoId);
       final idx = _productos.indexWhere((p) => p.id == productoId);
       if (idx != -1) {
-        _productos[idx] = _productos[idx].copyWith(imagenProducto: null, imagenUrl: null);
+        _productos[idx] = _productos[idx].copyWith(
+          imagenProducto: null,
+          imagenUrl: null,
+        );
         notifyListeners();
       }
       return true;
@@ -217,7 +224,11 @@ class ProductoProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> importExcelPorCategoria(int categoriaId, List<int> bytes, String filename) async {
+  Future<bool> importExcelPorCategoria(
+    int categoriaId,
+    List<int> bytes,
+    String filename,
+  ) async {
     _isLoading = true;
     notifyListeners();
     try {

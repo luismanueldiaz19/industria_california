@@ -2,7 +2,7 @@
 
 namespace App\Modules\Pedido\Models;
 
-use App\Models\InventarioProducto;
+use App\Modules\Producto\Models\Producto;
 use App\Modules\Pedido\Models\Pedido;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,6 +36,6 @@ class PedidoDetalle extends Model
 
     public function producto()
     {
-        return $this->belongsTo(InventarioProducto::class, 'producto_id');
+        return $this->belongsTo(Producto::class, 'producto_id');
     }
 }

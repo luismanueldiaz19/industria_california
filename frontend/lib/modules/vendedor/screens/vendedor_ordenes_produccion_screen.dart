@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../../auth/providers/auth_provider.dart';
-import '../../logistica/models/orden_produccion.dart';
-import '../../logistica/providers/orden_produccion_provider.dart';
+import '../../produccion/models/orden_produccion.dart';
+import '../../produccion/providers/orden_produccion_provider.dart';
 
 class VendedorOrdenesProduccionScreen extends StatefulWidget {
   const VendedorOrdenesProduccionScreen({super.key});

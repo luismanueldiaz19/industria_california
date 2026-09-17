@@ -18,10 +18,9 @@ use App\Http\Controllers\Api\LedhouseProveedorController;
 // use App\Http\Controllers\Api\InventarioMovimientoController;
 // Módulo Logística/Ventas
 use App\Http\Controllers\Api\RutaController;
-use App\Http\Controllers\Api\PedidoController;
-use App\Http\Controllers\Api\OrdenProduccionController;
-use App\Http\Controllers\Api\ProduccionAgrupadaController;
-// use App\Modules\Pedido\Http\Controllers\PedidoController;
+use App\Modules\Pedido\Http\Controllers\PedidoController;
+use App\Modules\Produccion\Http\Controllers\OrdenProduccionController;
+use App\Modules\Produccion\Http\Controllers\ProduccionAgrupadaController;
 
 
 // =========================================================

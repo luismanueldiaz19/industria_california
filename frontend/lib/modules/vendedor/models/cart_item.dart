@@ -34,7 +34,7 @@ class CartItem {
   factory CartItem.fromProducto(Producto producto) {
     return CartItem(
       productoId: producto.id!,
-      productoNombre: producto.descripcion,
+      productoNombre: producto.nombreCompleto,
       productoCodigo: producto.codigo ?? '',
       unidad: producto.unidad,
       stock: producto.stock,

@@ -18,7 +18,12 @@ class ProductoRepository implements ProductoRepositoryInterface
         if (request()->has('search')) {
             $search = request('search');
             $query->where(function($q) use ($search) {
-                $q->where('descripcion', 'like', '%' . $search . '%');
+                // Obtener el driver para usar ILIKE en postgres o LIKE en mysql/sqlite
+                $operator = \DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+                
+                // Emular el 'nombreCompleto' del frontend: descripcion + medidas + capacidad + unidad
+                $q->whereRaw("CONCAT_WS(' ', descripcion, medidas, capacidad, NULLIF(UPPER(unidad), 'UNIDAD')) $operator ?", ['%' . $search . '%'])
+                  ->orWhere('codigo', $operator, '%' . $search . '%');
             });
         }
 

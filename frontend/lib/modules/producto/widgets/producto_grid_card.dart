@@ -31,7 +31,7 @@ class _ProductoGridCardState extends State<ProductoGridCard>
   late AnimationController _animController;
   late Animation<double> _scaleAnim;
 
-  static const _cardBg = Color(0xFF2C2F33);
+  static const _cardBg = Color.fromARGB(255, 16, 16, 17);
   static const _accentRed = Color(0xFFE31E24);
   static const _darkBg = Color(0xFF1A1C1E);
 
@@ -101,14 +101,10 @@ class _ProductoGridCardState extends State<ProductoGridCard>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Imagen / placeholder ──
-                Expanded(flex: 3, child: _buildImage(p)),
-
                 // ── Info ──
                 Expanded(
-                  flex: 7,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -234,52 +230,6 @@ class _ProductoGridCardState extends State<ProductoGridCard>
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildImage(Producto p) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-      child: Container(
-        color: _darkBg,
-        child: p.imagenUrl != null
-            ? Image.network(
-                p.imagenUrl!,
-                fit: BoxFit.cover,
-                headers: {'Authorization': 'Bearer ${HttpService.token}'},
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value: progress.expectedTotalBytes != null
-                          ? progress.cumulativeBytesLoaded /
-                                progress.expectedTotalBytes!
-                          : null,
-                      color: const Color(0xFFE31E24),
-                      strokeWidth: 2,
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) =>
-                    _placeholderIcon(),
-              )
-            : _placeholderIcon(),
-      ),
-    );
-  }
-
-  Widget _placeholderIcon() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.inventory_2_outlined,
-            color: Colors.white.withValues(alpha: 0.12),
-            size: 36,
-          ),
-        ],
       ),
     );
   }

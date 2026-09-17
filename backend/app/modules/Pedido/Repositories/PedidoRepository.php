@@ -1,6 +1,7 @@
-
 <?php
 // app/Modules/Pedido/Repositories/PedidoRepository.php
+namespace App\Modules\Pedido\Repositories;
+
 use App\Modules\Pedido\Models\Pedido;
 use App\Modules\Pedido\Repositories\Contracts\PedidoRepositoryInterface;
 

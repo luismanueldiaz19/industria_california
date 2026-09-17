@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../logistica/providers/ruta_provider.dart';
-import '../../logistica/models/ruta.dart';
+import '../../ruta/providers/ruta_provider.dart';
+import '../../ruta/models/ruta.dart';
 
 /// Pantalla de Rutas para el vendedor.
 /// Puede: ver todas las rutas, crear nueva.

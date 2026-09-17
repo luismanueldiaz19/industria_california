@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/utils/dimension_parser.dart';
+import '../models/producto.dart';
 import '../providers/producto_provider.dart';
 import '../providers/categoria_provider.dart';
 // import '../providers/inventario_movimiento_provider.dart';
@@ -69,7 +71,7 @@ class _ProductosScreenState extends State<ProductosScreen>
     }
   }
 
-  Future<void> _openFormDialog({bool edit = false, int? index}) async {
+  Future<void> _openFormDialog({Producto? producto}) async {
     final prodProvider = context.read<ProductoProvider>();
     final catProvider = context.read<CategoriaProvider>();
 
@@ -77,14 +79,15 @@ class _ProductosScreenState extends State<ProductosScreen>
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.7),
       builder: (_) => ProductoFormDialog(
-        producto: edit && index != null ? prodProvider.productos[index] : null,
+        producto: producto,
         productoProvider: prodProvider,
         categoriaProvider: catProvider,
       ),
     );
+
     if (result == true) {
       _showSnack(
-        edit ? 'Producto actualizado' : 'Producto creado',
+        producto != null ? 'Producto actualizado' : 'Producto creado',
         isError: false,
       );
     }
@@ -152,16 +155,16 @@ class _ProductosScreenState extends State<ProductosScreen>
     // }
   }
 
-  Future<void> _openSyncScreen() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const InventarioSyncScreen()),
-    );
-    // Al volver, refrescar inventario (puede haber cambios)
-    if (mounted) {
-      await context.read<ProductoProvider>().fetchProductos();
-    }
-  }
+  // Future<void> _openSyncScreen() async {
+  //   await Navigator.push(
+  //     context,
+  //     MaterialPageRoute(builder: (_) => const InventarioSyncScreen()),
+  //   );
+  //   // Al volver, refrescar inventario (puede haber cambios)
+  //   if (mounted) {
+  //     await context.read<ProductoProvider>().fetchProductos();
+  //   }
+  // }
 
   Future<void> _openPdf() async {
     final url = await context.read<ProductoProvider>().getPdfUrl();
@@ -222,7 +225,7 @@ class _ProductosScreenState extends State<ProductosScreen>
             isAdmin: isAdmin,
             onApply: () => prodProvider.fetchProductos(),
             onAddProducto: isAdmin ? () => _openFormDialog() : null,
-            onSync: isAdmin ? _openSyncScreen : null,
+            // onSync: isAdmin ? _openSyncScreen : null,
             onPdf: _openPdf,
           ),
 
@@ -310,6 +313,17 @@ class _ProductosScreenState extends State<ProductosScreen>
       );
     }
 
+    final displayProducts = List<Producto>.from(prodProvider.productos);
+
+    displayProducts.sort((a, b) {
+      final valA = DimensionParser.parse(a.medidas ?? a.descripcion);
+      final valB = DimensionParser.parse(b.medidas ?? b.descripcion);
+      if (valA != valB) {
+        return valA.compareTo(valB);
+      }
+      return a.descripcion.compareTo(b.descripcion);
+    });
+
     return FadeTransition(
       opacity: _fadeAnim,
       child: GridView.builder(
@@ -319,13 +333,12 @@ class _ProductosScreenState extends State<ProductosScreen>
           crossAxisCount: crossAxisCount,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 0.72,
+          childAspectRatio: 1.15,
         ),
         itemCount:
-            prodProvider.productos.length +
-            (prodProvider.isLoadingMore ? 1 : 0),
+            displayProducts.length + (prodProvider.isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
-          if (index >= prodProvider.productos.length) {
+          if (index >= displayProducts.length) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(20),
@@ -337,13 +350,11 @@ class _ProductosScreenState extends State<ProductosScreen>
             );
           }
 
-          final producto = prodProvider.productos[index];
+          final producto = displayProducts[index];
           return ProductoGridCard(
             producto: producto,
             isAdmin: isAdmin,
-            onEdit: isAdmin
-                ? () => _openFormDialog(edit: true, index: index)
-                : null,
+            onEdit: isAdmin ? () => _openFormDialog(producto: producto) : null,
             onDelete: isAdmin
                 ? () => _confirmDelete(producto.id!, producto.descripcion)
                 : null,

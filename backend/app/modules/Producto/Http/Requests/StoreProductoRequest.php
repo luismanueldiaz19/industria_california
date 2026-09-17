@@ -25,6 +25,8 @@ class StoreProductoRequest extends FormRequest
             'precio' => 'nullable|numeric|min:0',
             'costo' => 'nullable|numeric|min:0',
             'stock' => 'nullable|numeric|min:0',
+            'stock_minimo' => 'nullable|numeric|min:0',
+            'stock_maximo' => 'nullable|numeric|min:0',
             'category_id' => 'required|exists:categories,id',
             'activo' => 'boolean',
         ];

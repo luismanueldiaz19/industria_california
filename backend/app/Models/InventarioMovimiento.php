@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Modules\Producto\Models\Producto;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -30,7 +31,7 @@ class InventarioMovimiento extends Model
 
     public function producto()
     {
-        return $this->belongsTo(InventarioProducto::class, 'producto_id');
+        return $this->belongsTo(Producto::class, 'producto_id');
     }
 
     public function user()

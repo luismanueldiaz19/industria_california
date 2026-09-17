@@ -21,6 +21,8 @@ class ProductoResource extends JsonResource
             'precio' => $this->precio,
             'costo' => $this->costo,
             'stock' => $this->stock,
+            'stock_minimo' => $this->stock_minimo,
+            'stock_maximo' => $this->stock_maximo,
             'category_id' => $this->category_id,
             'activo' => $this->activo,
             'categoria' => $this->whenLoaded('categoria', function() {

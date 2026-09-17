@@ -1,16 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'core/themes/app_theme.dart';
 import 'modules/auth/providers/auth_provider.dart';
-import 'modules/logistica/providers/produccion_agrupada_provider.dart';
-import 'modules/logistica/screens/produccion_agrupada_screen.dart';
+import 'modules/produccion/providers/produccion_agrupada_provider.dart';
+import 'modules/produccion/screens/produccion_agrupada_screen.dart';
 import 'models/company.dart';
 import 'modules/auth/screens/splash_screen.dart';
 import 'modules/led_house/providers/ledhouse_cliente_provider.dart';
 import 'modules/led_house/screens/ledhouse_detalles_screen.dart';
-import 'package:provider/provider.dart';
 import 'modules/dashboard/dashboard_provider.dart';
 import 'modules/users/providers/users_provider.dart';
 import 'modules/users/users_screen.dart';
@@ -48,15 +46,15 @@ import 'modules/flota/providers/despacho_provider.dart';
 import 'modules/flota/providers/mantenimiento_provider.dart';
 import 'modules/flota/providers/gasto_vehiculo_provider.dart';
 // Módulo Logística
-import 'modules/logistica/providers/ruta_provider.dart';
-import 'modules/logistica/providers/pedido_provider.dart';
-import 'modules/logistica/screens/pedidos_screen.dart';
-import 'modules/logistica/screens/rutas_screen.dart';
-import 'modules/logistica/screens/admin_ordenes_produccion_screen.dart';
-import 'modules/logistica/screens/reporte_vendedores_screen.dart';
-import 'modules/logistica/providers/reporte_vendedores_provider.dart';
+import 'modules/ruta/providers/ruta_provider.dart';
+import 'modules/pedido/providers/pedido_provider.dart';
+import 'modules/pedido/screens/pedidos_screen.dart';
+import 'modules/ruta/screens/rutas_screen.dart';
+import 'modules/produccion/screens/admin_ordenes_produccion_screen.dart';
+import 'modules/pedido/screens/reporte_vendedores_screen.dart';
+import 'modules/pedido/providers/reporte_vendedores_provider.dart';
 
-import 'modules/logistica/providers/orden_produccion_provider.dart';
+import 'modules/produccion/providers/orden_produccion_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

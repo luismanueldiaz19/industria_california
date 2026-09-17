@@ -23,10 +23,13 @@ class ProductoService {
       'order_by': orderBy,
       'order_dir': orderDir,
     };
+
+    print('🔍 params: $params');
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (categoriaId != null) params['categoria_id'] = categoriaId.toString();
-    if (estadoStock != null && estadoStock.isNotEmpty)
+    if (estadoStock != null && estadoStock.isNotEmpty) {
       params['estado_stock'] = estadoStock;
+    }
     if (soloNegativos) params['solo_negativos'] = 'true';
 
     final response = await _http.get(_base, params: params);
@@ -131,10 +134,7 @@ class ProductoService {
     if (estadoStock != null && estadoStock.isNotEmpty)
       params['estado_stock'] = estadoStock;
 
-    final response = await _http.get(
-      'industria-california/producto/productos-pdf-url',
-      params: params,
-    );
+    final response = await _http.get('$_base/pdf-url', params: params);
     return response?['url'] as String?;
   }
 }

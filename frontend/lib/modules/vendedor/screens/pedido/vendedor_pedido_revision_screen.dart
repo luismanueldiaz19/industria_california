@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/cart_item.dart';
 import '../../providers/pedido_form_provider.dart';
-import '../../../logistica/providers/pedido_provider.dart';
+import '../../../pedido/providers/pedido_provider.dart';
 
 class VendedorPedidoRevisionScreen extends StatefulWidget {
   final VoidCallback onPrev;

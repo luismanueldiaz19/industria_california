@@ -7,6 +7,7 @@ use App\Models\LedhouseCxc;
 use App\Models\LedhouseCliente;
 use App\Models\LedhouseCxcAlerta;
 use App\Models\LedhouseEstadoResultado;
+use App\Modules\Producto\Models\Producto as ModuleProducto;
 use App\Models\InventarioProducto;
 use App\Models\InventarioMovimiento;
 use App\Models\Pedido;
@@ -213,13 +214,13 @@ class PdfSecurityService
                 break;
 
             case 'inventario_productos':
-                $query = InventarioProducto::with('categoria')->where('activo', true);
+                $query = ModuleProducto::with('categoria')->where('activo', true);
                 if (!empty($params['search'])) {
                     $s = strtoupper($params['search']);
-                    $query->where(fn($q) => $q->where('codigo', 'LIKE', "%{$s}%")->orWhere('nombre', 'LIKE', "%{$s}%"));
+                    $query->where(fn($q) => $q->where('codigo', 'LIKE', "%{$s}%")->orWhere('descripcion', 'LIKE', "%{$s}%"));
                 }
                 if (!empty($params['categoria_id'])) {
-                    $query->where('categoria_id', $params['categoria_id']);
+                    $query->where('category_id', $params['categoria_id']);
                 }
                 if (!empty($params['estado_stock'])) {
                     match($params['estado_stock']) {
@@ -233,8 +234,19 @@ class PdfSecurityService
                 if (!empty($params['solo_negativos'])) {
                     $query->where('stock', '<', 0);
                 }
-                $orderBy  = in_array($params['order_by'] ?? '', ['nombre','codigo','stock','costo','venta']) ? $params['order_by'] : 'nombre';
+                
+                $orderByMap = [
+                    'nombre' => 'descripcion',
+                    'venta'  => 'precio',
+                    'codigo' => 'codigo',
+                    'stock'  => 'stock',
+                    'costo'  => 'costo'
+                ];
+                
+                $requestOrder = $params['order_by'] ?? 'nombre';
+                $orderBy = $orderByMap[$requestOrder] ?? 'descripcion';
                 $orderDir = ($params['order_dir'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+                
                 $productos = $query->orderBy($orderBy, $orderDir)->get();
                 $pdf = Pdf::loadView('pdf.inventario_productos', ['productos' => $productos]);
                 $filename = 'Inventario_Productos_' . date('Ymd') . '.pdf';

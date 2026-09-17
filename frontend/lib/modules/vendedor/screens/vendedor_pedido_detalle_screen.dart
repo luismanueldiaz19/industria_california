@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/themes/app_theme.dart';
-import '../../logistica/models/pedido.dart';
-import '../../logistica/models/pedido_detalle.dart';
+import '../../pedido/models/pedido.dart';
+import '../../pedido/models/pedido_detalle.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../logistica/providers/pedido_provider.dart';
+import '../../pedido/providers/pedido_provider.dart';
 import 'vendedor_pedido_flow_screen.dart';
 
 /// Pantalla de detalle de un pedido existente.

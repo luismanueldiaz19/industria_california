@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import '../../../core/services/http_service.dart';
 import '../../producto/providers/producto_provider.dart';
+import '../../producto/providers/categoria_provider.dart';
 import '../../producto/models/producto.dart';
+import '../widgets/vendedor_producto_card.dart';
+import '../../../core/utils/dimension_parser.dart';
 
 class VendedorInventarioScreen extends StatefulWidget {
   const VendedorInventarioScreen({super.key});
@@ -16,13 +17,16 @@ class VendedorInventarioScreen extends StatefulWidget {
 class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
   static const _primaryBlue = Color(0xFF1E3A5F);
   static const _accentBlue = Color(0xFF1976D2);
-  static final _currencyFmt = NumberFormat.currency(
-    symbol: '\$',
-    decimalDigits: 2,
-  );
 
   String _searchQuery = '';
-  String _selectedCategoria = 'Todas';
+  int? _selectedCategoriaId;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -32,22 +36,16 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
       if (prov.productos.isEmpty) {
         prov.fetchProductos();
       }
+      final catProv = context.read<CategoriaProvider>();
+      if (catProv.categorias.isEmpty) {
+        catProv.fetchCategorias();
+      }
     });
-  }
-
-  List<String> get _categorias {
-    final prods = context.read<ProductoProvider>().productos;
-    final cats = prods
-        .map((p) => p.categoria?.nombre ?? 'Sin categoría')
-        .toSet()
-        .toList();
-    cats.sort();
-    return ['Todas', ...cats];
   }
 
   List<Producto> get _productosFiltrados {
     final prods = context.watch<ProductoProvider>().productos;
-    return prods.where((p) {
+    final filtered = prods.where((p) {
       if (!p.activo) return false;
 
       final matchesSearch =
@@ -55,12 +53,22 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
           p.descripcion.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (p.codigo ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
 
-      final cat = p.categoria?.nombre ?? 'Sin categoría';
       final matchesCat =
-          _selectedCategoria == 'Todas' || cat == _selectedCategoria;
+          _selectedCategoriaId == null || p.categoriaId == _selectedCategoriaId;
 
       return matchesSearch && matchesCat;
     }).toList();
+
+    filtered.sort((a, b) {
+      final valA = DimensionParser.parse(a.medidas ?? a.descripcion);
+      final valB = DimensionParser.parse(b.medidas ?? b.descripcion);
+      if (valA != valB) {
+        return valA.compareTo(valB);
+      }
+      return a.descripcion.compareTo(b.descripcion);
+    });
+
+    return filtered;
   }
 
   @override
@@ -93,6 +101,7 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
   Widget _buildTopBar() {
     final totalProductos = context.watch<ProductoProvider>().productos.length;
     final mostrando = _productosFiltrados.length;
+    final categorias = context.watch<CategoriaProvider>().categorias;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -104,7 +113,6 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
             children: [
               // Búsqueda
               Expanded(
-                flex: 3,
                 child: Container(
                   height: 40,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -118,6 +126,7 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
+                          controller: _searchController,
                           onChanged: (v) => setState(() => _searchQuery = v),
                           style: const TextStyle(fontSize: 13),
                           decoration: const InputDecoration(
@@ -133,49 +142,33 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              // Filtro Categoría
-              Expanded(
-                flex: 2,
-                child: Container(
-                  height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedCategoria,
-                      isExpanded: true,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black87,
-                      ),
-                      icon: const Icon(Icons.arrow_drop_down, size: 20),
-                      items: _categorias
-                          .map(
-                            (c) => DropdownMenuItem(
-                              value: c,
-                              child: Text(c, overflow: TextOverflow.ellipsis),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _selectedCategoria = v!),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          // Lista de Categorías Horizontal
+          SizedBox(
+            height: 70,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: categorias.length + 1,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return _buildCategoriaItem(null, 'Todas', null);
+                }
+                final cat = categorias[index - 1];
+                return _buildCategoriaItem(cat.id, cat.nombre, cat.imagenUrl);
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Padding(
                 padding: const EdgeInsets.only(left: 4),
                 child: Text(
-                  'Mostrando $mostrando de $totalProductos productos disponibles',
+                  'Mostrando $mostrando de $totalProductos disponibles',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -184,7 +177,15 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
                 ),
               ),
               InkWell(
-                onTap: () => context.read<ProductoProvider>().fetchProductos(),
+                onTap: () {
+                  context.read<ProductoProvider>().fetchProductos();
+                  context.read<CategoriaProvider>().fetchCategorias();
+                  setState(() {
+                    _searchQuery = '';
+                    _selectedCategoriaId = null;
+                    _searchController.clear();
+                  });
+                },
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -218,6 +219,69 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
     );
   }
 
+  Widget _buildCategoriaItem(int? id, String nombre, String? imagenUrl) {
+    final isSelected = _selectedCategoriaId == id;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedCategoriaId = id),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 70,
+        decoration: BoxDecoration(
+          color: isSelected ? _primaryBlue : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? _primaryBlue : Colors.grey.shade300,
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: _primaryBlue.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        padding: const EdgeInsets.all(4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: imagenUrl != null
+                  ? Image.network(
+                      imagenUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.category,
+                        color: isSelected ? Colors.white : Colors.grey,
+                        size: 20,
+                      ),
+                    )
+                  : Icon(
+                      Icons.category,
+                      color: isSelected ? Colors.white : Colors.grey,
+                      size: 20,
+                    ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              nombre,
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? Colors.white : Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildGrid() {
     final filtrados = _productosFiltrados;
 
@@ -244,138 +308,14 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
     return GridView.builder(
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 180,
+        maxCrossAxisExtent: 220,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
-        childAspectRatio: 0.72,
+        childAspectRatio: 1.15,
       ),
       itemCount: filtrados.length,
-      itemBuilder: (ctx, i) => _buildProductoCard(filtrados[i]),
-    );
-  }
-
-  Widget _buildProductoCard(Producto producto) {
-    final hasStock = producto.stock > 0;
-
-    return Card(
-      elevation: 2,
-      shadowColor: Colors.black12,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Imagen
-          Expanded(
-            flex: 3,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                producto.imagenUrl != null
-                    ? Image.network(
-                        producto.imagenUrl!,
-                        fit: BoxFit.cover,
-                        headers: {
-                          'Authorization': 'Bearer ${HttpService.token}',
-                        },
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.image_not_supported,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                      )
-                    : Container(
-                        color: Colors.grey.shade100,
-                        child: const Icon(
-                          Icons.inventory_2_outlined,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                      ),
-                if (!hasStock)
-                  Container(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    child: const Center(
-                      child: Text(
-                        'AGOTADO',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                // Badge de Stock
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: hasStock
-                          ? Colors.green.shade600
-                          : Colors.red.shade600,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Stock: ${producto.stock % 1 == 0 ? producto.stock.toInt() : producto.stock.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Info
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    producto.codigo ?? '',
-                    style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Expanded(
-                    child: Text(
-                      producto.descripcion,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                        height: 1.1,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Text(
-                    _currencyFmt.format(producto.precio),
-                    style: const TextStyle(
-                      color: _accentBlue,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+      itemBuilder: (ctx, i) =>
+          VendedorProductoCard(producto: filtrados[i], isReadOnly: true),
     );
   }
 }

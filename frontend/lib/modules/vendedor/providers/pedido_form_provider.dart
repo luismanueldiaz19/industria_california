@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../led_house/models/ledhouse_cliente.dart';
-import '../../logistica/models/ruta.dart';
-import '../../logistica/models/pedido.dart';
+import '../../ruta/models/ruta.dart';
+import '../../pedido/models/pedido.dart';
 import '../../producto/models/producto.dart';
 import '../models/cart_item.dart';
 
