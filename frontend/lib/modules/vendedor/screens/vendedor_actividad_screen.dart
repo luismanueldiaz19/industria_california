@@ -147,34 +147,30 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
 
   void _descargarPdf() async {
     final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
-    final queryParams = <String, String>{'token': token};
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Generando PDF...')),
+    );
 
-    if (_searchController.text.trim().isNotEmpty) {
-      queryParams['search'] = _searchController.text.trim();
-    }
-    if (_estadoFiltro != 'todos') {
-      queryParams['estado'] = _estadoFiltro;
-    }
-    if (_tipoFiltro != 'todos') {
-      queryParams['tipo'] = _tipoFiltro;
-    }
-    if (_startDate != null) {
-      queryParams['start_date'] = DateFormat('yyyy-MM-dd').format(_startDate!);
-    }
-    if (_endDate != null) {
-      queryParams['end_date'] = DateFormat('yyyy-MM-dd').format(_endDate!);
-    }
+    try {
+      final urlStr = await _service.obtenerUrlPdfMisAlertas(
+        token: token,
+        search: _searchController.text.trim(),
+        estado: _estadoFiltro,
+        tipo: _tipoFiltro,
+        startDate: _startDate != null ? DateFormat('yyyy-MM-dd').format(_startDate!) : null,
+        endDate: _endDate != null ? DateFormat('yyyy-MM-dd').format(_endDate!) : null,
+      );
 
-    final uri = Uri.parse(
-      '$host/api/v1/cxc/alertas/pdf',
-    ).replace(queryParameters: queryParams);
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+      final uri = Uri.parse(urlStr);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw Exception('No se pudo abrir el enlace');
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir el PDF.')),
+          SnackBar(content: Text('Error al generar PDF: $e')),
         );
       }
     }

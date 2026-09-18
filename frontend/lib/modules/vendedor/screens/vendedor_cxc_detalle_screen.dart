@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/themes/app_theme.dart';
+import '../../../core/utils/formatters.dart';
 import '../services/vendedor_cxc_service.dart';
 
 class VendedorCxcDetalleScreen extends StatefulWidget {
@@ -23,10 +24,19 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
   bool _isSubmitting = false;
   static const _blue = Color(0xFF1565C0);
 
-  // Formulario de alerta
-  String _tipoAlerta = 'informacion';
+  String _tipoAlerta = 'pago_recibido'; // Default to pago_recibido
+  String? _formaPago;
   final _notaController = TextEditingController();
-  final _montoController = TextEditingController();
+  late final _montoController = TextEditingController(
+    text: widget.cxcData['monto_pendiente']?.toString() ?? '0',
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _montoController.text =
+        widget.cxcData['monto_pendiente']?.toString() ?? '0';
+  }
 
   @override
   void dispose() {
@@ -36,7 +46,32 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
   }
 
   Future<void> _enviarAlerta() async {
-    if (_notaController.text.trim().isEmpty) return;
+    final bool isConsulta = _tipoAlerta == 'consulta';
+
+    if (!isConsulta) {
+      if (_montoController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('El monto es obligatorio para este tipo de alerta'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
+    if (_notaController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('La nota o descripción es obligatoria'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    String notaFinal = _notaController.text.trim();
+
     final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
     setState(() => _isSubmitting = true);
 
@@ -44,7 +79,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
       await _service.addAlerta(
         cxcId: widget.cxcData['id'],
         tipo: _tipoAlerta,
-        nota: _notaController.text.trim(),
+        nota: notaFinal,
         montoInformado: _montoController.text.trim().isNotEmpty
             ? double.tryParse(_montoController.text.trim())
             : null,
@@ -53,6 +88,9 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
       if (!mounted) return;
       _notaController.clear();
       _montoController.clear();
+      setState(() {
+        _formaPago = null;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Row(
@@ -255,18 +293,24 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                                   _buildInfoRow(
                                     Icons.attach_money,
                                     'Monto Factura',
-                                    '\$${cxc['monto_factura'] ?? '0.00'}',
+                                    Formatters.formatCurrency(
+                                      cxc['monto_factura'],
+                                    ),
                                   ),
                                   _buildInfoRow(
                                     Icons.money_off,
                                     'Monto Pendiente',
-                                    '\$${cxc['monto_pendiente'] ?? '0.00'}',
+                                    Formatters.formatCurrency(
+                                      cxc['monto_pendiente'],
+                                    ),
                                     valueColor: Colors.orange,
                                   ),
                                   _buildInfoRow(
                                     Icons.check_circle_outline,
                                     'Monto Pagado',
-                                    '\$${cxc['monto_pagado'] ?? '0.00'}',
+                                    Formatters.formatCurrency(
+                                      cxc['monto_pagado'],
+                                    ),
                                     valueColor: Colors.green,
                                   ),
                                   const Divider(height: 16),
@@ -378,10 +422,68 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                                   ),
                                 ),
                               ],
-                              onChanged: (v) =>
-                                  setState(() => _tipoAlerta = v!),
+                              onChanged: (v) => setState(() {
+                                _tipoAlerta = v!;
+                                if (v != 'pago_recibido') {
+                                  _formaPago = null;
+                                }
+                              }),
                             ),
                             const SizedBox(height: 12),
+                            if (_tipoAlerta == 'pago_recibido')
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: DropdownButtonFormField<String>(
+                                  isExpanded: true,
+                                  value: _formaPago,
+                                  decoration: _inputDeco(
+                                    'Forma de pago (Opcional)',
+                                    Icons.account_balance_wallet_outlined,
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: 'Efectivo',
+                                      child: Text('💵 Efectivo'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'Transferencia',
+                                      child: Text('🏦 Transferencia'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'Cheque',
+                                      child: Text('📝 Cheque'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'Otro',
+                                      child: Text('📌 Otro'),
+                                    ),
+                                  ],
+                                  onChanged: (v) {
+                                    setState(() => _formaPago = v);
+                                    if (v != null) {
+                                      String cur = _notaController.text.trim();
+                                      if (cur.startsWith('Forma de pago:')) {
+                                        final lines = cur.split('\n');
+                                        if (lines.length > 1) {
+                                          cur = lines
+                                              .sublist(1)
+                                              .join('\n')
+                                              .trim();
+                                        } else {
+                                          cur = '';
+                                        }
+                                      }
+                                      if (cur.isEmpty) {
+                                        _notaController.text =
+                                            'Forma de pago: $v';
+                                      } else {
+                                        _notaController.text =
+                                            'Forma de pago: $v\n$cur';
+                                      }
+                                    }
+                                  },
+                                ),
+                              ),
                             if ([
                               'pago_recibido',
                               'credito',

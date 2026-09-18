@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/widgets/general_header.dart';
+import '../../../core/utils/formatters.dart';
 import '../services/vendedor_cxc_service.dart';
 import 'package:intl/intl.dart';
 import 'vendedor_cxc_detalle_screen.dart';
@@ -435,10 +436,6 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
   }
 
   Widget _buildTotales(double facturado, double pendiente, double vencido) {
-    final currencyFormatter = NumberFormat.currency(
-      symbol: '\$',
-      decimalDigits: 2,
-    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -457,7 +454,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
             Expanded(
               child: _buildMiniTotalCard(
                 'FACTURADO',
-                currencyFormatter.format(_totalFacturadoGlobal),
+                Formatters.formatCurrency(_totalFacturadoGlobal),
                 AppTheme.primaryBlue,
               ),
             ),
@@ -465,7 +462,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
             Expanded(
               child: _buildMiniTotalCard(
                 'PENDIENTE',
-                currencyFormatter.format(_totalPendienteGlobal),
+                Formatters.formatCurrency(_totalPendienteGlobal),
                 const Color(0xFFFB8C00),
               ),
             ),
@@ -473,7 +470,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
             Expanded(
               child: _buildMiniTotalCard(
                 'VENCIDO',
-                currencyFormatter.format(_totalVencidoGlobal),
+                Formatters.formatCurrency(_totalVencidoGlobal),
                 Colors.red.shade700,
               ),
             ),
@@ -679,12 +676,12 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                     children: [
                       _buildMontoItem(
                         'Pendiente',
-                        '\$${cxc['monto_pendiente'] ?? '0.00'}',
+                        Formatters.formatCurrency(cxc['monto_pendiente']),
                         Colors.orange.shade700,
                       ),
                       _buildMontoItem(
                         'Factura',
-                        '\$${cxc['monto_factura'] ?? '0.00'}',
+                        Formatters.formatCurrency(cxc['monto_factura']),
                         Colors.blue.shade600,
                       ),
                       _buildMontoItem(

@@ -116,6 +116,31 @@ class VendedorCxcService {
     throw Exception('Error al generar PDF URL');
   }
 
+  /// Obtener URL temporal del PDF de Alertas del vendedor
+  Future<String> obtenerUrlPdfMisAlertas({
+    required String token,
+    String? search,
+    String? estado,
+    String? tipo,
+    String? startDate,
+    String? endDate,
+  }) async {
+    final params = <String, String>{};
+    if (search != null && search.isNotEmpty) params['search'] = search;
+    if (estado != null && estado != 'todos') params['estado'] = estado;
+    if (tipo != null && tipo != 'todos') params['tipo'] = tipo;
+    if (startDate != null) params['start_date'] = startDate;
+    if (endDate != null) params['end_date'] = endDate;
+
+    final uri = Uri.parse('$_base/alertas-pdf-url').replace(queryParameters: params);
+
+    final res = await http.get(uri, headers: _headers(token));
+    if (res.statusCode == 200) {
+      return json.decode(res.body)['url'] as String;
+    }
+    throw Exception('Error al generar PDF URL');
+  }
+
   /// Descargar PDF de CXC del vendedor como bytes
   Future<Uint8List> descargarPdfMisCxc({
     required String token,
