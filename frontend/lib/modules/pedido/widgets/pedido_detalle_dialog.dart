@@ -246,7 +246,8 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                       builder: (context) {
                         double faltanteTotal = 0;
                         for (var det in pedido.detalles) {
-                          faltanteTotal += (det.cantidadEnProduccion * det.precioUnitario);
+                          faltanteTotal +=
+                              (det.cantidadEnProduccion * det.precioUnitario);
                         }
                         double realTotal = pedido.total - faltanteTotal;
 
@@ -350,7 +351,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                             ],
                           ),
                         );
-                      }
+                      },
                     ),
 
                     if (pedido.comentario != null &&
@@ -540,12 +541,14 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
             child: Text(
               det.cantidadEnProduccion > 0
                   ? (det.cantidadEnProduccion % 1 == 0
-                      ? det.cantidadEnProduccion.toInt().toString()
-                      : det.cantidadEnProduccion.toStringAsFixed(3))
+                        ? det.cantidadEnProduccion.toInt().toString()
+                        : det.cantidadEnProduccion.toStringAsFixed(3))
                   : '-',
               textAlign: TextAlign.right,
               style: TextStyle(
-                color: det.cantidadEnProduccion > 0 ? Colors.redAccent : Colors.white24,
+                color: det.cantidadEnProduccion > 0
+                    ? Colors.redAccent
+                    : Colors.white24,
                 fontSize: 11,
               ),
             ),

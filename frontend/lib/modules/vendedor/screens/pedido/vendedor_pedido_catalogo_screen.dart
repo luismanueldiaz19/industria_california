@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/http_service.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../producto/providers/producto_provider.dart';
 import '../../../producto/providers/categoria_provider.dart';
 import '../../../producto/models/producto.dart';
@@ -29,10 +30,6 @@ class _VendedorPedidoCatalogoScreenState
     extends State<VendedorPedidoCatalogoScreen> {
   static const _primaryBlue = Color(0xFF1E3A5F);
   static const _accentBlue = Color(0xFF1976D2);
-  static final _currencyFmt = NumberFormat.currency(
-    symbol: '\$',
-    decimalDigits: 2,
-  );
 
   String _searchQuery = '';
   int? _selectedCategoriaId;
@@ -493,7 +490,7 @@ class _VendedorPedidoCatalogoScreenState
                               ),
                             ),
                             Text(
-                              _currencyFmt.format(provider.total),
+                              Formatters.formatCurrency(provider.total),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 24,
@@ -817,7 +814,7 @@ class _VendedorPedidoCatalogoScreenState
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${item.cantidadController.text} ${item.unidad} x ${_currencyFmt.format(double.tryParse(item.precioController.text) ?? 0)}',
+                    '${item.cantidadController.text} ${item.unidad} x ${Formatters.formatCurrency(double.tryParse(item.precioController.text) ?? 0)}',
                     style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                   ),
                 ],
@@ -829,7 +826,7 @@ class _VendedorPedidoCatalogoScreenState
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  _currencyFmt.format(item.subtotal),
+                  Formatters.formatCurrency(item.subtotal),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: _accentBlue,

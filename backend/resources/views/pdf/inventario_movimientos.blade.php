@@ -106,7 +106,7 @@
                 <tr>
                     <td class="monospace">{{ $fecha }}</td>
                     <td class="monospace">{{ $mov->producto?->codigo ?? '—' }}</td>
-                    <td style="font-weight:600">{{ $mov->producto?->descripcion ?? '—' }}</td>
+                    <td style="font-weight:600">{{ $mov->producto?->nombre_completo ?? $mov->producto?->descripcion ?? '—' }}</td>
                     <td class="text-center">
                         <span class="badge tipo-{{ $mov->tipo }}">{{ $mov->tipo }}</span>
                     </td>
