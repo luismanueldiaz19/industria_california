@@ -1081,7 +1081,7 @@ class LedhouseCxcController extends Controller
         $dupGlobal = DB::table('ledhouse_cxcs')
             ->select('documento', DB::raw('COUNT(*) as total'))
             ->groupBy('documento')
-            ->having('total', '>', 1)
+            ->havingRaw('COUNT(*) > 1')
             ->orderByDesc('total')
             ->get();
 
@@ -1106,9 +1106,9 @@ class LedhouseCxcController extends Controller
         $dupCliente = DB::table('ledhouse_cxcs as c')
             ->leftJoin('ledhouse_clientes as cl', 'c.cliente_id', '=', 'cl.id')
             ->leftJoin('users as u', 'c.vendedor_id', '=', 'u.id')
-            ->select('c.cliente_id', 'c.documento', 'cl.nombre as cliente', 'u.name as vendedor', DB::raw('COUNT(c.id) as repeticiones'), DB::raw('GROUP_CONCAT(c.id) as ids'))
+            ->select('c.cliente_id', 'c.documento', 'cl.nombre as cliente', 'u.name as vendedor', DB::raw('COUNT(c.id) as repeticiones'))
             ->groupBy('c.cliente_id', 'c.documento', 'cl.nombre', 'u.name')
-            ->having('repeticiones', '>', 1)
+            ->havingRaw('COUNT(c.id) > 1')
             ->orderByDesc('repeticiones')
             ->get();
 
