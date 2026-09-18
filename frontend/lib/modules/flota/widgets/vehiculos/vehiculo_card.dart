@@ -34,29 +34,37 @@ class VehiculoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  vehiculo.ficha,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    vehiculo.ficha,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    vehiculo.estado.toUpperCase().replaceAll('_', ' '),
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        vehiculo.estado.toUpperCase().replaceAll('_', ' '),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -71,9 +79,12 @@ class VehiculoCard extends StatelessWidget {
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '${vehiculo.marca} ${vehiculo.modelo}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                Expanded(
+                  child: Text(
+                    '${vehiculo.marca} ${vehiculo.modelo}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -82,9 +93,12 @@ class VehiculoCard extends StatelessWidget {
               children: [
                 const Icon(Icons.pin_drop_outlined, color: Colors.grey, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  'Placa: ${vehiculo.placa}',
-                  style: const TextStyle(color: Colors.white54, fontSize: 14),
+                Expanded(
+                  child: Text(
+                    'Placa: ${vehiculo.placa}',
+                    style: const TextStyle(color: Colors.white54, fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
