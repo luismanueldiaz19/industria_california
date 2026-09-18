@@ -81,7 +81,7 @@ class PedidoController extends Controller
 
     public function update(StorePedidoRequest $request, Pedido $pedido)
     {
-        if ($pedido->estado !== 'borrador' && !Auth::user()->hasRole('admin')) {
+        if ($pedido->estado->value !== 'borrador' && !Auth::user()->hasRole('admin')) {
             return response()->json(['message' => 'No puedes editar un pedido que ya no es borrador.'], 403);
         }
 

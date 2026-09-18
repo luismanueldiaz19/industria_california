@@ -99,7 +99,7 @@ class PedidoService
                 'nota_produccion' => $datos['nota_produccion'] ?? null,
             ]);
 
-            if ($originalEstado === 'borrador' && $datos['estado'] === 'enviado') {
+            if ($originalEstado->value === 'borrador' && $datos['estado'] === 'enviado') {
                 $this->deducirInventario($pedido->load('detalles'));
             }
 
@@ -119,7 +119,7 @@ class PedidoService
             $pedido->estado = $nuevoEstado;
             $pedido->save();
 
-            if ($estadoAnterior === 'borrador' && $nuevoEstado === 'enviado') {
+            if ($estadoAnterior->value === 'borrador' && $nuevoEstado === 'enviado') {
                 $this->deducirInventario($pedido->load('detalles'));
             }
 
