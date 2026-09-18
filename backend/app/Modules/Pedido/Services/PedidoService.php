@@ -130,17 +130,17 @@ class PedidoService
     private function prepararDetalles(array $detallesEntrada, ?int $pedidoId = null): array
     {
         $detalles = [];
-        $total = '0';
+        $total = 0.0;
 
         foreach ($detallesEntrada as $detalle) {
             $producto = Producto::findOrFail($detalle['producto_id']);
-            $precio = (string) $detalle['precio_unitario'];
-            $cantidad = (string) $detalle['cantidad'];
+            $precio = (float) $detalle['precio_unitario'];
+            $cantidad = (float) $detalle['cantidad'];
             
-            $subtotal = bcmul($cantidad, $precio, 2);
+            $subtotal = round($cantidad * $precio, 2);
 
             $stockActual = (float) $producto->stock;
-            $cantidadSolicitada = (float) $detalle['cantidad'];
+            $cantidadSolicitada = $cantidad;
             $faltanteEstimado = max(0, $cantidadSolicitada - $stockActual);
 
             $detData = [
@@ -157,10 +157,10 @@ class PedidoService
             }
 
             $detalles[] = $detData;
-            $total = bcadd($total, $subtotal, 2);
+            $total += $subtotal;
         }
 
-        return [$detalles, (float) $total];
+        return [$detalles, round($total, 2)];
     }
 
     public function deducirInventario(Pedido $pedido)
