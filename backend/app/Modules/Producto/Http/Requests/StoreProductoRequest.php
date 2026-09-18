@@ -13,6 +13,12 @@ class StoreProductoRequest extends FormRequest
 
     protected function prepareForValidation()
     {
+        if (!$this->filled('cant_x_packages')) {
+            $this->merge([
+                'cant_x_packages' => 1,
+            ]);
+        }
+
         if ($this->has('unidad') && $this->unidad !== null) {
             $this->merge([
                 'unidad' => strtoupper(trim($this->unidad)),

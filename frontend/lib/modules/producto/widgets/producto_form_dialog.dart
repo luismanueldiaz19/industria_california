@@ -203,7 +203,9 @@ class _ProductoFormDialogState extends State<ProductoFormDialog> {
                                 Expanded(
                                   child: _buildTextField(
                                     controller: _medidasCtrl,
-                                    label: 'Medidas (Ej. 1/2 X 90)',
+                                    label: 'Medidas (Ej. 1/2 X 90)*',
+                                    validator: (v) =>
+                                        v!.isEmpty ? 'Requerido' : null,
                                   ),
                                 ),
                                 const SizedBox(width: 16),

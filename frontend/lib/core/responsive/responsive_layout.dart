@@ -30,11 +30,11 @@ class ResponsiveLayout extends StatelessWidget {
         // Layout para Desktop / System Windows
         if (constraints.maxWidth >= 1100) {
           return desktop;
-        } 
+        }
         // Layout para Tablet
         else if (constraints.maxWidth >= 650) {
           return tablet ?? mobile;
-        } 
+        }
         // Layout para Mobile
         else {
           return mobile;
