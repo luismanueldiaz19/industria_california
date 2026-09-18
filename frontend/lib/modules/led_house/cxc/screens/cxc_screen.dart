@@ -11,6 +11,7 @@ import '../widgets/cxc_form_dialog.dart';
 import '../widgets/cxc_soporte_dialog.dart';
 import '../widgets/cxc_modern_totals_bar.dart';
 import 'cxc_cliente_detail_screen.dart';
+import 'cxc_auditoria_screen.dart';
 import '../../../vendedor/screens/vendedor_cxc_sync_screen.dart';
 import '../../../../core/widgets/general_header.dart';
 import '../../../../core/services/http_service.dart';
@@ -252,11 +253,13 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
   }
 
   String _initials(String nombre) {
-    final parts = nombre.trim().split(' ');
+    final cleanName = nombre.trim();
+    if (cleanName.isEmpty) return '?';
+    final parts = cleanName.split(RegExp(r'\s+'));
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-    return nombre.isNotEmpty ? nombre[0].toUpperCase() : '?';
+    return cleanName[0].toUpperCase();
   }
 
   Widget _buildGroupedView(
@@ -560,6 +563,15 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
       icon: Icons.request_quote_rounded,
       iconColor: AppTheme.ledhouseBlue,
       actions: [
+        HeaderButton(
+          icon: Icons.bug_report_rounded,
+          tooltip: 'Auditoría de Datos',
+          color: Colors.amberAccent,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CxcAuditoriaScreen()),
+          ),
+        ),
         HeaderButton(
           icon: Icons.picture_as_pdf_rounded,
           tooltip: 'Generar PDF',

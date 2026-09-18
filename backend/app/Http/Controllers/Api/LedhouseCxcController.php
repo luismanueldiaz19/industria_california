@@ -1059,4 +1059,209 @@ class LedhouseCxcController extends Controller
             return response()->json(['message' => 'Error al importar: ' . $e->getMessage()], 500);
         }
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // Auditoría / Depuración de Datos
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Ejecuta 9 checks de calidad de datos sobre la tabla ledhouse_cxcs.
+     * Solo accesible para administradores.
+     */
+    public function auditoria(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->hasRole('admin')) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $results = [];
+
+        // ── 1. Documentos duplicados (global) ──
+        $dupGlobal = DB::table('ledhouse_cxcs')
+            ->select('documento', DB::raw('COUNT(*) as total'))
+            ->groupBy('documento')
+            ->having('total', '>', 1)
+            ->orderByDesc('total')
+            ->get();
+
+        $results['duplicados_documento'] = [
+            'label'       => 'Documentos Duplicados (Global)',
+            'descripcion' => 'El mismo número de documento aparece más de una vez en el sistema.',
+            'nivel'       => 'warning',
+            'total'       => $dupGlobal->count(),
+            'registros'   => $dupGlobal->map(function ($r) {
+                // Traer los CXC afectados con sus clientes y vendedores
+                $afectados = DB::table('ledhouse_cxcs as c')
+                    ->leftJoin('ledhouse_clientes as cl', 'c.cliente_id', '=', 'cl.id')
+                    ->leftJoin('users as u', 'c.vendedor_id', '=', 'u.id')
+                    ->where('c.documento', $r->documento)
+                    ->select('c.id', 'c.documento', 'c.monto_factura', 'c.monto_pendiente', 'c.estado', 'c.fecha_factura', 'cl.nombre as cliente', 'u.name as vendedor')
+                    ->get();
+                return ['documento' => $r->documento, 'repeticiones' => $r->total, 'afectados' => $afectados];
+            }),
+        ];
+
+        // ── 2. Documento duplicado por MISMO cliente ──
+        $dupCliente = DB::table('ledhouse_cxcs as c')
+            ->leftJoin('ledhouse_clientes as cl', 'c.cliente_id', '=', 'cl.id')
+            ->leftJoin('users as u', 'c.vendedor_id', '=', 'u.id')
+            ->select('c.cliente_id', 'c.documento', 'cl.nombre as cliente', 'u.name as vendedor', DB::raw('COUNT(c.id) as repeticiones'), DB::raw('GROUP_CONCAT(c.id) as ids'))
+            ->groupBy('c.cliente_id', 'c.documento', 'cl.nombre', 'u.name')
+            ->having('repeticiones', '>', 1)
+            ->orderByDesc('repeticiones')
+            ->get();
+
+        $results['duplicados_cliente_documento'] = [
+            'label'       => 'Documento Duplicado por Cliente',
+            'descripcion' => 'Un mismo documento existe más de una vez para el mismo cliente (posible carga doble).',
+            'nivel'       => 'danger',
+            'total'       => $dupCliente->count(),
+            'registros'   => $dupCliente,
+        ];
+
+        // ── 3. Montos inconsistentes: pendiente ≠ factura - pagado ──
+        $montosIncon = DB::table('ledhouse_cxcs as c')
+            ->leftJoin('ledhouse_clientes as cl', 'c.cliente_id', '=', 'cl.id')
+            ->leftJoin('users as u', 'c.vendedor_id', '=', 'u.id')
+            ->select(
+                'c.id', 'c.documento', 'c.monto_factura', 'c.monto_pagado', 'c.monto_pendiente', 'c.estado',
+                'cl.nombre as cliente', 'u.name as vendedor',
+                DB::raw('(c.monto_factura - c.monto_pagado) as pendiente_calculado'),
+                DB::raw('(c.monto_pendiente - (c.monto_factura - c.monto_pagado)) as diferencia')
+            )
+            ->whereRaw('ROUND(c.monto_pendiente, 2) <> ROUND((c.monto_factura - c.monto_pagado), 2)')
+            ->orderByDesc(DB::raw('ABS(c.monto_pendiente - (c.monto_factura - c.monto_pagado))'))
+            ->limit(50)
+            ->get();
+
+        $results['montos_inconsistentes'] = [
+            'label'       => 'Montos Inconsistentes',
+            'descripcion' => 'El monto pendiente no coincide con (factura - pagado). Error de cálculo.',
+            'nivel'       => 'danger',
+            'total'       => $montosIncon->count(),
+            'registros'   => $montosIncon,
+        ];
+
+        // ── 4. Pagos mayores a la factura ──
+        $pagosExc = DB::table('ledhouse_cxcs as c')
+            ->leftJoin('ledhouse_clientes as cl', 'c.cliente_id', '=', 'cl.id')
+            ->leftJoin('users as u', 'c.vendedor_id', '=', 'u.id')
+            ->select('c.id', 'c.documento', 'c.monto_factura', 'c.monto_pagado', 'c.estado', 'cl.nombre as cliente', 'u.name as vendedor',
+                DB::raw('(c.monto_pagado - c.monto_factura) as exceso'))
+            ->whereColumn('c.monto_pagado', '>', 'c.monto_factura')
+            ->orderByDesc(DB::raw('c.monto_pagado - c.monto_factura'))
+            ->get();
+
+        $results['pagos_excedidos'] = [
+            'label'       => 'Pagos Mayores a la Factura',
+            'descripcion' => 'El monto pagado supera al monto facturado.',
+            'nivel'       => 'warning',
+            'total'       => $pagosExc->count(),
+            'registros'   => $pagosExc,
+        ];
+
+        // ── 5. Facturas con monto inválido (≤ 0) ──
+        $factInv = DB::table('ledhouse_cxcs as c')
+            ->leftJoin('ledhouse_clientes as cl', 'c.cliente_id', '=', 'cl.id')
+            ->leftJoin('users as u', 'c.vendedor_id', '=', 'u.id')
+            ->select('c.id', 'c.documento', 'c.monto_factura', 'c.estado', 'cl.nombre as cliente', 'u.name as vendedor')
+            ->where('c.monto_factura', '<=', 0)
+            ->orWhere('c.monto_pagado', '<', 0)
+            ->orWhere('c.monto_pendiente', '<', 0)
+            ->get();
+
+        $results['facturas_monto_invalido'] = [
+            'label'       => 'Montos Negativos o en Cero',
+            'descripcion' => 'Registros con monto_factura ≤ 0 o montos pagado/pendiente negativos.',
+            'nivel'       => 'warning',
+            'total'       => $factInv->count(),
+            'registros'   => $factInv,
+        ];
+
+        // ── 6. Fechas invertidas (vencimiento < factura) ──
+        $fechasInv = DB::table('ledhouse_cxcs as c')
+            ->leftJoin('ledhouse_clientes as cl', 'c.cliente_id', '=', 'cl.id')
+            ->leftJoin('users as u', 'c.vendedor_id', '=', 'u.id')
+            ->select('c.id', 'c.documento', 'c.fecha_factura', 'c.fecha_vencimiento', 'c.estado', 'cl.nombre as cliente', 'u.name as vendedor')
+            ->whereColumn('c.fecha_vencimiento', '<', 'c.fecha_factura')
+            ->get();
+
+        $results['fechas_invertidas'] = [
+            'label'       => 'Fechas Invertidas',
+            'descripcion' => 'La fecha de vencimiento es anterior a la fecha de factura (imposible lógicamente).',
+            'nivel'       => 'danger',
+            'total'       => $fechasInv->count(),
+            'registros'   => $fechasInv,
+        ];
+
+        // ── 7. Estado "pagado" pero con saldo pendiente > 0 ──
+        $estadoPagadoConSaldo = DB::table('ledhouse_cxcs as c')
+            ->leftJoin('ledhouse_clientes as cl', 'c.cliente_id', '=', 'cl.id')
+            ->leftJoin('users as u', 'c.vendedor_id', '=', 'u.id')
+            ->select('c.id', 'c.documento', 'c.monto_pendiente', 'c.estado', 'cl.nombre as cliente', 'u.name as vendedor')
+            ->whereIn(DB::raw('LOWER(c.estado)'), ['pagado', 'pagada', 'cancelado', 'cancelada'])
+            ->where('c.monto_pendiente', '>', 0)
+            ->get();
+
+        $results['estado_pagado_con_saldo'] = [
+            'label'       => 'Pagado con Saldo Pendiente',
+            'descripcion' => 'Estado indica "pagado" pero aún tiene monto pendiente > 0.',
+            'nivel'       => 'danger',
+            'total'       => $estadoPagadoConSaldo->count(),
+            'registros'   => $estadoPagadoConSaldo,
+        ];
+
+        // ── 8. Estado "pendiente" sin saldo ──
+        $pendienteSinSaldo = DB::table('ledhouse_cxcs as c')
+            ->leftJoin('ledhouse_clientes as cl', 'c.cliente_id', '=', 'cl.id')
+            ->leftJoin('users as u', 'c.vendedor_id', '=', 'u.id')
+            ->select('c.id', 'c.documento', 'c.monto_pendiente', 'c.estado', 'cl.nombre as cliente', 'u.name as vendedor')
+            ->whereIn(DB::raw('LOWER(c.estado)'), ['pendiente', 'vencido', 'vencida'])
+            ->where('c.monto_pendiente', '=', 0)
+            ->get();
+
+        $results['pendiente_sin_saldo'] = [
+            'label'       => 'Pendiente sin Deuda',
+            'descripcion' => 'Estado indica "pendiente/vencido" pero el saldo es 0 (debería estar pagado).',
+            'nivel'       => 'warning',
+            'total'       => $pendienteSinSaldo->count(),
+            'registros'   => $pendienteSinSaldo,
+        ];
+
+        // ── 9. Registros con campos clave nulos ──
+        $conNulos = DB::table('ledhouse_cxcs as c')
+            ->leftJoin('ledhouse_clientes as cl', 'c.cliente_id', '=', 'cl.id')
+            ->leftJoin('users as u', 'c.vendedor_id', '=', 'u.id')
+            ->select('c.id', 'c.documento', 'c.cliente_id', 'c.vendedor_id', 'c.fecha_factura', 'c.fecha_vencimiento', 'c.estado', 'cl.nombre as cliente', 'u.name as vendedor')
+            ->where(function ($q) {
+                $q->whereNull('c.documento')
+                  ->orWhereRaw("TRIM(c.documento) = ''")
+                  ->orWhereNull('c.cliente_id')
+                  ->orWhereNull('c.vendedor_id')
+                  ->orWhereNull('c.fecha_factura')
+                  ->orWhereNull('c.fecha_vencimiento')
+                  ->orWhereNull('c.estado')
+                  ->orWhereRaw("TRIM(c.estado) = ''")
+                  ->orWhereNull('c.monto_factura');
+            })
+            ->get();
+
+        $results['registros_con_nulos'] = [
+            'label'       => 'Campos Clave Nulos o Vacíos',
+            'descripcion' => 'Registros con documento, cliente, vendedor, fechas o estado nulos.',
+            'nivel'       => 'warning',
+            'total'       => $conNulos->count(),
+            'registros'   => $conNulos,
+        ];
+
+        // ── Resumen general ──
+        $totalProblemas = collect($results)->sum('total');
+
+        return response()->json([
+            'total_problemas' => $totalProblemas,
+            'checks'          => $results,
+            'generado_en'     => now()->toISOString(),
+        ]);
+    }
 }

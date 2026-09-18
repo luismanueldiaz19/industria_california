@@ -1,0 +1,225 @@
+QL
+-- =====================================================================
+-- AUDITORÍA DE DATOS - public.ledhouse_cxcs (Cuentas por Cobrar)
+-- =====================================================================
+-- Objetivo: detectar duplicidad, inconsistencias de montos, fechas
+-- fuera de rango, estados inválidos, nulos y valores atípicos.
+-- Ejecuta cada bloque por separado y revisa los resultados.
+-- =====================================================================
+ 
+ 
+-- ---------------------------------------------------------------------
+-- 0. CONOCER LOS DATOS: valores distintos de "estado" (para saber qué
+--    valores son válidos antes de auditar inconsistencias de estado)
+-- ---------------------------------------------------------------------
+SELECT estado, COUNT(*) AS cantidad
+FROM public.ledhouse_cxcs
+GROUP BY estado
+ORDER BY cantidad DESC;
+ 
+ 
+-- ---------------------------------------------------------------------
+-- 1. DUPLICADOS DE DOCUMENTO
+-- ---------------------------------------------------------------------
+ 
+-- 1.1 Documento repetido (mismo documento, sin importar cliente)
+SELECT documento, COUNT(*) AS repeticiones
+FROM public.ledhouse_cxcs
+GROUP BY documento
+HAVING COUNT(*) > 1
+ORDER BY repeticiones DESC;
+ 
+-- 1.2 Documento repetido para el MISMO cliente (más grave, normalmente
+--     un documento no debería repetirse para un mismo cliente)
+SELECT cliente_id, documento, COUNT(*) AS repeticiones
+FROM public.ledhouse_cxcs
+GROUP BY cliente_id, documento
+HAVING COUNT(*) > 1
+ORDER BY repeticiones DESC;
+ 
+-- 1.3 Filas "duplicado exacto" (mismo cliente, documento, monto y fecha
+--     de factura => muy probablemente una carga duplicada del registro)
+SELECT cliente_id, documento, monto_factura, fecha_factura, COUNT(*) AS repeticiones,
+       array_agg(id ORDER BY id) AS ids_afectados
+FROM public.ledhouse_cxcs
+GROUP BY cliente_id, documento, monto_factura, fecha_factura
+HAVING COUNT(*) > 1
+ORDER BY repeticiones DESC;
+ 
+-- 1.4 Verificar que "id" no tenga duplicados (por si no es PK real o hay
+--     una vista/union detrás)
+SELECT id, COUNT(*) AS repeticiones
+FROM public.ledhouse_cxcs
+GROUP BY id
+HAVING COUNT(*) > 1;
+ 
+ 
+-- ---------------------------------------------------------------------
+-- 2. INCONSISTENCIAS EN MONTOS
+-- ---------------------------------------------------------------------
+ 
+-- 2.1 monto_pendiente NO coincide con (monto_factura - monto_pagado)
+SELECT id, documento, monto_factura, monto_pagado, monto_pendiente,
+       (monto_factura - monto_pagado) AS pendiente_calculado,
+       (monto_pendiente - (monto_factura - monto_pagado)) AS diferencia
+FROM public.ledhouse_cxcs
+WHERE ROUND(monto_pendiente::numeric, 2) <> ROUND((monto_factura - monto_pagado)::numeric, 2)
+ORDER BY ABS(monto_pendiente - (monto_factura - monto_pagado)) DESC;
+ 
+-- 2.2 Pago mayor a la factura (monto_pagado > monto_factura)
+SELECT id, documento, monto_factura, monto_pagado,
+       (monto_pagado - monto_factura) AS exceso_pagado
+FROM public.ledhouse_cxcs
+WHERE monto_pagado > monto_factura
+ORDER BY exceso_pagado DESC;
+ 
+-- 2.3 Montos negativos o en cero (sospechosos en factura o pago)
+SELECT id, documento, monto_factura, monto_pagado, monto_pendiente
+FROM public.ledhouse_cxcs
+WHERE monto_factura <= 0
+   OR monto_pagado < 0
+   OR monto_pendiente < 0;
+ 
+-- 2.4 monto_pendiente positivo pero estado indica "pagado" (ajustar el
+--     texto 'pagado' al valor real que viste en el bloque 0)
+SELECT id, documento, estado, monto_pendiente
+FROM public.ledhouse_cxcs
+WHERE LOWER(estado) IN ('pagado', 'pagada', 'cancelado', 'cancelada')
+  AND monto_pendiente > 0;
+ 
+-- 2.5 monto_pendiente = 0 pero estado indica "pendiente"/"vencido"
+SELECT id, documento, estado, monto_pendiente
+FROM public.ledhouse_cxcs
+WHERE LOWER(estado) IN ('pendiente', 'vencido', 'vencida')
+  AND monto_pendiente = 0;
+ 
+-- 2.6 Outliers: montos de factura muy alejados del promedio (posible
+--     error de digitación, ej: un cero de más)
+WITH stats AS (
+    SELECT AVG(monto_factura) AS promedio, STDDEV(monto_factura) AS desviacion
+    FROM public.ledhouse_cxcs
+)
+SELECT c.id, c.documento, c.monto_factura, s.promedio, s.desviacion
+FROM public.ledhouse_cxcs c, stats s
+WHERE ABS(c.monto_factura - s.promedio) > 3 * s.desviacion
+ORDER BY c.monto_factura DESC;
+ 
+ 
+-- ---------------------------------------------------------------------
+-- 3. FECHAS FUERA DE RANGO / INCONSISTENTES
+-- ---------------------------------------------------------------------
+ 
+-- 3.1 fecha_vencimiento anterior a fecha_factura (imposible lógicamente)
+SELECT id, documento, fecha_factura, fecha_vencimiento
+FROM public.ledhouse_cxcs
+WHERE fecha_vencimiento < fecha_factura;
+ 
+-- 3.2 fecha_factura en el futuro (respecto a hoy)
+SELECT id, documento, fecha_factura
+FROM public.ledhouse_cxcs
+WHERE fecha_factura > CURRENT_DATE;
+ 
+-- 3.3 Fechas demasiado antiguas o "sospechosas" (ajusta el año límite
+--     según cuándo arrancó el sistema, ej: antes del 2015)
+SELECT id, documento, fecha_factura, fecha_vencimiento
+FROM public.ledhouse_cxcs
+WHERE fecha_factura < DATE '2015-01-01'
+   OR fecha_vencimiento < DATE '2015-01-01';
+ 
+-- 3.4 created_at posterior a updated_at (inconsistencia de auditoría)
+SELECT id, documento, created_at, updated_at
+FROM public.ledhouse_cxcs
+WHERE created_at > updated_at;
+ 
+-- 3.5 updated_at en el futuro
+SELECT id, documento, updated_at
+FROM public.ledhouse_cxcs
+WHERE updated_at > NOW();
+ 
+ 
+-- ---------------------------------------------------------------------
+-- 4. VALORES NULOS O VACÍOS EN CAMPOS CLAVE
+-- ---------------------------------------------------------------------
+ 
+SELECT id,
+       documento,
+       cliente_id,
+       vendedor_id,
+       fecha_factura,
+       fecha_vencimiento,
+       estado
+FROM public.ledhouse_cxcs
+WHERE documento IS NULL OR TRIM(documento) = ''
+   OR cliente_id IS NULL
+   OR vendedor_id IS NULL
+   OR fecha_factura IS NULL
+   OR fecha_vencimiento IS NULL
+   OR estado IS NULL OR TRIM(estado) = ''
+   OR monto_factura IS NULL;
+ 
+ 
+-- ---------------------------------------------------------------------
+-- 5. FORMATO / CALIDAD DEL DATO "documento"
+-- ---------------------------------------------------------------------
+ 
+-- 5.1 Documentos con espacios al inicio/fin (pueden causar "falsos
+--     duplicados" al comparar como texto)
+SELECT id, documento
+FROM public.ledhouse_cxcs
+WHERE documento <> TRIM(documento);
+ 
+-- 5.2 Mismo documento pero con diferencias de mayúsc/minúsc o espacios
+--     (duplicados "ocultos" que el bloque 1.1 no detecta)
+SELECT LOWER(TRIM(documento)) AS documento_normalizado, COUNT(*) AS repeticiones,
+       array_agg(DISTINCT documento) AS variantes_encontradas
+FROM public.ledhouse_cxcs
+GROUP BY LOWER(TRIM(documento))
+HAVING COUNT(DISTINCT documento) > 1;
+ 
+ 
+-- ---------------------------------------------------------------------
+-- 6. ESTADOS FUERA DE LISTA ESPERADA
+-- ---------------------------------------------------------------------
+-- Ajusta la lista según los estados válidos reales de tu negocio
+-- (revisa primero el resultado del bloque 0).
+ 
+SELECT id, documento, estado
+FROM public.ledhouse_cxcs
+WHERE estado NOT IN ('pendiente', 'pagado', 'vencido', 'anulado')  -- <-- AJUSTAR
+   OR estado IS NULL;
+ 
+ 
+-- ---------------------------------------------------------------------
+-- 7. INTEGRIDAD REFERENCIAL (si existen tablas de clientes/vendedores)
+-- ---------------------------------------------------------------------
+-- Descomenta y ajusta nombres de tabla si existen public.clientes /
+-- public.vendedores, para detectar cliente_id o vendedor_id "huérfanos".
+ 
+-- SELECT c.id, c.cliente_id
+-- FROM public.ledhouse_cxcs c
+-- LEFT JOIN public.clientes cl ON cl.id = c.cliente_id
+-- WHERE cl.id IS NULL;
+ 
+-- SELECT c.id, c.vendedor_id
+-- FROM public.ledhouse_cxcs c
+-- LEFT JOIN public.vendedores v ON v.id = c.vendedor_id
+-- WHERE v.id IS NULL;
+ 
+ 
+-- ---------------------------------------------------------------------
+-- 8. RESUMEN GENERAL (conteo de cada tipo de problema en una sola vista)
+-- ---------------------------------------------------------------------
+SELECT
+    (SELECT COUNT(*) FROM (
+        SELECT 1 FROM public.ledhouse_cxcs GROUP BY documento HAVING COUNT(*) > 1
+    ) x) AS documentos_duplicados,
+    (SELECT COUNT(*) FROM public.ledhouse_cxcs
+        WHERE ROUND(monto_pendiente::numeric,2) <> ROUND((monto_factura - monto_pagado)::numeric,2)
+    ) AS montos_inconsistentes,
+    (SELECT COUNT(*) FROM public.ledhouse_cxcs WHERE monto_pagado > monto_factura) AS pagos_excedidos,
+    (SELECT COUNT(*) FROM public.ledhouse_cxcs WHERE monto_factura <= 0) AS facturas_monto_invalido,
+    (SELECT COUNT(*) FROM public.ledhouse_cxcs WHERE fecha_vencimiento < fecha_factura) AS fechas_invertidas,
+    (SELECT COUNT(*) FROM public.ledhouse_cxcs WHERE created_at > updated_at) AS auditoria_invertida,
+    (SELECT COUNT(*) FROM public.ledhouse_cxcs
+        WHERE documento IS NULL OR cliente_id IS NULL OR vendedor_id IS NULL
+    ) AS registros_con_nulos_clave;
