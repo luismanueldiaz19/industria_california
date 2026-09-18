@@ -132,10 +132,10 @@ Route::prefix('v1')->group(function () {
                 // Evidencias (archivos PDF/JPG)
                 Route::post('cxc/{cxc}/evidencia', [LedhouseCxcController::class, 'uploadEvidencia']);
                 Route::get('cxc/{cxc}/evidencias', [LedhouseCxcController::class, 'getEvidencias']);
+                Route::get('cxc/auditoria', [LedhouseCxcController::class, 'auditoria']);
                 Route::apiResource('cxc', LedhouseCxcController::class);
                 Route::post('cxc/{cxc}/soporte', [LedhouseCxcController::class, 'addSoporte']);
                 Route::get('cxc/{cxc}/soporte', [LedhouseCxcController::class, 'getSoportes']);
-                Route::get('cxc/auditoria', [LedhouseCxcController::class, 'auditoria']);
 
                 // Cuentas de Catalogo
                 Route::post('cuentas-catalogo/import', [LedhouseCuentaCatalogoController::class, 'import']);
