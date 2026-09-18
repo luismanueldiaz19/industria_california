@@ -1120,6 +1120,23 @@ class LedhouseCxcController extends Controller
             'registros'   => $dupCliente,
         ];
 
+        // ── 2.5 Documento duplicado por MISMO vendedor ──
+        $dupVendedor = DB::table('ledhouse_cxcs as c')
+            ->leftJoin('users as u', 'c.vendedor_id', '=', 'u.id')
+            ->select('c.vendedor_id', 'c.documento', 'u.name as vendedor', DB::raw('COUNT(c.id) as repeticiones'))
+            ->groupBy('c.vendedor_id', 'c.documento', 'u.name')
+            ->havingRaw('COUNT(c.id) > 1')
+            ->orderByDesc('repeticiones')
+            ->get();
+
+        $results['duplicados_vendedor_documento'] = [
+            'label'       => 'Documento Duplicado por Vendedor',
+            'descripcion' => 'Un vendedor tiene el mismo número de documento registrado más de una vez.',
+            'nivel'       => 'danger',
+            'total'       => $dupVendedor->count(),
+            'registros'   => $dupVendedor,
+        ];
+
         // ── 3. Montos inconsistentes: pendiente ≠ factura - pagado ──
         $montosIncon = DB::table('ledhouse_cxcs as c')
             ->leftJoin('ledhouse_clientes as cl', 'c.cliente_id', '=', 'cl.id')
