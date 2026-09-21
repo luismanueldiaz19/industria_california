@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../models/company.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -195,12 +196,13 @@ class CxcClienteDataTable extends StatelessWidget {
                                       constraints: const BoxConstraints(),
                                       onPressed: () async {
                                         String mensaje =
-                                            'Hola *${cliente['nombre']}*,\n\nLe recordamos que tiene un saldo pendiente con *Ledhouse*.\n\n';
+                                            'Hola *${cliente['nombre']}*,\n\nLe recordamos que tiene un saldo pendiente con *${Company.current.name}*.\n\n';
                                         mensaje +=
                                             '*Doc:* ${cxc.documento}\n*Vencimiento:* ${cxc.fechaVencimiento}\n';
-                                        if (dias > 0)
+                                        if (dias > 0) {
                                           mensaje +=
                                               '*Días de atraso:* $dias días\n';
+                                        }
                                         mensaje +=
                                             '*Monto:* ${currencyFormatter.format(cxc.montoPendiente)}\n\nPor favor, contáctenos para coordinar el pago. Gracias.';
 
@@ -208,8 +210,9 @@ class CxcClienteDataTable extends StatelessWidget {
                                             .toString()
                                             .replaceAll(RegExp(r'\D'), '');
                                         if (!phone.startsWith('1') &&
-                                            phone.length == 10)
+                                            phone.length == 10) {
                                           phone = '1$phone';
+                                        }
                                         if (phone.isNotEmpty) {
                                           final url = Uri.parse(
                                             'https://wa.me/$phone?text=${Uri.encodeComponent(mensaje)}',
@@ -238,11 +241,11 @@ class CxcClienteDataTable extends StatelessWidget {
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
                                       color: pastDue
-                                          ? AppTheme.dangerColor.withOpacity(
-                                              0.1,
+                                          ? AppTheme.dangerColor.withValues(
+                                              alpha: 0.1,
                                             )
-                                          : AppTheme.ledhouseBlue.withOpacity(
-                                              0.1,
+                                          : AppTheme.ledhouseBlue.withValues(
+                                              alpha: 0.1,
                                             ),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
@@ -304,13 +307,13 @@ class CxcClienteDataTable extends StatelessWidget {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.dangerColor.withOpacity(
-                                          0.1,
+                                        color: AppTheme.dangerColor.withValues(
+                                          alpha: 0.1,
                                         ),
                                         borderRadius: BorderRadius.circular(4),
                                         border: Border.all(
                                           color: AppTheme.dangerColor
-                                              .withOpacity(0.3),
+                                              .withValues(alpha: 0.3),
                                         ),
                                       ),
                                       child: Text(
@@ -330,12 +333,12 @@ class CxcClienteDataTable extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         color: _getStatusColor(
                                           cxc.estado,
-                                        ).withOpacity(0.1),
+                                        ).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(4),
                                         border: Border.all(
                                           color: _getStatusColor(
                                             cxc.estado,
-                                          ).withOpacity(0.3),
+                                          ).withValues(alpha: 0.3),
                                         ),
                                       ),
                                       child: Text(

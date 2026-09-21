@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../models/company.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -307,7 +308,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                     border: Border.all(color: Colors.grey.shade800, width: 1),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.015),
+                        color: Colors.black.withValues(alpha: 0.015),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -344,7 +345,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                     _avatarColor(cliente['nombre'] ?? ''),
                                     _avatarColor(
                                       cliente['nombre'] ?? '',
-                                    ).withOpacity(0.7),
+                                    ).withValues(alpha: 0.7),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(14),
@@ -352,7 +353,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                   BoxShadow(
                                     color: _avatarColor(
                                       cliente['nombre'] ?? '',
-                                    ).withOpacity(0.3),
+                                    ).withValues(alpha: 0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -440,7 +441,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                   }
 
                                   String mensaje =
-                                      'Hola *${cliente['nombre']}*,\n\nLe recordamos que tiene facturas pendientes con *Ledhouse*:\n\n';
+                                      'Hola *${cliente['nombre']}*,\n\nLe recordamos que tiene facturas pendientes con *${Company.current.name}*:\n\n';
                                   for (var cxc in cxcsCliente) {
                                     int diasAtraso = 0;
                                     try {

@@ -42,8 +42,10 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
   int get _clienteId => widget.clienteAgrupado['id'];
 
   bool _isPastDue(String fechaVencimiento, String estado) {
-    if (estado.toLowerCase() == 'pagado' || estado.toLowerCase() == 'cancelado')
+    if (estado.toLowerCase() == 'pagado' ||
+        estado.toLowerCase() == 'cancelado') {
       return false;
+    }
     try {
       final date = DateTime.parse(fechaVencimiento);
       final todayDate = DateTime(
@@ -266,12 +268,12 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
             decoration: BoxDecoration(
               border: Border.all(
                 color: isRequired
-                    ? AppTheme.dangerColor.withOpacity(0.4)
+                    ? AppTheme.dangerColor.withValues(alpha: 0.4)
                     : AppTheme.darkBorderColor,
               ),
               borderRadius: BorderRadius.circular(4),
               color: isRequired
-                  ? AppTheme.dangerColor.withOpacity(0.1)
+                  ? AppTheme.dangerColor.withValues(alpha: 0.1)
                   : Colors.transparent,
             ),
             child: Text(
@@ -317,7 +319,7 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade900.withOpacity(0.2),
+                  color: Colors.amber.shade900.withValues(alpha: 0.2),
                   border: Border.all(color: Colors.amber.shade700, width: 1),
                   borderRadius: BorderRadius.circular(4),
                 ),
