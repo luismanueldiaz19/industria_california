@@ -120,6 +120,8 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.camera,
       imageQuality: 80,
+      maxWidth: 1024,
+      maxHeight: 1024,
     );
     if (image != null) {
       final bytes = await image.readAsBytes();
@@ -131,6 +133,8 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 80,
+      maxWidth: 1024,
+      maxHeight: 1024,
     );
     if (image != null) {
       final bytes = await image.readAsBytes();
