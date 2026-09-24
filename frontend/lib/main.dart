@@ -40,6 +40,7 @@ import 'modules/flota/screens/vehiculos_screen.dart';
 import 'modules/flota/screens/despachos_screen.dart';
 import 'modules/flota/screens/mantenimientos_screen.dart';
 import 'modules/flota/screens/gastos_vehiculos_screen.dart';
+import 'modules/flota/screens/camiones_victuales_admin_screen.dart';
 import 'modules/flota/providers/chofer_provider.dart';
 import 'modules/flota/providers/vehiculo_provider.dart';
 import 'modules/flota/providers/despacho_provider.dart';
@@ -55,6 +56,8 @@ import 'modules/pedido/screens/reporte_vendedores_screen.dart';
 import 'modules/pedido/providers/reporte_vendedores_provider.dart';
 
 import 'modules/produccion/providers/orden_produccion_provider.dart';
+// Módulo Camiones Victuales
+import 'modules/camion_victual/providers/camion_victual_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +90,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => DespachoProvider()),
         ChangeNotifierProvider(create: (_) => MantenimientoProvider()),
         ChangeNotifierProvider(create: (_) => GastoVehiculoProvider()),
+        // Módulo Camiones Victuales
+        ChangeNotifierProvider(create: (_) => CamionVictualProvider()),
       ],
       child: const ConstruccionERP(),
     ),
@@ -183,6 +188,7 @@ class _MainLayoutState extends State<MainLayout> {
     const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.pedido), // 20
     const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.cliente), // 21
     const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.fecha), // 22
+    const CamionesVictualesAdminScreen(), // 23
   ];
 
   @override

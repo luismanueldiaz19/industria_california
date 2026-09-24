@@ -5,6 +5,10 @@ class PedidoService {
   final HttpService _http = HttpService();
   static const String _base = 'industria-california/pedidos';
 
+  Future<Map<String, dynamic>> getPedido(int id) async {
+    return await _http.get('$_base/$id');
+  }
+
   Future<Map<String, dynamic>> getPedidos({
     int? clienteId,
     int? rutaId,

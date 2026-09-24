@@ -329,6 +329,18 @@ class PdfSecurityService
                 $filename = "pedido_{$pedido->id}.pdf";
                 break;
 
+            case 'camion_conduce':
+                $id = $params['id'] ?? null;
+                $camion = \App\Modules\CamionVictual\Models\CamionVictual::with([
+                    'chofer.user',
+                    'vendedor',
+                    'pedidos.cliente',
+                    'pedidos.detalles.producto'
+                ])->findOrFail($id);
+                $pdf = Pdf::loadView('pdf.camion_conduce', compact('camion'));
+                $filename = "conduce_camion_{$camion->id}.pdf";
+                break;
+
             case 'pedidos_vendedores':
                 // ── Scope base usando el modelo Pedido + relación vendedor ──
                 $baseScope = Pedido::query()

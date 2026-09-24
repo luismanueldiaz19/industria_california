@@ -7,4 +7,5 @@ return [
     App\Modules\Producto\Providers\ProductoServiceProvider::class,
     App\Modules\Pedido\Providers\PedidoServiceProvider::class,
     App\Modules\Produccion\Providers\ProduccionServiceProvider::class,
+    App\Modules\CamionVictual\Providers\CamionVictualServiceProvider::class,
 ];

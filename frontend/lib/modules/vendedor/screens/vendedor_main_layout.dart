@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'vendedor_dashboard_screen.dart';
-import 'vendedor_perfil_screen.dart';
 import 'vendedor_cxc_screen.dart';
 import 'vendedor_actividad_screen.dart';
 import 'vendedor_inventario_screen.dart';
+import '../../camion_victual/screens/vendedor_camiones_screen.dart';
 
 class VendedorMainLayout extends StatefulWidget {
   const VendedorMainLayout({super.key});
@@ -17,13 +17,11 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
 
   List<Widget> _getScreens() {
     return [
-      VendedorDashboardScreen(
-        onProfileTap: () => setState(() => _currentIndex = 4),
-      ),
+      const VendedorDashboardScreen(), // index 0
       const VendedorCxcScreen(), // index 1
       const VendedorInventarioScreen(), // index 2
-      const VendedorActividadScreen(), // index 3
-      const VendedorPerfilScreen(), // index 4
+      const VendedorCamionesScreen(), // index 3
+      const VendedorActividadScreen(), // index 4
     ];
   }
 
@@ -82,14 +80,14 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
                       label: 'Inventario',
                     ),
                     BottomNavigationBarItem(
+                      icon: Icon(Icons.local_shipping_outlined),
+                      activeIcon: Icon(Icons.local_shipping),
+                      label: 'Camiones',
+                    ),
+                    BottomNavigationBarItem(
                       icon: Icon(Icons.campaign_outlined),
                       activeIcon: Icon(Icons.campaign),
                       label: 'Alertas',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.person_outline),
-                      activeIcon: Icon(Icons.person),
-                      label: 'Perfil',
                     ),
                   ],
                 ),

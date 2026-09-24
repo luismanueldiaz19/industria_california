@@ -31,6 +31,16 @@ class PedidoProvider extends ChangeNotifier {
   int get currentPage => _currentPage;
   int get lastPage => _lastPage;
 
+  Future<Pedido?> getPedidoById(int id) async {
+    try {
+      final data = await _service.getPedido(id);
+      return Pedido.fromJson(data);
+    } catch (e) {
+      if (kDebugMode) print('Error fetching pedido $id: $e');
+      return null;
+    }
+  }
+
   void setFiltros({
     int? clienteId,
     int? rutaId,

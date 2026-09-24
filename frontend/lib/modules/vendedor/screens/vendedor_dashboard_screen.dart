@@ -6,6 +6,7 @@ import '../../../core/themes/app_theme.dart';
 import '../widgets/action_quick_vendedor.dart';
 import '../widgets/header_clipper.dart';
 import '../widgets/mini_chart_painter.dart';
+import 'vendedor_perfil_screen.dart';
 
 class VendedorDashboardScreen extends StatelessWidget {
   final VoidCallback? onProfileTap;
@@ -64,7 +65,18 @@ class VendedorDashboardScreen extends StatelessWidget {
                             ],
                           ),
                           GestureDetector(
-                            onTap: onProfileTap,
+                            onTap: () {
+                              if (onProfileTap != null) {
+                                onProfileTap!();
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const VendedorPerfilScreen(),
+                                  ),
+                                );
+                              }
+                            },
                             child: Column(
                               children: [
                                 CircleAvatar(

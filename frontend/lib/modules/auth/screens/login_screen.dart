@@ -480,7 +480,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
 
               // Comentar esto en producción para ocultar los botones de prueba
-              // _buildQuickLoginRoles(),
+              _buildQuickLoginRoles(),
             ],
           ),
         ),
@@ -488,5 +488,3 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 }
-
-

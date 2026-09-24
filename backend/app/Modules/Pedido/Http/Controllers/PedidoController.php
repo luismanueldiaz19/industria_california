@@ -70,6 +70,19 @@ class PedidoController extends Controller
         return response()->json($query->paginate($perPage));
     }
 
+    public function show(Pedido $pedido)
+    {
+        return response()->json(
+            $pedido->load([
+                'cliente:id,nombre,direccion',
+                'ruta:id,nombre',
+                'vendedor:id,name',
+                'facturador:id,name',
+                'detalles.producto:id,codigo,descripcion,imagen_producto,unidad,medidas,capacidad'
+            ])
+        );
+    }
+
     public function store(StorePedidoRequest $request)
     {
         $vendedor = Auth::user();

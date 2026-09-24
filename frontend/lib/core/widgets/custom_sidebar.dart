@@ -283,6 +283,13 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                   accentColor,
                                 ),
                                 _buildMenuItem(
+                                  23,
+                                  Icons.local_shipping_outlined,
+                                  Icons.local_shipping_rounded,
+                                  'Camiones Victuales',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
                                   16,
                                   Icons.route_outlined,
                                   Icons.route_rounded,
