@@ -29,8 +29,11 @@ class ChoferController extends Controller
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users',
             'email' => 'nullable|email|max:255|unique:users',
+            'password' => 'nullable|string|min:6',
             'numero_licencia' => 'nullable|string|max:255',
             'tipo_licencia' => 'nullable|string|max:255',
+            'vencimiento_licencia' => 'nullable|date',
+            'contacto_emergencia' => 'nullable|string|max:255',
             'estado' => 'required|in:activo,inactivo,vacaciones',
         ]);
 
@@ -41,13 +44,18 @@ class ChoferController extends Controller
                 'name' => $request->name,
                 'username' => $request->username,
                 'email' => $request->email,
-                'password' => Hash::make('12345678'), // Default password
+                'password' => Hash::make($request->password ?: '12345678'), // Default password if empty
             ]);
+
+            // Assign role 'chofer' if it exists in Spatie permissions
+            $user->assignRole('chofer');
 
             $chofer = Chofer::create([
                 'user_id' => $user->id,
                 'numero_licencia' => $request->numero_licencia,
                 'tipo_licencia' => $request->tipo_licencia,
+                'vencimiento_licencia' => $request->vencimiento_licencia,
+                'contacto_emergencia' => $request->contacto_emergencia,
                 'estado' => $request->estado,
             ]);
 
@@ -80,23 +88,34 @@ class ChoferController extends Controller
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users,username,' . $chofer->user_id,
             'email' => 'nullable|email|max:255|unique:users,email,' . $chofer->user_id,
+            'password' => 'nullable|string|min:6',
             'numero_licencia' => 'nullable|string|max:255',
             'tipo_licencia' => 'nullable|string|max:255',
+            'vencimiento_licencia' => 'nullable|date',
+            'contacto_emergencia' => 'nullable|string|max:255',
             'estado' => 'required|in:activo,inactivo,vacaciones',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $chofer->user->update([
+            $userData = [
                 'name' => $request->name,
                 'username' => $request->username,
                 'email' => $request->email,
-            ]);
+            ];
+            
+            if ($request->filled('password')) {
+                $userData['password'] = Hash::make($request->password);
+            }
+
+            $chofer->user->update($userData);
 
             $chofer->update([
                 'numero_licencia' => $request->numero_licencia,
                 'tipo_licencia' => $request->tipo_licencia,
+                'vencimiento_licencia' => $request->vencimiento_licencia,
+                'contacto_emergencia' => $request->contacto_emergencia,
                 'estado' => $request->estado,
             ]);
 
@@ -127,5 +146,32 @@ class ChoferController extends Controller
             DB::rollBack();
             return response()->json(['message' => 'Error al eliminar chofer', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function getChoferesPdfUrl(Request $request)
+    {
+        $prefix = request()->segment(3) == 'industria-california' ? 'industria-california' : 'ledhouse';
+        $routeName = $prefix == 'industria-california' ? 'choferes.pdf' : 'choferes.pdf.legacy';
+
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            $routeName,
+            now()->addMinutes(60)
+        );
+
+        $tokenUrl = \App\Services\PdfSecurityService::generarUrl('choferes', [], null, 60);
+
+        return response()->json(['url' => $tokenUrl]);
+    }
+
+    public function generateChoferesPdf(Request $request)
+    {
+        if (!$request->hasValidSignature()) {
+            abort(401, 'Enlace expirado o inválido.');
+        }
+
+        $choferes = Chofer::with('user:id,name,email,username')->get();
+        
+        $pdfService = new \App\Services\PdfSecurityService();
+        return $pdfService->generateSecurePdf('pdf.choferes', compact('choferes'), 'reporte_choferes');
     }
 }

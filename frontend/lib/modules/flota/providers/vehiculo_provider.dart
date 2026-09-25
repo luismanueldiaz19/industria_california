@@ -1,44 +1,54 @@
 import 'package:flutter/material.dart';
-
-class VehiculoModel {
-  final String id;
-  final String ficha;
-  final String placa;
-  final String marca;
-  final String modelo;
-  final String tipoEnergia;
-  final String estado;
-
-  VehiculoModel({
-    required this.id,
-    required this.ficha,
-    required this.placa,
-    required this.marca,
-    required this.modelo,
-    required this.tipoEnergia,
-    required this.estado,
-  });
-}
+import '../models/vehiculo.dart';
+import '../services/vehiculo_service.dart';
 
 class VehiculoProvider with ChangeNotifier {
-  bool isLoading = false;
-  List<VehiculoModel> vehiculos = [];
+  final VehiculoService _service = VehiculoService();
   
-  void mockLoad() {
+  bool isLoading = false;
+  List<Vehiculo> vehiculos = [];
+  Map<String, dynamic> resumen = {
+    'total': 0,
+    'disponibles': 0,
+    'en_mantenimiento': 0,
+    'inactivos': 0,
+  };
+  
+  Future<void> loadVehiculos() async {
     isLoading = true;
     notifyListeners();
-    Future.delayed(const Duration(seconds: 1), () {
-      vehiculos = [
-        VehiculoModel(id: '1', ficha: 'F-119', placa: 'L123456', marca: 'Isuzu', modelo: 'NPR', tipoEnergia: 'diesel', estado: 'disponible'),
-        VehiculoModel(id: '2', ficha: 'F-120', placa: 'L987654', marca: 'BYD', modelo: 'T3', tipoEnergia: 'electrico', estado: 'disponible'),
-        VehiculoModel(id: '3', ficha: 'F-121', placa: 'L555555', marca: 'Hino', modelo: '300', tipoEnergia: 'diesel', estado: 'en_mantenimiento'),
-      ];
+    try {
+      vehiculos = await _service.getVehiculos();
+      resumen = await _service.getResumen();
+    } catch (e) {
+      debugPrint('Error cargando vehículos: $e');
+    } finally {
       isLoading = false;
       notifyListeners();
-    });
+    }
   }
 
-  int get totalDisponibles => vehiculos.where((v) => v.estado == 'disponible').length;
-  int get totalMantenimiento => vehiculos.where((v) => v.estado == 'en_mantenimiento').length;
-  int get totalInactivos => vehiculos.where((v) => v.estado == 'inactivo').length;
+  int get totalDisponibles => resumen['disponibles'] ?? 0;
+  int get totalMantenimiento => resumen['en_mantenimiento'] ?? 0;
+  int get totalInactivos => resumen['inactivos'] ?? 0;
+
+  Future<void> createVehiculo(Map<String, dynamic> data) async {
+    try {
+      await _service.createVehiculo(data);
+      await loadVehiculos();
+    } catch (e) {
+      debugPrint('Error creating vehiculo: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateVehiculo(int id, Map<String, dynamic> data) async {
+    try {
+      await _service.updateVehiculo(id, data);
+      await loadVehiculos();
+    } catch (e) {
+      debugPrint('Error updating vehiculo: $e');
+      rethrow;
+    }
+  }
 }

@@ -12,6 +12,7 @@ use App\Models\InventarioProducto;
 use App\Models\InventarioMovimiento;
 use App\Models\Pedido;
 use App\Models\User;
+use App\Modules\Vehiculo\Models\VehiculoMantenimiento;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
@@ -506,6 +507,73 @@ class PdfSecurityService
                     'fechaFin'    => $params['end_date']   ?? null,
                 ])->setPaper('a4', 'landscape');
                 $filename = 'Reporte_Vendedores_Pedidos_' . date('Ymd_His') . '.pdf';
+                break;
+
+            case 'mantenimientos_flota':
+                $query = VehiculoMantenimiento::with(['vehiculo:id,ficha,placa', 'reportador:id,name']);
+
+                if (!empty($params['estado']) && $params['estado'] !== 'todos' && $params['estado'] !== 'Todos') {
+                    $query->where('estado', strtolower(str_replace(' ', '_', $params['estado'])));
+                }
+                if (!empty($params['tipo']) && $params['tipo'] !== 'todos' && $params['tipo'] !== 'Todos') {
+                    $query->where('tipo', strtolower($params['tipo']));
+                }
+                if (!empty($params['vehiculo_ficha']) && $params['vehiculo_ficha'] !== 'todos' && $params['vehiculo_ficha'] !== 'Todos') {
+                    $query->whereHas('vehiculo', function ($q) use ($params) {
+                        $q->where('ficha', $params['vehiculo_ficha']);
+                    });
+                }
+                if (!empty($params['fecha_inicio'])) {
+                    $query->where('fecha_reporte', '>=', $params['fecha_inicio']);
+                }
+                if (!empty($params['fecha_fin'])) {
+                    $query->where('fecha_reporte', '<=', $params['fecha_fin']);
+                }
+
+                $mantenimientos = $query->orderBy('fecha_reporte', 'desc')->get();
+                $totalCosto = $mantenimientos->sum('costo');
+
+                $pdf = Pdf::loadView('pdf.mantenimientos_flota', [
+                    'mantenimientos' => $mantenimientos,
+                    'totalCosto'     => $totalCosto,
+                    'filtros'        => $params
+                ]);
+                $filename = 'mantenimientos_flota.pdf';
+                break;
+
+            case 'gastos_flota':
+                $query = \App\Models\VehiculoGasto::with(['vehiculo:id,ficha,placa', 'registrador:id,name']);
+
+                if (!empty($params['tipo_gasto']) && $params['tipo_gasto'] !== 'todos' && $params['tipo_gasto'] !== 'Todos') {
+                    $query->where('tipo_gasto', strtolower($params['tipo_gasto']));
+                }
+                if (!empty($params['vehiculo_ficha']) && $params['vehiculo_ficha'] !== 'todos' && $params['vehiculo_ficha'] !== 'Todos') {
+                    $query->whereHas('vehiculo', function ($q) use ($params) {
+                        $q->where('ficha', $params['vehiculo_ficha']);
+                    });
+                }
+                if (!empty($params['fecha_inicio'])) {
+                    $query->where('fecha_gasto', '>=', $params['fecha_inicio']);
+                }
+                if (!empty($params['fecha_fin'])) {
+                    $query->where('fecha_gasto', '<=', $params['fecha_fin']);
+                }
+
+                $gastos = $query->orderBy('fecha_gasto', 'desc')->get();
+                $totalMonto = $gastos->sum('monto_total');
+
+                $pdf = Pdf::loadView('pdf.gastos_flota', [
+                    'gastos'     => $gastos,
+                    'totalMonto' => $totalMonto,
+                    'filtros'    => $params
+                ]);
+                $filename = 'gastos_flota.pdf';
+                break;
+
+            case 'choferes':
+                $choferes = \App\Models\Chofer::with('user:id,name,email,username')->get();
+                $pdf = Pdf::loadView('pdf.choferes', compact('choferes'));
+                $filename = 'reporte_choferes.pdf';
                 break;
 
             default:

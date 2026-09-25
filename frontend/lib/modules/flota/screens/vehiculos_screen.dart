@@ -18,7 +18,7 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<VehiculoProvider>().mockLoad();
+      context.read<VehiculoProvider>().loadVehiculos();
     });
   }
 
@@ -27,7 +27,10 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1C1E),
       appBar: AppBar(
-        title: const Text('Flota de Vehículos', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Flota de Vehículos',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: const Color(0xFF2C2F33),
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
@@ -48,106 +51,83 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
       body: Consumer<VehiculoProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFFE31E24)));
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFE31E24)),
+            );
           }
 
           return LayoutBuilder(
             builder: (context, constraints) {
               final isMobile = constraints.maxWidth < 600;
-              final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1000;
-              
-              int crossAxisCount = 3;
-              double aspectRatio = 1.3;
-              
+              final isTablet =
+                  constraints.maxWidth >= 600 && constraints.maxWidth < 1000;
+
+              int crossAxisCount = 4;
+              double aspectRatio = 2.5;
+
               if (isMobile) {
-                crossAxisCount = 1;
-                aspectRatio = 2.5; // Wider cards for 1 column
-              } else if (isTablet) {
                 crossAxisCount = 2;
-                aspectRatio = 1.4;
+                aspectRatio = 1.8;
+              } else if (isTablet) {
+                crossAxisCount = 3;
+                aspectRatio = 2.2;
               }
 
               return Padding(
-                padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+                padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Stats Row/Column
-                    if (isMobile)
-                      Column(
-                        children: [
-                          FlotaStatCard(
+                    // Stats Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FlotaStatCard(
                             title: 'Disponibles',
                             value: provider.totalDisponibles.toString(),
                             icon: Icons.check_circle_outline,
                             color: Colors.green,
                           ),
-                          const SizedBox(height: 12),
-                          FlotaStatCard(
+                        ),
+                        SizedBox(width: isMobile ? 6 : 16),
+                        Expanded(
+                          child: FlotaStatCard(
                             title: 'En Taller',
                             value: provider.totalMantenimiento.toString(),
                             icon: Icons.build_outlined,
                             color: Colors.orange,
                           ),
-                          const SizedBox(height: 12),
-                          FlotaStatCard(
+                        ),
+                        SizedBox(width: isMobile ? 6 : 16),
+                        Expanded(
+                          child: FlotaStatCard(
                             title: 'Inactivos',
                             value: provider.totalInactivos.toString(),
                             icon: Icons.cancel_outlined,
                             color: Colors.red,
                           ),
-                        ],
-                      )
-                    else
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FlotaStatCard(
-                              title: 'Disponibles',
-                              value: provider.totalDisponibles.toString(),
-                              icon: Icons.check_circle_outline,
-                              color: Colors.green,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: FlotaStatCard(
-                              title: 'En Taller',
-                              value: provider.totalMantenimiento.toString(),
-                              icon: Icons.build_outlined,
-                              color: Colors.orange,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: FlotaStatCard(
-                              title: 'Inactivos',
-                              value: provider.totalInactivos.toString(),
-                              icon: Icons.cancel_outlined,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
-                    
-                    SizedBox(height: isMobile ? 24 : 32),
-                    
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: isMobile ? 12 : 16),
+
                     const Text(
                       'Inventario de Vehículos',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
                     Expanded(
                       child: GridView.builder(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: isMobile ? 12 : 16,
-                          mainAxisSpacing: isMobile ? 12 : 16,
+                          crossAxisSpacing: isMobile ? 6 : 8,
+                          mainAxisSpacing: isMobile ? 6 : 8,
                           childAspectRatio: aspectRatio,
                         ),
                         itemCount: provider.vehiculos.length,
@@ -159,7 +139,8 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => VehiculoDetalleScreen(vehiculo: vehiculo),
+                                  builder: (context) =>
+                                      VehiculoDetalleScreen(vehiculo: vehiculo),
                                 ),
                               );
                             },

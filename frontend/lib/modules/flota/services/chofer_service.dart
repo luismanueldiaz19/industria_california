@@ -24,4 +24,9 @@ class ChoferService {
   Future<void> deleteChofer(int id) async {
     await _http.delete('$_base/$id');
   }
+
+  Future<String> getChoferesPdfUrl() async {
+    final response = await _http.get('industria-california/choferes/pdf-url');
+    return response['url'] as String;
+  }
 }

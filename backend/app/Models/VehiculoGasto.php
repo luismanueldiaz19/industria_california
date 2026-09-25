@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class VehiculoGasto extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'vehiculo_id', 'fecha_gasto', 'concepto', 'cantidad', 
+        'vehiculo_id', 'tipo_gasto', 'fecha_gasto', 'concepto', 'cantidad', 
         'unidad_medida', 'precio_unitario', 'monto_total', 
         'comprobantes', 'registrado_por'
     ];

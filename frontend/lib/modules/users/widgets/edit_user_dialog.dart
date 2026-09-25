@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/users_provider.dart';
+import '../providers/role_provider.dart';
 
 class EditUserDialog extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -26,10 +27,15 @@ class _EditUserDialogState extends State<EditUserDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.user['name']?.toString() ?? '');
     _usernameController = TextEditingController(text: widget.user['username']?.toString() ?? '');
-    // Asumimos que viene el nombre del rol o podemos dejarlo null si no se envió en el JSON
     _selectedRole = widget.user['roles'] != null && (widget.user['roles'] as List).isNotEmpty
         ? widget.user['roles'][0]['name']
-        : 'vendedor';
+        : null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.read<RoleProvider>().roles.isEmpty) {
+        context.read<RoleProvider>().fetchRoles();
+      }
+    });
   }
 
   @override
@@ -235,48 +241,63 @@ class _EditUserDialogState extends State<EditUserDialog> {
     final secondaryColor = const Color(0xFF2C2F33);
     final accentColor = const Color(0xFFE31E24);
     
-    final roles = [
-      {'name': 'admin', 'label': 'Administrador (CRUD Total)'},
-      {'name': 'gerente', 'label': 'Gerente (Vista Global)'},
-      {'name': 'contable', 'label': 'Contador (Sin Eliminar)'},
-      {'name': 'vendedor', 'label': 'Vendedor (Reporta Pagos)'},
-    ];
+    return Consumer<RoleProvider>(
+      builder: (context, roleProvider, child) {
+        if (roleProvider.isLoading && roleProvider.roles.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    // Verificar que _selectedRole es válido, si no, fallback
-    if (!roles.any((r) => r['name'] == _selectedRole)) {
-      _selectedRole = 'vendedor';
-    }
+        // Add a safety check in case the selected role is not in the list
+        if (roleProvider.roles.isNotEmpty && _selectedRole != null && !roleProvider.roles.any((r) => r.name == _selectedRole)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _selectedRole = roleProvider.roles.first.name;
+              });
+            }
+          });
+        } else if (roleProvider.roles.isNotEmpty && _selectedRole == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _selectedRole = roleProvider.roles.first.name;
+              });
+            }
+          });
+        }
 
-    return DropdownButtonFormField<String>(
-      value: _selectedRole,
-      dropdownColor: secondaryColor,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: 'Rol del Usuario',
-        labelStyle: const TextStyle(color: Colors.white54),
-        filled: true,
-        fillColor: secondaryColor,
-        prefixIcon: const Icon(Icons.shield_outlined, color: Colors.white54),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: accentColor, width: 1),
-        ),
-      ),
-      items: roles.map((role) {
-        return DropdownMenuItem<String>(
-          value: role['name'],
-          child: Text(role['label']!),
+        return DropdownButtonFormField<String>(
+          value: _selectedRole,
+          dropdownColor: secondaryColor,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Rol del Usuario',
+            labelStyle: const TextStyle(color: Colors.white54),
+            filled: true,
+            fillColor: secondaryColor,
+            prefixIcon: const Icon(Icons.shield_outlined, color: Colors.white54),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: accentColor, width: 1),
+            ),
+          ),
+          items: roleProvider.roles.map((role) {
+            return DropdownMenuItem<String>(
+              value: role.name,
+              child: Text(role.name.toUpperCase()),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedRole = value;
+            });
+          },
         );
-      }).toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedRole = value;
-        });
-      },
+      }
     );
   }
 }

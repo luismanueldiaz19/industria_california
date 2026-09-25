@@ -22,6 +22,8 @@ use App\Modules\Pedido\Http\Controllers\PedidoController;
 use App\Modules\Produccion\Http\Controllers\OrdenProduccionController;
 use App\Modules\Produccion\Http\Controllers\ProduccionAgrupadaController;
 use App\Modules\CamionVictual\Http\Controllers\CamionVictualController;
+use App\Modules\Vehiculo\Http\Controllers\VehiculoController;
+use App\Modules\Vehiculo\Http\Controllers\TipoGastoController;
 use App\Http\Controllers\Api\ChoferController;
 
 // =========================================================
@@ -62,16 +64,27 @@ Route::prefix('v1')->group(function () {
             // Ruta pública para generar PDF del Pedido
             $pedidoPdf = Route::get('pedidos/pdf/{id}', [PedidoController::class, 'generatePdf'])->middleware('signed');
 
+            // Ruta pública para PDF de Mantenimientos y Gastos
+            $mantenimientosPdf = Route::get('vehiculos/mantenimientos/pdf', [VehiculoController::class, 'generateMantenimientosPdf'])->middleware('signed');
+            $gastosPdf = Route::get('vehiculos/gastos/pdf', [VehiculoController::class, 'generateGastosPdf'])->middleware('signed');
+            $choferesPdf = Route::get('choferes/pdf', [ChoferController::class, 'generateChoferesPdf'])->middleware('signed');
+
             if ($prefix === 'industria-california') {
                 $genPdf->name('cxc.general.pdf');
                 $agrPdf->name('cxc.agrupado.pdf');
                 $venPdf->name('cxc.vendedor.pdf');
                 $pedidoPdf->name('pedido.pdf');
+                $mantenimientosPdf->name('mantenimientos.pdf');
+                $gastosPdf->name('gastos.pdf');
+                $choferesPdf->name('choferes.pdf');
             } else {
                 $genPdf->name('cxc.general.pdf.legacy');
                 $agrPdf->name('cxc.agrupado.pdf.legacy');
                 $venPdf->name('cxc.vendedor.pdf.legacy');
                 $pedidoPdf->name('pedido.pdf.legacy');
+                $mantenimientosPdf->name('mantenimientos.pdf.legacy');
+                $gastosPdf->name('gastos.pdf.legacy');
+                $choferesPdf->name('choferes.pdf.legacy');
             }
         });
     }
@@ -182,6 +195,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('pedidos/reporte-vendedores', [PedidoController::class, 'reporteVendedores']);
                 Route::get('pedidos-vendedores-pdf-url', [PedidoController::class, 'getReporteVendedoresPdfUrl']);
                 Route::apiResource('pedidos', PedidoController::class);
+                Route::get('choferes/pdf-url', [ChoferController::class, 'getChoferesPdfUrl']);
                 Route::apiResource('choferes', ChoferController::class);
                 
                 // Órdenes de Producción
@@ -206,6 +220,30 @@ Route::prefix('v1')->group(function () {
                 Route::apiResource('camiones-victuales', CamionVictualController::class)->parameters([
                     'camiones-victuales' => 'camionVictual'
                 ]);
+
+                // ── MÓDULO VEHÍCULOS ──────────────────────────────────────
+                Route::get('vehiculos/resumen', [VehiculoController::class, 'resumen']);
+                // Mantenimientos
+                Route::get('vehiculos/mantenimientos/todos', [VehiculoController::class, 'mantenimientosTodos']);
+                Route::get('vehiculos/mantenimientos/pdf-url', [VehiculoController::class, 'getMantenimientosPdfUrl']);
+                Route::get('vehiculos/{vehiculo}/mantenimientos', [VehiculoController::class, 'mantenimientosIndex']);
+                Route::post('vehiculos/{vehiculo}/mantenimientos', [VehiculoController::class, 'mantenimientosStore']);
+                Route::patch('vehiculos/{vehiculo}/mantenimientos/{mantenimiento}', [VehiculoController::class, 'mantenimientosUpdate']);
+                Route::delete('vehiculos/{vehiculo}/mantenimientos/{mantenimiento}', [VehiculoController::class, 'mantenimientosDestroy']);
+                // Gastos y Combustible
+                Route::get('vehiculos/gastos/todos', [VehiculoController::class, 'gastosTodos']);
+                Route::get('vehiculos/gastos/pdf-url', [VehiculoController::class, 'getGastosPdfUrl']);
+                Route::get('vehiculos/gastos/estadisticas', [VehiculoController::class, 'gastosEstadisticas']);
+                Route::get('vehiculos/{vehiculo}/gastos', [VehiculoController::class, 'gastosIndex']);
+                Route::post('vehiculos/{vehiculo}/gastos', [VehiculoController::class, 'gastosStore']);
+                Route::patch('vehiculos/{vehiculo}/gastos/{gasto}', [VehiculoController::class, 'gastosUpdate']);
+                Route::delete('vehiculos/{vehiculo}/gastos/{gasto}', [VehiculoController::class, 'gastosDestroy']);
+                // Tipos de Gasto
+                Route::apiResource('vehiculos/tipo-gastos', TipoGastoController::class)->except(['show']);
+                // CRUD base
+                Route::apiResource('vehiculos', VehiculoController::class);
+                // Roles
+                Route::apiResource('roles', \App\Http\Controllers\Api\RoleController::class);
             });
         }
     });

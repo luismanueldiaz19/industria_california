@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../providers/role_provider.dart';
 
 class RegisterUserDialog extends StatefulWidget {
   const RegisterUserDialog({super.key});
@@ -18,6 +19,16 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
   String? _selectedRole = 'vendedor'; // Default role
 
   bool _isObscure = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.read<RoleProvider>().roles.isEmpty) {
+        context.read<RoleProvider>().fetchRoles();
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -219,42 +230,54 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
     final secondaryColor = const Color(0xFF2C2F33);
     final accentColor = const Color(0xFFE31E24);
 
-    final roles = [
-      {'name': 'admin', 'label': 'Administrador (CRUD Total)'},
-      {'name': 'gerente', 'label': 'Gerente (Vista Global)'},
-      {'name': 'contable', 'label': 'Contador (Sin Eliminar)'},
-      {'name': 'vendedor', 'label': 'Vendedor (Reporta Pagos)'},
-    ];
+    return Consumer<RoleProvider>(
+      builder: (context, roleProvider, child) {
+        if (roleProvider.isLoading && roleProvider.roles.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return DropdownButtonFormField<String>(
-      value: _selectedRole,
-      dropdownColor: secondaryColor,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: 'Rol del Usuario',
-        labelStyle: const TextStyle(color: Colors.white54),
-        filled: true,
-        fillColor: secondaryColor,
-        prefixIcon: const Icon(Icons.shield_outlined, color: Colors.white54),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: accentColor, width: 1),
-        ),
-      ),
-      items: roles.map((role) {
-        return DropdownMenuItem<String>(
-          value: role['name'],
-          child: Text(role['label']!),
+        if (roleProvider.roles.isNotEmpty && !roleProvider.roles.any((r) => r.name == _selectedRole)) {
+          // If the selected role is not in the list, default to the first one, but do it asynchronously to avoid setState during build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _selectedRole = roleProvider.roles.first.name;
+              });
+            }
+          });
+        }
+
+        return DropdownButtonFormField<String>(
+          value: _selectedRole,
+          dropdownColor: secondaryColor,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Rol del Usuario',
+            labelStyle: const TextStyle(color: Colors.white54),
+            filled: true,
+            fillColor: secondaryColor,
+            prefixIcon: const Icon(Icons.shield_outlined, color: Colors.white54),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: accentColor, width: 1),
+            ),
+          ),
+          items: roleProvider.roles.map((role) {
+            return DropdownMenuItem<String>(
+              value: role.name,
+              child: Text(role.name.toUpperCase()),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedRole = value;
+            });
+          },
         );
-      }).toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedRole = value;
-        });
       },
     );
   }

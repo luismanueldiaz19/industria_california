@@ -13,6 +13,7 @@ import 'modules/dashboard/dashboard_provider.dart';
 import 'modules/users/providers/users_provider.dart';
 import 'modules/users/users_screen.dart';
 import 'modules/users/roles_screen.dart';
+import 'modules/users/providers/role_provider.dart';
 
 import 'core/widgets/custom_sidebar.dart';
 import 'modules/led_house/providers/ledhouse_provider.dart';
@@ -40,6 +41,7 @@ import 'modules/flota/screens/vehiculos_screen.dart';
 import 'modules/flota/screens/despachos_screen.dart';
 import 'modules/flota/screens/mantenimientos_screen.dart';
 import 'modules/flota/screens/gastos_vehiculos_screen.dart';
+import 'modules/flota/screens/gastos_estadisticas_screen.dart';
 import 'modules/flota/screens/camiones_victuales_admin_screen.dart';
 import 'modules/flota/providers/chofer_provider.dart';
 import 'modules/flota/providers/vehiculo_provider.dart';
@@ -92,6 +94,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => GastoVehiculoProvider()),
         // Módulo Camiones Victuales
         ChangeNotifierProvider(create: (_) => CamionVictualProvider()),
+        // Usuarios y Roles
+        ChangeNotifierProvider(create: (_) => RoleProvider()),
       ],
       child: const ConstruccionERP(),
     ),
@@ -183,12 +187,13 @@ class _MainLayoutState extends State<MainLayout> {
     const DespachosScreen(), // 16
     const MantenimientosScreen(), // 17
     const GastosVehiculosScreen(), // 18
-    // Módulo Producción Agrupada (19-22)
-    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.producto), // 19
-    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.pedido), // 20
-    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.cliente), // 21
-    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.fecha), // 22
-    const CamionesVictualesAdminScreen(), // 23
+    const GastosEstadisticasScreen(), // 19
+    // Módulo Producción Agrupada (20-23)
+    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.producto), // 20
+    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.pedido), // 21
+    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.cliente), // 22
+    const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.fecha), // 23
+    const CamionesVictualesAdminScreen(), // 24
   ];
 
   @override

@@ -18,8 +18,11 @@ class _ChoferFormModalState extends State<ChoferFormModal> {
   late TextEditingController _nameController;
   late TextEditingController _usernameController;
   late TextEditingController _emailController;
+  late TextEditingController _passwordController;
   late TextEditingController _licenciaController;
   late TextEditingController _tipoLicenciaController;
+  late TextEditingController _vencimientoLicenciaController;
+  late TextEditingController _contactoEmergenciaController;
   
   String _estado = 'activo';
   bool _isLoading = false;
@@ -30,8 +33,18 @@ class _ChoferFormModalState extends State<ChoferFormModal> {
     _nameController = TextEditingController(text: widget.chofer?.name ?? '');
     _usernameController = TextEditingController(text: widget.chofer?.username ?? '');
     _emailController = TextEditingController(text: widget.chofer?.email ?? '');
+    _passwordController = TextEditingController();
     _licenciaController = TextEditingController(text: widget.chofer?.numeroLicencia ?? '');
     _tipoLicenciaController = TextEditingController(text: widget.chofer?.tipoLicencia ?? '');
+    
+    // Parse vencimiento_licencia to YYYY-MM-DD
+    String vencimiento = '';
+    if (widget.chofer?.vencimientoLicencia != null) {
+      vencimiento = widget.chofer!.vencimientoLicencia!.split('T').first;
+    }
+    _vencimientoLicenciaController = TextEditingController(text: vencimiento);
+    
+    _contactoEmergenciaController = TextEditingController(text: widget.chofer?.contactoEmergencia ?? '');
     
     if (widget.chofer != null) {
       _estado = widget.chofer!.estado;
@@ -43,8 +56,11 @@ class _ChoferFormModalState extends State<ChoferFormModal> {
     _nameController.dispose();
     _usernameController.dispose();
     _emailController.dispose();
+    _passwordController.dispose();
     _licenciaController.dispose();
     _tipoLicenciaController.dispose();
+    _vencimientoLicenciaController.dispose();
+    _contactoEmergenciaController.dispose();
     super.dispose();
   }
 
@@ -59,8 +75,14 @@ class _ChoferFormModalState extends State<ChoferFormModal> {
       'email': _emailController.text.trim(),
       'numero_licencia': _licenciaController.text.trim(),
       'tipo_licencia': _tipoLicenciaController.text.trim(),
+      'vencimiento_licencia': _vencimientoLicenciaController.text.trim(),
+      'contacto_emergencia': _contactoEmergenciaController.text.trim(),
       'estado': _estado,
     };
+
+    if (_passwordController.text.isNotEmpty) {
+      data['password'] = _passwordController.text;
+    }
 
     try {
       if (widget.chofer == null) {
@@ -147,6 +169,13 @@ class _ChoferFormModalState extends State<ChoferFormModal> {
                 icon: Icons.email,
               ),
               const SizedBox(height: 16),
+              _buildTextField(
+                controller: _passwordController,
+                label: isEditing ? 'Contraseña (Dejar en blanco para no cambiar)' : 'Contraseña (Opcional, 12345678 por defecto)',
+                icon: Icons.lock,
+                obscureText: true,
+              ),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -162,6 +191,56 @@ class _ChoferFormModalState extends State<ChoferFormModal> {
                       controller: _tipoLicenciaController,
                       label: 'Tipo Licencia',
                       icon: Icons.card_membership,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: const ColorScheme.dark(
+                                  primary: Color(0xFFE31E24),
+                                  onPrimary: Colors.white,
+                                  surface: Color(0xFF2C2F33),
+                                  onSurface: Colors.white,
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
+                        if (date != null) {
+                          setState(() {
+                            _vencimientoLicenciaController.text = date.toIso8601String().split('T').first;
+                          });
+                        }
+                      },
+                      child: IgnorePointer(
+                        child: _buildTextField(
+                          controller: _vencimientoLicenciaController,
+                          label: 'Vencimiento Lic.',
+                          icon: Icons.calendar_today,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _contactoEmergenciaController,
+                      label: 'Contacto de Emergencia',
+                      icon: Icons.phone,
                     ),
                   ),
                 ],
@@ -232,10 +311,12 @@ class _ChoferFormModalState extends State<ChoferFormModal> {
     required String label,
     required IconData icon,
     String? Function(String?)? validator,
+    bool obscureText = false,
   }) {
     return TextFormField(
       controller: controller,
       style: const TextStyle(color: Colors.white),
+      obscureText: obscureText,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white54),

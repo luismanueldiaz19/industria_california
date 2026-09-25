@@ -11,6 +11,8 @@ class ChoferesScreen extends StatefulWidget {
 }
 
 class _ChoferesScreenState extends State<ChoferesScreen> {
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -29,21 +31,32 @@ class _ChoferesScreenState extends State<ChoferesScreen> {
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 16,
           ),
         ),
-        backgroundColor: const Color(0xFF232529),
+        backgroundColor: const Color(0xFF2C2F33),
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(
+              Icons.picture_as_pdf,
+              color: Colors.white70,
+              size: 20,
+            ),
+            tooltip: 'Exportar PDF',
+            onPressed: () {
+              context.read<ChoferProvider>().generarPdf();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
             onPressed: () {
               context.read<ChoferProvider>().fetchChoferes();
             },
           ),
           IconButton(
-            icon: const Icon(Icons.add, color: Color(0xFFE31E24)),
+            icon: const Icon(Icons.add, color: Color(0xFFE31E24), size: 20),
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -72,114 +85,193 @@ class _ChoferesScreenState extends State<ChoferesScreen> {
             );
           }
 
-          return RefreshIndicator(
-            color: const Color(0xFFE31E24),
-            backgroundColor: const Color(0xFF232529),
-            onRefresh: () async {
-              await provider.fetchChoferes();
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 20.0,
-              ),
-              child: ListView.builder(
-                itemCount: provider.choferes.length,
-                itemBuilder: (context, index) {
-                  final chofer = provider.choferes[index];
-                  final isActivo = chofer.estado == 'activo';
-                  final isVacaciones = chofer.estado == 'vacaciones';
+          final filteredChoferes = provider.choferes.where((c) {
+            final query = _searchQuery.toLowerCase();
+            return (c.name?.toLowerCase().contains(query) ?? false) ||
+                (c.username?.toLowerCase().contains(query) ?? false) ||
+                (c.numeroLicencia?.toLowerCase().contains(query) ?? false) ||
+                (c.estado.toLowerCase().contains(query));
+          }).toList();
 
-                  Color statusColor = Colors.grey;
-                  if (isActivo) statusColor = const Color(0xFF4CAF50);
-                  if (isVacaciones) statusColor = const Color(0xFFFF9800);
-
-                  return GestureDetector(
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => ChoferFormModal(chofer: chofer),
-                      );
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2C2F33),
-                        borderRadius: BorderRadius.circular(12),
+          return Column(
+            children: [
+              Container(
+                color: const Color(0xFF2C2F33),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: SizedBox(
+                  height: 32,
+                  child: TextField(
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    decoration: InputDecoration(
+                      hintText:
+                          'Buscar por nombre, usuario, licencia o estado...',
+                      hintStyle: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 11,
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.05),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.person,
-                                color: statusColor,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    chofer.name ?? 'Sin Nombre',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Licencia: ${chofer.numeroLicencia ?? 'N/A'}${chofer.tipoLicencia != null ? ' (${chofer.tipoLicencia})' : ''}\n'
-                                    'Vence: ${chofer.vencimientoLicencia != null ? chofer.vencimientoLicencia!.split('T').first : 'N/A'}\n'
-                                    'Emergencia: ${chofer.contactoEmergencia ?? 'N/A'}\n'
-                                    'Email: ${chofer.email ?? 'N/A'}',
-                                    style: const TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 13,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: statusColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Colors.white54,
+                        size: 16,
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFF1A1C1E),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  color: const Color(0xFFE31E24),
+                  backgroundColor: const Color(0xFF232529),
+                  onRefresh: () async {
+                    await provider.fetchChoferes();
+                  },
+                  child: filteredChoferes.isEmpty
+                      ? ListView(
+                          children: const [
+                            SizedBox(height: 100),
+                            Center(
                               child: Text(
-                                chofer.estado.toUpperCase(),
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                'No se encontraron choferes.',
+                                style: TextStyle(color: Colors.white54),
                               ),
                             ),
                           ],
+                        )
+                      : SingleChildScrollView(
+                          scrollDirection: Axis.vertical,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Theme(
+                              data: Theme.of(
+                                context,
+                              ).copyWith(dividerColor: Colors.white10),
+                              child: DataTable(
+                                border: TableBorder.all(color: Colors.white10),
+                                headingRowHeight: 32,
+                                dataRowMinHeight: 32,
+                                dataRowMaxHeight: 32,
+                                columnSpacing: 20,
+                                showCheckboxColumn: false,
+                                headingTextStyle: const TextStyle(
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                                dataTextStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                ),
+                                columns: const [
+                                  DataColumn(label: Text('NOMBRE')),
+                                  DataColumn(label: Text('USUARIO')),
+                                  DataColumn(label: Text('LICENCIA')),
+                                  DataColumn(label: Text('TIPO')),
+                                  DataColumn(label: Text('VENCE')),
+                                  DataColumn(label: Text('EMERGENCIA')),
+                                  DataColumn(label: Text('ESTADO')),
+                                ],
+                                rows: filteredChoferes.map((chofer) {
+                                  final isActivo = chofer.estado == 'activo';
+                                  final isVacaciones =
+                                      chofer.estado == 'vacaciones';
+
+                                  Color statusColor = Colors.grey;
+                                  if (isActivo)
+                                    statusColor = const Color(0xFF4CAF50);
+                                  if (isVacaciones)
+                                    statusColor = const Color(0xFFFF9800);
+
+                                  return DataRow(
+                                    onSelectChanged: (_) {
+                                      showModalBottomSheet(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        backgroundColor: Colors.transparent,
+                                        builder: (context) =>
+                                            ChoferFormModal(chofer: chofer),
+                                      );
+                                    },
+                                    cells: [
+                                      DataCell(Text(chofer.name ?? 'N/A')),
+                                      DataCell(Text(chofer.username ?? 'N/A')),
+                                      DataCell(
+                                        Text(chofer.numeroLicencia ?? 'N/A'),
+                                      ),
+                                      DataCell(
+                                        Text(chofer.tipoLicencia ?? 'N/A'),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          chofer.vencimientoLicencia != null
+                                              ? chofer.vencimientoLicencia!
+                                                    .split('T')
+                                                    .first
+                                              : 'N/A',
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          chofer.contactoEmergencia ?? 'N/A',
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: statusColor.withValues(
+                                              alpha: 0.1,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                            border: Border.all(
+                                              color: statusColor.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            chofer.estado.toUpperCase(),
+                                            style: TextStyle(
+                                              color: statusColor,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                },
+                ),
               ),
-            ),
+            ],
           );
         },
       ),

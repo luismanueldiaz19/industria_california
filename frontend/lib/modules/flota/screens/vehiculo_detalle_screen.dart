@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../providers/vehiculo_provider.dart';
+import '../models/vehiculo.dart';
 
 class VehiculoDetalleScreen extends StatelessWidget {
-  final VehiculoModel vehiculo;
+  final Vehiculo vehiculo;
 
   const VehiculoDetalleScreen({super.key, required this.vehiculo});
 
@@ -46,8 +46,8 @@ class VehiculoDetalleScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildInfoRow('Ficha:', vehiculo.ficha),
-          _buildInfoRow('Placa:', vehiculo.placa),
-          _buildInfoRow('Marca / Modelo:', '${vehiculo.marca} ${vehiculo.modelo}'),
+          _buildInfoRow('Placa:', vehiculo.placa ?? 'S/N'),
+          _buildInfoRow('Marca / Modelo:', '${vehiculo.marca ?? 'N/A'} ${vehiculo.modelo ?? ''}'),
           _buildInfoRow('Energía:', vehiculo.tipoEnergia.toUpperCase()),
           _buildInfoRow('Estado:', vehiculo.estado.toUpperCase().replaceAll('_', ' ')),
         ],

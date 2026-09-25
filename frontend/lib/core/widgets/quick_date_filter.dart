@@ -38,13 +38,13 @@ class QuickDateFilter extends StatelessWidget {
       case DateFilterOption.mesPasado:
         return const _FilterMenuData('Mes Pasado', Icons.history);
       case DateFilterOption.ultimos7Dias:
-        return const _FilterMenuData('Últimos 7 días', Icons.view_column);
+        return const _FilterMenuData('7 días', Icons.view_column);
       case DateFilterOption.ultimos30Dias:
-        return const _FilterMenuData('Últimos 30 días', Icons.calendar_month);
+        return const _FilterMenuData('30 días', Icons.calendar_month);
       case DateFilterOption.hace2Meses:
-        return const _FilterMenuData('Últimos 2 meses', Icons.grid_view);
+        return const _FilterMenuData('2 meses', Icons.grid_view);
       case DateFilterOption.hace3Meses:
-        return const _FilterMenuData('Últimos 3 meses', Icons.grid_on);
+        return const _FilterMenuData('3 meses', Icons.grid_on);
       case DateFilterOption.esteAno:
         return const _FilterMenuData('Este Año', Icons.star_border);
       case DateFilterOption.anoPasado:

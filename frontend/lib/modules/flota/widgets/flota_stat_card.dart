@@ -17,23 +17,23 @@ class FlotaStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFF2C2F33),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.white10),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 28),
+            child: Icon(icon, color: color, size: 14),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,11 +46,11 @@ class FlotaStatCard extends StatelessWidget {
                     title,
                     style: const TextStyle(
                       color: Colors.grey,
-                      fontSize: 14,
+                      fontSize: 9,
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
@@ -58,7 +58,7 @@ class FlotaStatCard extends StatelessWidget {
                     value,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

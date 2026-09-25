@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/chofer.dart';
 import '../services/chofer_service.dart';
 
@@ -58,6 +59,20 @@ class ChoferProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       rethrow;
+    }
+  }
+
+  Future<void> generarPdf() async {
+    try {
+      final urlStr = await _service.getChoferesPdfUrl();
+      final url = Uri.parse(urlStr);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        debugPrint("Could not launch $urlStr");
+      }
+    } catch (e) {
+      debugPrint("Error generando PDF de choferes: $e");
     }
   }
 }
