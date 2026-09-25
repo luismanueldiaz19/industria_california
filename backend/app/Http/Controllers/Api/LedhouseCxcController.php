@@ -199,6 +199,11 @@ class LedhouseCxcController extends Controller
             $query->where('estado', '!=', 'pagado');
         }
 
+        // Filtro opcional por rango de fechas (fecha_factura)
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('fecha_factura', [$request->start_date, $request->end_date]);
+        }
+
         // Paginación opcional
         if ($request->has('page') || $request->has('paginate')) {
             return response()->json($query->orderBy('fecha_vencimiento', 'asc')->paginate($request->per_page ?? 25));
@@ -217,6 +222,9 @@ class LedhouseCxcController extends Controller
             if ($request->filled('vencidos') && $request->vencidos == '1') {
                 $q->where('monto_pendiente', '>', 0)
                   ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
+            }
+            if ($request->filled('start_date') && $request->filled('end_date')) {
+                $q->whereBetween('fecha_factura', [$request->start_date, $request->end_date]);
             }
         };
 
@@ -315,6 +323,8 @@ class LedhouseCxcController extends Controller
                 'vencidos'   => $request->vencidos,
                 'estado'     => $request->estado,
                 'con_visita' => $request->con_visita,
+                'start_date' => $request->start_date,
+                'end_date'   => $request->end_date,
             ],
             $request->user()?->id,
             minutos: 30
@@ -327,9 +337,13 @@ class LedhouseCxcController extends Controller
         $url = \App\Services\PdfSecurityService::generarUrl(
             'cxc_agrupado',
             [
-                'search' => $request->search,
+                'search'      => $request->search,
                 'vendedor_id' => $request->vendedor_id,
-                'vencidos' => $request->vencidos,
+                'vencidos'    => $request->vencidos,
+                'estado'      => $request->estado,
+                'con_visita'  => $request->con_visita,
+                'start_date'  => $request->start_date,
+                'end_date'    => $request->end_date,
             ],
             $request->user()?->id,
             minutos: 30
@@ -372,11 +386,13 @@ class LedhouseCxcController extends Controller
         $query = LedhouseCxc::with('cliente');
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $rawSearch = trim($request->search);
+            $search = \App\Helpers\TextNormalizer::normalize($rawSearch);
             $query->where(function($q) use ($search) {
-                $q->where('documento', 'like', "%{$search}%")
+                $q->whereRaw('LOWER(documento) LIKE ?', ["%{$search}%"])
                   ->orWhereHas('cliente', function($q2) use ($search) {
-                      $q2->where('nombre', 'like', "%{$search}%");
+                      $q2->whereRaw('LOWER(nombre) LIKE ?', ["%{$search}%"])
+                         ->orWhereRaw('LOWER(documento) LIKE ?', ["%{$search}%"]);
                   });
             });
         }
@@ -431,7 +447,11 @@ class LedhouseCxcController extends Controller
         }
 
         $queryCxc = function ($q) use ($request) {
-            $q->where('estado', '!=', 'pagado');
+            if ($request->filled('estado') && $request->estado !== 'Todos' && $request->estado !== 'Todos los Estados') {
+                $q->where('estado', $request->estado);
+            } else {
+                $q->where('estado', '!=', 'pagado');
+            }
             if ($request->filled('vendedor_id')) {
                 $q->where('vendedor_id', $request->vendedor_id);
             }
@@ -439,15 +459,27 @@ class LedhouseCxcController extends Controller
                 $q->where('monto_pendiente', '>', 0)
                   ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
             }
+            if ($request->filled('con_visita') && $request->con_visita == '1') {
+                $q->whereHas('soportes', function ($q2) {
+                    $q2->whereNotNull('fecha_visita');
+                });
+            }
+            if ($request->filled('search')) {
+                $rawSearch = trim($request->search);
+                $search = \App\Helpers\TextNormalizer::normalize($rawSearch);
+                $q->where(function($q2) use ($search) {
+                    $q2->whereRaw('LOWER(documento) LIKE ?', ["%{$search}%"])
+                       ->orWhereHas('cliente', function($q3) use ($search) {
+                           $q3->whereRaw('LOWER(nombre) LIKE ?', ["%{$search}%"])
+                              ->orWhereRaw('LOWER(documento) LIKE ?', ["%{$search}%"]);
+                       });
+                });
+            }
         };
 
         $query = LedhouseCliente::whereHas('cxcs', $queryCxc)
             ->withSum(['cxcs as total_facturado' => $queryCxc], 'monto_factura')
             ->withSum(['cxcs as total_pendiente' => $queryCxc], 'monto_pendiente');
-
-        if ($request->filled('search')) {
-            $query->where('nombre', 'like', "%{$request->search}%");
-        }
 
         $clientes = $query->get()
             ->filter(fn($c) => $c->total_pendiente > 0);

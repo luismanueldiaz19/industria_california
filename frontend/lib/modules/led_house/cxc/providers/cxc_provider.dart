@@ -24,15 +24,20 @@ class CxcProvider with ChangeNotifier {
   List<CxcSoporteModel> get soportes => _soportes;
   bool get isLoadingSoportes => _isLoadingSoportes;
 
-  Future<void> fetchCxcs({int? vendedorId, bool? vencidos}) async {
+  Future<void> fetchCxcs({
+    int? vendedorId,
+    bool? vencidos,
+    String? startDate,
+    String? endDate,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
       final results = await Future.wait([
-        _service.getCxc(vendedorId: vendedorId, vencidos: vencidos),
-        _service.getGroupedByCliente(vendedorId: vendedorId, vencidos: vencidos),
+        _service.getCxc(vendedorId: vendedorId, vencidos: vencidos, startDate: startDate, endDate: endDate),
+        _service.getGroupedByCliente(vendedorId: vendedorId, vencidos: vencidos, startDate: startDate, endDate: endDate),
       ]);
       _cxcs = results[0] as List<CxcModel>;
       _clientesAgrupados = results[1] as List<Map<String, dynamic>>;

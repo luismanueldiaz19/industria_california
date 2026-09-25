@@ -51,17 +51,119 @@ class PdfSecurityService
 
         switch ($pdfToken->tipo) {
             case 'cxc_general':
-                $cxcs = LedhouseCxc::with('cliente')->orderBy('fecha_vencimiento', 'asc')->get();
-                $pdf  = Pdf::loadView('pdf.cxc_general', ['cxcs' => $cxcs]);
+                $query = LedhouseCxc::with('cliente');
+                if (!empty($params['search'])) {
+                    $rawSearch = trim($params['search']);
+                    $search = \App\Helpers\TextNormalizer::normalize($rawSearch);
+                    $query->where(function($q) use ($search) {
+                        $q->whereRaw('LOWER(documento) LIKE ?', ["%{$search}%"])
+                          ->orWhereHas('cliente', function($q2) use ($search) {
+                              $q2->whereRaw('LOWER(nombre) LIKE ?', ["%{$search}%"])
+                                 ->orWhereRaw('LOWER(documento) LIKE ?', ["%{$search}%"]);
+                          });
+                    });
+                }
+
+                $isVencidos = !empty($params['vencidos']) && $params['vencidos'] == '1';
+                if ($isVencidos) {
+                    $query->where('monto_pendiente', '>', 0)
+                          ->where('estado', '!=', 'pagado')
+                          ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
+                }
+
+                if (!empty($params['estado']) && $params['estado'] !== 'Todos' && $params['estado'] !== 'Todos los Estados') {
+                    $query->where('estado', $params['estado']);
+                } else {
+                    $query->where('estado', '!=', 'pagado');
+                }
+
+                if (!empty($params['vendedor_id'])) {
+                    $query->where('vendedor_id', $params['vendedor_id']);
+                }
+
+                if (!empty($params['con_visita']) && $params['con_visita'] == '1') {
+                    $query->whereHas('soportes', function ($q) {
+                        $q->whereNotNull('fecha_visita');
+                    });
+                }
+
+                if (!empty($params['start_date']) && !empty($params['end_date'])) {
+                    $query->whereBetween('fecha_factura', [$params['start_date'], $params['end_date']]);
+                }
+
+                $cxcs = $query->orderBy('fecha_vencimiento', 'asc')->get();
+                $vendedorNombre = null;
+                if (!empty($params['vendedor_id'])) {
+                    $vendedor = User::find($params['vendedor_id']);
+                    if ($vendedor) {
+                        $vendedorNombre = $vendedor->name;
+                    }
+                }
+                $pdf  = Pdf::loadView('pdf.cxc_general', [
+                    'cxcs' => $cxcs,
+                    'search' => $params['search'] ?? null,
+                    'isVencidos' => $isVencidos,
+                    'estado' => $params['estado'] ?? null,
+                    'vendedorNombre' => $vendedorNombre,
+                ]);
                 $filename = 'Reporte_General_CXC.pdf';
                 break;
 
             case 'cxc_agrupado':
-                $clientes = LedhouseCliente::withSum('cxcs as total_facturado', 'monto_factura')
-                    ->withSum('cxcs as total_pendiente', 'monto_pendiente')
+                $queryCxc = function ($q) use ($params) {
+                    if (!empty($params['estado']) && $params['estado'] !== 'Todos' && $params['estado'] !== 'Todos los Estados') {
+                        $q->where('estado', $params['estado']);
+                    } else {
+                        $q->where('estado', '!=', 'pagado');
+                    }
+                    if (!empty($params['vendedor_id'])) {
+                        $q->where('vendedor_id', $params['vendedor_id']);
+                    }
+                    if (!empty($params['vencidos']) && $params['vencidos'] == '1') {
+                        $q->where('monto_pendiente', '>', 0)
+                          ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
+                    }
+                    if (!empty($params['con_visita']) && $params['con_visita'] == '1') {
+                        $q->whereHas('soportes', function ($q2) {
+                            $q2->whereNotNull('fecha_visita');
+                        });
+                    }
+                    if (!empty($params['start_date']) && !empty($params['end_date'])) {
+                        $q->whereBetween('fecha_factura', [$params['start_date'], $params['end_date']]);
+                    }
+                    if (!empty($params['search'])) {
+                        $rawSearch = trim($params['search']);
+                        $search = \App\Helpers\TextNormalizer::normalize($rawSearch);
+                        $q->where(function($q2) use ($search) {
+                            $q2->whereRaw('LOWER(documento) LIKE ?', ["%{$search}%"])
+                               ->orWhereHas('cliente', function($q3) use ($search) {
+                                   $q3->whereRaw('LOWER(nombre) LIKE ?', ["%{$search}%"])
+                                      ->orWhereRaw('LOWER(documento) LIKE ?', ["%{$search}%"]);
+                               });
+                        });
+                    }
+                };
+
+                $clientes = LedhouseCliente::whereHas('cxcs', $queryCxc)
+                    ->withSum(['cxcs as total_facturado' => $queryCxc], 'monto_factura')
+                    ->withSum(['cxcs as total_pendiente' => $queryCxc], 'monto_pendiente')
                     ->get()
                     ->filter(fn($c) => $c->total_pendiente > 0);
-                $pdf = Pdf::loadView('pdf.cxc_agrupado', ['clientes' => $clientes]);
+                
+                $vendedorNombre = null;
+                if (!empty($params['vendedor_id'])) {
+                    $vendedor = User::find($params['vendedor_id']);
+                    if ($vendedor) {
+                        $vendedorNombre = $vendedor->name;
+                    }
+                }
+                
+                $pdf = Pdf::loadView('pdf.cxc_agrupado', [
+                    'clientes' => $clientes,
+                    'search' => $params['search'] ?? null,
+                    'vendedorNombre' => $vendedorNombre,
+                    'isVencidos' => !empty($params['vencidos']) && $params['vencidos'] == '1',
+                ]);
                 $filename = 'Reporte_Agrupado_CXC.pdf';
                 break;
 

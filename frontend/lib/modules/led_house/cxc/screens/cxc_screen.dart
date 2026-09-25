@@ -43,6 +43,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
   int? _selectedVendedorId;
   bool _soloVencidos = false;
   bool _conVisita = false;
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   int _currentPage = 1;
   int _rowsPerPage = 10;
@@ -590,12 +592,17 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
               queryParams.add('vendedor_id=$_selectedVendedorId');
             }
             if (_soloVencidos) queryParams.add('vencidos=1');
-
-            if (_tabController.index == 1) {
-              if (_conVisita) queryParams.add('con_visita=1');
-              if (_statusFilter != 'Todos') {
-                queryParams.add('estado=${Uri.encodeComponent(_statusFilter)}');
-              }
+            if (_conVisita) queryParams.add('con_visita=1');
+            if (_statusFilter != 'Todos') {
+              queryParams.add('estado=${Uri.encodeComponent(_statusFilter)}');
+            }
+            if (_startDate != null && _endDate != null) {
+              queryParams.add(
+                'start_date=${_startDate!.toIso8601String().split('T')[0]}',
+              );
+              queryParams.add(
+                'end_date=${_endDate!.toIso8601String().split('T')[0]}',
+              );
             }
 
             if (queryParams.isNotEmpty) {
@@ -631,7 +638,12 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
           icon: Icons.refresh_rounded,
           tooltip: 'Actualizar',
           onTap: () =>
-              Provider.of<CxcProvider>(context, listen: false).fetchCxcs(),
+              Provider.of<CxcProvider>(context, listen: false).fetchCxcs(
+                vendedorId: _selectedVendedorId,
+                vencidos: _soloVencidos,
+                startDate: _startDate?.toIso8601String().split('T')[0],
+                endDate: _endDate?.toIso8601String().split('T')[0],
+              ),
         ),
         HeaderButton(
           icon: Icons.upload_file_rounded,
@@ -737,6 +749,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
               Provider.of<CxcProvider>(context, listen: false).fetchCxcs(
                 vendedorId: _selectedVendedorId,
                 vencidos: _soloVencidos,
+                startDate: _startDate?.toIso8601String().split('T')[0],
+                endDate: _endDate?.toIso8601String().split('T')[0],
               );
             },
           ),
@@ -857,6 +871,8 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
               Provider.of<CxcProvider>(context, listen: false).fetchCxcs(
                 vendedorId: _selectedVendedorId,
                 vencidos: _soloVencidos,
+                startDate: _startDate?.toIso8601String().split('T')[0],
+                endDate: _endDate?.toIso8601String().split('T')[0],
               );
             },
           ),
@@ -869,7 +885,112 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
               _currentPage = 1;
             }),
           ),
+          const SizedBox(width: 12),
+          _buildDateRangeFilter(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDateRangeFilter() {
+    final hasDate = _startDate != null && _endDate != null;
+    String dateLabel = 'Fechas';
+    if (hasDate) {
+      dateLabel =
+          '${_startDate!.day}/${_startDate!.month} - ${_endDate!.day}/${_endDate!.month}';
+    }
+    return InkWell(
+      onTap: () async {
+        final result = await showDateRangePicker(
+          context: context,
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now().add(const Duration(days: 365)),
+          initialDateRange: hasDate
+              ? DateTimeRange(start: _startDate!, end: _endDate!)
+              : null,
+          builder: (context, child) {
+            return Theme(
+              data: ThemeData.dark().copyWith(
+                colorScheme: const ColorScheme.dark(
+                  primary: AppTheme.ledhouseBlue,
+                  onPrimary: Colors.white,
+                  surface: AppTheme.darkInputColor,
+                  onSurface: Colors.white,
+                ),
+              ),
+              child: child!,
+            );
+          },
+        );
+        if (result != null) {
+          setState(() {
+            _startDate = result.start;
+            _endDate = result.end;
+            _currentPage = 1;
+          });
+          Provider.of<CxcProvider>(context, listen: false).fetchCxcs(
+            vendedorId: _selectedVendedorId,
+            vencidos: _soloVencidos,
+            startDate: _startDate?.toIso8601String().split('T')[0],
+            endDate: _endDate?.toIso8601String().split('T')[0],
+          );
+        }
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: hasDate
+              ? AppTheme.ledhouseBlue.withOpacity(0.15)
+              : Colors.transparent,
+          border: Border.all(
+            color: hasDate ? AppTheme.ledhouseBlue : Colors.grey.shade700,
+            width: 1.5,
+          ),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_today_rounded,
+              size: 14,
+              color: hasDate ? AppTheme.ledhouseBlue : Colors.grey.shade400,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              dateLabel,
+              style: TextStyle(
+                color: hasDate ? Colors.white : Colors.grey.shade300,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (hasDate) ...[
+              const SizedBox(width: 4),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _startDate = null;
+                    _endDate = null;
+                    _currentPage = 1;
+                  });
+                  Provider.of<CxcProvider>(context, listen: false).fetchCxcs(
+                    vendedorId: _selectedVendedorId,
+                    vencidos: _soloVencidos,
+                    startDate: null,
+                    endDate: null,
+                  );
+                },
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
