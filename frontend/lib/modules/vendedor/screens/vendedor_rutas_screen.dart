@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/general_header.dart';
+import 'package:industria_california/modules/vendedor/widgets/vendedor_mobile_wrapper.dart';
 import 'package:provider/provider.dart';
+import '../../../core/themes/app_theme.dart';
 import '../../ruta/providers/ruta_provider.dart';
 import '../../ruta/models/ruta.dart';
 
@@ -14,9 +17,6 @@ class VendedorRutasScreen extends StatefulWidget {
 }
 
 class _VendedorRutasScreenState extends State<VendedorRutasScreen> {
-  static const _bgPrimary = Color(0xFF1E2F4C);
-  static const _accentBlue = Color(0xFF1976D2);
-
   @override
   void initState() {
     super.initState();
@@ -27,70 +27,39 @@ class _VendedorRutasScreenState extends State<VendedorRutasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: Column(
-        children: [
-          _buildHeader(),
-          Expanded(child: _buildBody()),
-        ],
+    return MobileWrapper(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        body: Column(
+          children: [
+            _buildHeader(),
+            Expanded(child: _buildBody()),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHeader() {
-    return Container(
-      color: _bgPrimary,
-      padding: const EdgeInsets.fromLTRB(20, 20, 16, 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Rutas',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          GestureDetector(
-            onTap: _mostrarFormularioCrear,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: _accentBlue,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add, color: Colors.white, size: 18),
-                  SizedBox(width: 4),
-                  Text(
-                    'Nueva',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return GeneralHeader(
+      title: 'Rutas',
+      subtitle: 'Revisar y gestionar rutas',
+      icon: Icons.map_rounded,
+      iconColor: Colors.orange.shade500,
+      gradientColors: [AppTheme.primaryBlue, AppTheme.secondaryBlue],
+      onBackPressed: () => Navigator.pop(context),
+      actions: [
+        HeaderButton(
+          icon: Icons.add,
+          tooltip: 'Nueva',
+          onTap: _mostrarFormularioCrear,
+        ),
+        HeaderButton(
+          icon: Icons.refresh_rounded,
+          tooltip: 'Actualizar',
+          onTap: () => context.read<RutaProvider>().fetchRutas(),
+        ),
+      ],
     );
   }
 
@@ -99,7 +68,7 @@ class _VendedorRutasScreenState extends State<VendedorRutasScreen> {
       builder: (ctx, provider, _) {
         if (provider.isLoading) {
           return const Center(
-            child: CircularProgressIndicator(color: _accentBlue),
+            child: CircularProgressIndicator(color: AppTheme.secondaryBlue),
           );
         }
         if (provider.error != null && provider.rutas.isEmpty) {
@@ -109,7 +78,7 @@ class _VendedorRutasScreenState extends State<VendedorRutasScreen> {
           return _buildEmpty();
         }
         return RefreshIndicator(
-          color: _accentBlue,
+          color: AppTheme.secondaryBlue,
           onRefresh: () => provider.fetchRutas(),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -144,17 +113,21 @@ class _VendedorRutasScreenState extends State<VendedorRutasScreen> {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: _accentBlue.withValues(alpha: 0.1),
+            color: AppTheme.secondaryBlue.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.map_rounded, color: _accentBlue, size: 22),
+          child: const Icon(
+            Icons.map_rounded,
+            color: AppTheme.secondaryBlue,
+            size: 22,
+          ),
         ),
         title: Text(
           ruta.nombre,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
-            color: _bgPrimary,
+            color: AppTheme.primaryBlue,
           ),
         ),
         subtitle: Column(
@@ -224,7 +197,9 @@ class _VendedorRutasScreenState extends State<VendedorRutasScreen> {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => context.read<RutaProvider>().fetchRutas(),
-            style: ElevatedButton.styleFrom(backgroundColor: _accentBlue),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.secondaryBlue,
+            ),
             child: const Text(
               'Reintentar',
               style: TextStyle(color: Colors.white),
@@ -277,7 +252,6 @@ class _RutaFormSheet extends StatefulWidget {
 }
 
 class _RutaFormSheetState extends State<_RutaFormSheet> {
-  static const _accentBlue = Color(0xFF1976D2);
   final _formKey = GlobalKey<FormState>();
   final _nombreCtrl = TextEditingController();
   final _choferCtrl = TextEditingController();
@@ -357,7 +331,7 @@ class _RutaFormSheetState extends State<_RutaFormSheet> {
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _guardar,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _accentBlue,
+                  backgroundColor: AppTheme.secondaryBlue,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -399,7 +373,7 @@ class _RutaFormSheetState extends State<_RutaFormSheet> {
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, size: 20, color: _accentBlue),
+        prefixIcon: Icon(icon, size: 20, color: AppTheme.secondaryBlue),
         filled: true,
         fillColor: Colors.grey.shade50,
         border: OutlineInputBorder(
@@ -412,7 +386,10 @@ class _RutaFormSheetState extends State<_RutaFormSheet> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _accentBlue, width: 1.5),
+          borderSide: const BorderSide(
+            color: AppTheme.secondaryBlue,
+            width: 1.5,
+          ),
         ),
       ),
     );

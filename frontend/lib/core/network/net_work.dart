@@ -1,6 +1,5 @@
-final String host = "http://127.0.0.1:8000";
-
-// final String host = "https://lwadersoft.site";
+// final String host = "http://127.0.0.1:8000";
+final String host = "https://lwadersoft.site";
 
 final logoPath = "assets/logos/logo_california.png";
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../vendedor/widgets/vendedor_mobile_wrapper.dart';
 import '../models/camion_victual.dart';
 import '../providers/camion_victual_provider.dart';
 

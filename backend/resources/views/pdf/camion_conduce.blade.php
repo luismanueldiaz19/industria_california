@@ -92,7 +92,7 @@
                     if (!isset($totalesProductos[$idProd])) {
                         $totalesProductos[$idProd] = [
                             'codigo' => $prod->codigo,
-                            'descripcion' => $prod->descripcion,
+                            'descripcion' => $prod->nombre_completo ?? $prod->descripcion,
                             'unidad' => $prod->unidad,
                             'cantidad' => 0,
                         ];

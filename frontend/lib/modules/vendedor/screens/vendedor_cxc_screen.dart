@@ -206,54 +206,30 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeStyle = Theme.of(context).textTheme;
-
     return Scaffold(
-      backgroundColor: AppTheme.bgColor,
-
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Cuentas por Cobrar (CXC)',
-              style: themeStyle.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            if (_totalRecords > 0)
-              Text(
-                '$_totalRecords registros',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.white70,
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-          ],
-        ),
-        backgroundColor: AppTheme.primaryBlue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          HeaderButton(
-            icon: Icons.picture_as_pdf_rounded,
-            tooltip: 'Generar PDF',
-            color: Colors.redAccent,
-            onTap: _openPdf,
-          ),
-          HeaderButton(
-            icon: Icons.refresh_rounded,
-            tooltip: 'Actualizar',
-            onTap: _load,
-          ),
-          const SizedBox(width: 10),
-        ],
-      ),
-
       body: Column(
         children: [
+          GeneralHeader(
+            title: 'Cuentas por Cobrar \n$_totalRecords registros',
+            icon: Icons.money,
+            iconColor: Colors.green,
+            gradientColors: [AppTheme.primaryBlue, AppTheme.secondaryBlue],
+
+            actions: [
+              if (_cxcs.isNotEmpty)
+                HeaderButton(
+                  icon: Icons.picture_as_pdf_rounded,
+                  tooltip: 'Generar PDF',
+                  color: Colors.redAccent,
+                  onTap: _openPdf,
+                ),
+              HeaderButton(
+                icon: Icons.refresh_rounded,
+                tooltip: 'Actualizar',
+                onTap: _load,
+              ),
+            ],
+          ),
           Material(
             color: Colors.white,
             child: Padding(

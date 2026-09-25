@@ -52,7 +52,9 @@ class CamionVictualCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,##0.00', 'es');
-    final actualMinimo = camion.minimoSalida;
+    final actualMinimo = (camion.minimoSalida > 5000)
+        ? camion.minimoSalida
+        : (montoMinimo > 0 ? montoMinimo : 500000.0);
     final progreso = actualMinimo > 0
         ? (camion.montoTotal / actualMinimo).clamp(0.0, 1.0)
         : 1.0;

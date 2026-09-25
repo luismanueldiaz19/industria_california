@@ -72,7 +72,8 @@ class VendedorDashboardScreen extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => const VendedorPerfilScreen(),
+                                    builder: (_) =>
+                                        const VendedorPerfilScreen(),
                                   ),
                                 );
                               }

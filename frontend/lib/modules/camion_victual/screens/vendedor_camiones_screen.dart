@@ -32,49 +32,31 @@ class _VendedorCamionesScreenState extends State<VendedorCamionesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.bgColor,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Mis Camiones Victuales',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
-            ),
-            Consumer<CamionVictualProvider>(
-              builder: (_, p, __) {
-                final total = p.camiones.length;
-                return total > 0
-                    ? Text(
-                        '$total camiones activos',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      )
-                    : const SizedBox.shrink();
-              },
-            ),
-          ],
-        ),
-        backgroundColor: AppTheme.primaryBlue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          HeaderButton(
-            icon: Icons.refresh_rounded,
-            tooltip: 'Actualizar',
-            onTap: _refrescar,
-          ),
-          const SizedBox(width: 10),
-        ],
-      ),
+
       body: Column(
         children: [
+          Consumer<CamionVictualProvider>(
+            builder: (context, provider, _) {
+              final total = provider.camiones.length;
+              return GeneralHeader(
+                title: 'Mis Camiones Victuales',
+                subtitle: total > 0 ? '$total camiones activos' : null,
+                icon: Icons.local_shipping,
+                iconColor: Colors.blue,
+                gradientColors: const [
+                  AppTheme.primaryBlue,
+                  AppTheme.secondaryBlue,
+                ],
+                actions: [
+                  HeaderButton(
+                    icon: Icons.refresh_rounded,
+                    tooltip: 'Actualizar',
+                    onTap: _refrescar,
+                  ),
+                ],
+              );
+            },
+          ),
           // ── Barra de estados (leyenda) ─────────────────────────────
           Material(
             color: Colors.white,
@@ -103,7 +85,7 @@ class _VendedorCamionesScreenState extends State<VendedorCamionesScreen> {
           // ── Contenido principal ────────────────────────────────────
           Expanded(
             child: Consumer<CamionVictualProvider>(
-              builder: (_, provider, __) {
+              builder: (context, provider, _) {
                 if (provider.isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -198,11 +180,7 @@ class _VendedorCamionesScreenState extends State<VendedorCamionesScreen> {
                     padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
                     children: [
                       if (vacios.isNotEmpty) ...[
-                        _sectionLabel(
-                          'Vacíos',
-                          vacios.length,
-                          Colors.blueGrey,
-                        ),
+                        _sectionLabel('Vacíos', vacios.length, Colors.blueGrey),
                         const SizedBox(height: 6),
                         ...vacios.map(
                           (c) => CamionVictualCard(
@@ -270,7 +248,7 @@ class _VendedorCamionesScreenState extends State<VendedorCamionesScreen> {
       ), // Column (body)
       // Totales al pie — similar al footer de CXC
       bottomSheet: Consumer<CamionVictualProvider>(
-        builder: (_, p, __) {
+        builder: (context, p, _) {
           if (p.camiones.isEmpty || p.isLoading) return const SizedBox.shrink();
           final totalMonto = p.camiones.fold<double>(
             0,

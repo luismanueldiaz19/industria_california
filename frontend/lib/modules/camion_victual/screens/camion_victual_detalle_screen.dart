@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../vendedor/widgets/vendedor_mobile_wrapper.dart';
 import '../models/camion_victual.dart';
 import '../providers/camion_victual_provider.dart';
 import '../widgets/pedido_en_camion_tile.dart';
@@ -28,7 +29,6 @@ class CamionVictualDetalleScreen extends StatefulWidget {
 
 class _CamionVictualDetalleScreenState
     extends State<CamionVictualDetalleScreen> {
-  static const _bgPrimary = AppTheme.bgColor;
   static const _azul = Color(0xFF1976D2);
   final _fmt = NumberFormat('#,##0.00', 'es');
 
@@ -68,12 +68,13 @@ class _CamionVictualDetalleScreenState
     _sincronizarLocal();
   }
 
+  // MobileWrapper
   void _abrirAgregarPedido() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      constraints: const BoxConstraints(maxWidth: 600),
+      constraints: const BoxConstraints(maxWidth: 450),
       builder: (_) => ChangeNotifierProvider.value(
         value: context.read<CamionVictualProvider>(),
         child: AgregarPedidoSheet(camionId: widget.camionId),
@@ -286,125 +287,88 @@ class _CamionVictualDetalleScreenState
             ? (camion.montoTotal / provider.montoMinimo).clamp(0.0, 1.0)
             : 0.0;
 
-        return Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Scaffold(
-              backgroundColor: _bgPrimary,
-              appBar: AppBar(
-                backgroundColor: AppTheme.primaryBlue,
-                elevation: 0,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      camion.nombre,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (camion.choferNombre != null)
-                      Text(
-                        'Chofer: ${camion.choferNombre}',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                        ),
-                      ),
+        return MobileWrapper(
+          child: Scaffold(
+            body: Column(
+              children: [
+                // ── Encabezado general del camión ───────────────────
+                GeneralHeader(
+                  title: camion.nombre,
+                  icon: Icons.local_shipping_outlined,
+                  onBackPressed: () => Navigator.pop(context),
+                  gradientColors: [
+                    AppTheme.primaryBlue,
+                    AppTheme.secondaryBlue,
                   ],
-                ),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.print, color: Colors.white),
-                    tooltip: 'Imprimir Conduce',
-                    onPressed: _imprimirConduce,
-                  ),
-                  // Botón de reordenar (solo en modo armando)
-                  if (puedeEditar && _pedidosLocales.isNotEmpty)
-                    TextButton.icon(
-                      onPressed: () {
-                        if (_modoReorden) {
-                          _guardarReorden();
-                        } else {
-                          setState(() => _modoReorden = true);
-                        }
-                      },
-                      icon: Icon(
-                        _modoReorden ? Icons.save_outlined : Icons.reorder,
+                  actions: [
+                    HeaderButton(
+                      icon: Icons.print,
+                      tooltip: 'Imprimir Conduce',
+                      onTap: _imprimirConduce,
+                    ),
+                    if (puedeEditar && _pedidosLocales.isNotEmpty)
+                      HeaderButton(
+                        icon: _modoReorden
+                            ? Icons.save_outlined
+                            : Icons.reorder,
+                        tooltip: _modoReorden ? 'Guardar' : 'Ordenar',
                         color: _modoReorden
                             ? const Color(0xFF4CAF50)
                             : Colors.white70,
-                        size: 18,
+                        onTap: () {
+                          if (_modoReorden) {
+                            _guardarReorden();
+                          } else {
+                            setState(() => _modoReorden = true);
+                          }
+                        },
                       ),
-                      label: Text(
-                        _modoReorden ? 'Guardar' : 'Ordenar',
-                        style: TextStyle(
-                          color: _modoReorden
-                              ? const Color(0xFF4CAF50)
-                              : Colors.white70,
-                          fontSize: 13,
-                        ),
-                      ),
+                    HeaderButton(
+                      icon: Icons.refresh_rounded,
+                      tooltip: 'Actualizar',
+                      onTap: _refrescar,
                     ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                    child: Center(
-                      child: HeaderButton(
-                        icon: Icons.refresh_rounded,
-                        tooltip: 'Actualizar',
-                        onTap: _refrescar,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              body: Column(
-                children: [
-                  // ── Panel de estado del camión ───────────────────
-                  _buildInfoPanel(camion, provider.montoMinimo, progreso),
+                  ],
+                ),
 
-                  // ── Lista de pedidos ──────────────────────────────
-                  Expanded(
-                    child: provider.isActualizando
-                        ? const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircularProgressIndicator(color: _azul),
-                                SizedBox(height: 12),
-                                Text(
-                                  'Actualizando...',
-                                  style: TextStyle(color: Colors.black54),
-                                ),
-                              ],
-                            ),
-                          )
-                        : _buildPedidosList(camion, puedeEditar),
-                  ),
-                ],
-              ),
-              // FAB: Agregar pedido (solo cuando el camión está en 'armando')
-              floatingActionButton: puedeEditar && !_modoReorden
-                  ? FloatingActionButton.extended(
-                      onPressed: _abrirAgregarPedido,
-                      backgroundColor: _azul,
-                      icon: const Icon(
-                        Icons.add_shopping_cart,
-                        color: Colors.white,
-                      ),
-                      label: const Text(
-                        'Agregar Pedido',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    )
-                  : null,
+                // ── Panel de estado del camión ───────────────────
+                _buildInfoPanel(camion, provider.montoMinimo, progreso),
+
+                // ── Lista de pedidos ──────────────────────────────
+                Expanded(
+                  child: provider.isActualizando
+                      ? const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(color: _azul),
+                              SizedBox(height: 12),
+                              Text(
+                                'Actualizando...',
+                                style: TextStyle(color: Colors.black54),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _buildPedidosList(camion, puedeEditar),
+                ),
+              ],
             ),
+            // FAB: Agregar pedido (solo cuando el camión está en 'armando')
+            floatingActionButton: puedeEditar && !_modoReorden
+                ? FloatingActionButton.extended(
+                    onPressed: _abrirAgregarPedido,
+                    backgroundColor: _azul,
+                    icon: const Icon(
+                      Icons.add_shopping_cart,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      'Agregar Pedido',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  )
+                : null,
           ),
         );
       },

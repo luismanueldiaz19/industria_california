@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/vendedor_mobile_wrapper.dart';
 import 'vendedor_dashboard_screen.dart';
 import 'vendedor_cxc_screen.dart';
 import 'vendedor_actividad_screen.dart';
@@ -27,73 +28,56 @@ class _VendedorMainLayoutState extends State<VendedorMainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    // Estructura que centra y limita el ancho para que parezca una app móvil si se abre en pantallas grandes
-    return SafeArea(
-      child: Container(
-        color: const Color(0xFF121212), // Fondo oscuro fuera del área móvil
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: ClipRRect(
-              // Redondeamos los bordes para dar apariencia de dispositivo móvil si está en escritorio
-              borderRadius: BorderRadius.circular(
-                MediaQuery.of(context).size.width > 500 ? 20 : 0,
-              ),
-              child: Scaffold(
-                backgroundColor: const Color(0xFFF5F7FA), // Gris claro de fondo
-                body: SafeArea(child: _getScreens()[_currentIndex]),
-                bottomNavigationBar: BottomNavigationBar(
-                  currentIndex: _currentIndex,
-                  onTap: (index) {
-                    setState(() {
-                      _currentIndex = index;
-                    });
-                  },
-                  type: BottomNavigationBarType.fixed,
-                  selectedItemColor: const Color(
-                    0xFF1976D2,
-                  ), // Azul estilo VentaFlow
-                  unselectedItemColor: Colors.grey.shade500,
-                  showUnselectedLabels: true,
-                  selectedLabelStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontWeight: FontWeight.normal,
-                    fontSize: 12,
-                  ),
-                  items: const [
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.home_outlined),
-                      activeIcon: Icon(Icons.home),
-                      label: 'Inicio',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.receipt_long_outlined),
-                      activeIcon: Icon(Icons.receipt_long),
-                      label: 'CXC',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.inventory_2_outlined),
-                      activeIcon: Icon(Icons.inventory_2),
-                      label: 'Inventario',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.local_shipping_outlined),
-                      activeIcon: Icon(Icons.local_shipping),
-                      label: 'Camiones',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.campaign_outlined),
-                      activeIcon: Icon(Icons.campaign),
-                      label: 'Alertas',
-                    ),
-                  ],
-                ),
-              ),
-            ),
+    return MobileWrapper(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA), // Gris claro de fondo
+        body: SafeArea(child: _getScreens()[_currentIndex]),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: const Color(0xFF1976D2), // Azul estilo VentaFlow
+          unselectedItemColor: Colors.grey.shade500,
+          showUnselectedLabels: true,
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
           ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.normal,
+            fontSize: 12,
+          ),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Inicio',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.receipt_long_outlined),
+              activeIcon: Icon(Icons.receipt_long),
+              label: 'CXC',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.inventory_2_outlined),
+              activeIcon: Icon(Icons.inventory_2),
+              label: 'Inventario',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.local_shipping_outlined),
+              activeIcon: Icon(Icons.local_shipping),
+              label: 'Camiones',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.campaign_outlined),
+              activeIcon: Icon(Icons.campaign),
+              label: 'Alertas',
+            ),
+          ],
         ),
       ),
     );

@@ -43,7 +43,7 @@ class CamionVictual {
           ? (json['estado']['value'] ?? json['estado'].toString())
           : (json['estado'] ?? 'armando'),
       montoTotal: double.tryParse(json['monto_total']?.toString() ?? '0') ?? 0,
-      minimoSalida: double.tryParse(json['minimo_salida']?.toString() ?? '5000') ?? 5000,
+      minimoSalida: double.tryParse(json['minimo_salida']?.toString() ?? '500000') ?? 500000,
       fechaCierre: json['fecha_cierre'] != null
           ? DateTime.tryParse(json['fecha_cierre'])
           : null,

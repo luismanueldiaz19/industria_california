@@ -23,7 +23,7 @@ class CamionVictualService
             ->where('clave', 'camion_victual_monto_minimo')
             ->value('valor');
 
-        return (float) ($config ?? 300000.00);
+        return (float) ($config ?? 500000.00);
     }
 
     /**
@@ -46,7 +46,7 @@ class CamionVictualService
             'slot_numero' => $slotDisponible,
             'estado'      => EstadoCamion::Vacio,
             'monto_total' => 0,
-            'minimo_salida' => $datos['minimo_salida'] ?? 5000.00,
+            'minimo_salida' => $datos['minimo_salida'] ?? $this->getMontoMinimo(),
             'notas'       => $datos['notas'] ?? null,
         ]);
     }
@@ -57,7 +57,14 @@ class CamionVictualService
     public function actualizar(CamionVictual $camion, array $datos): CamionVictual
     {
         if (isset($datos['estado'])) {
-            $datos['estado'] = EstadoCamion::from($datos['estado']);
+            $nuevoEstado = EstadoCamion::from($datos['estado']);
+            if ($nuevoEstado === EstadoCamion::Listo) {
+                $minimo = ($camion->minimo_salida > 5000.0) ? (float)$camion->minimo_salida : $this->getMontoMinimo();
+                if ((float)$camion->monto_total < $minimo) {
+                    throw new \Exception("No se puede marcar como 'listo'. El monto cargado (RD$ " . number_format($camion->monto_total, 2) . ") no alcanza el mínimo requerido (RD$ " . number_format($minimo, 2) . ").");
+                }
+            }
+            $datos['estado'] = $nuevoEstado;
         }
 
         $camion->update($datos);

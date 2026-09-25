@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../produccion/models/orden_produccion.dart';
 import '../../produccion/providers/orden_produccion_provider.dart';
+import '../widgets/vendedor_mobile_wrapper.dart';
 
 class VendedorOrdenesProduccionScreen extends StatefulWidget {
   const VendedorOrdenesProduccionScreen({super.key});
@@ -48,67 +49,69 @@ class _VendedorOrdenesProduccionScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: const Text(
-          'Órdenes en Producción',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    return MobileWrapper(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: AppBar(
+          title: const Text(
+            'Órdenes en Producción',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: const Color(0xFF1E2F4C),
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
-        backgroundColor: const Color(0xFF1E2F4C),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Consumer<OrdenProduccionProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading && provider.ordenes.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        body: Consumer<OrdenProduccionProvider>(
+          builder: (context, provider, child) {
+            if (provider.isLoading && provider.ordenes.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (provider.error != null && provider.ordenes.isEmpty) {
-            return Center(
-              child: Text(
-                'Error: ${provider.error}',
-                style: const TextStyle(color: Colors.red),
+            if (provider.error != null && provider.ordenes.isEmpty) {
+              return Center(
+                child: Text(
+                  'Error: ${provider.error}',
+                  style: const TextStyle(color: Colors.red),
+                ),
+              );
+            }
+
+            final misOrdenes = provider.ordenes;
+
+            if (misOrdenes.isEmpty) {
+              return const Center(
+                child: Text('No has enviado órdenes a producción.'),
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                final authProvider = context.read<AuthProvider>();
+                await provider.fetchOrdenes(
+                  refresh: true,
+                  vendedorId: authProvider.id,
+                );
+              },
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(16),
+                itemCount: misOrdenes.length + (provider.hasMore ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == misOrdenes.length) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+
+                  final orden = misOrdenes[index];
+                  return _buildOrdenCard(orden);
+                },
               ),
             );
-          }
-
-          final misOrdenes = provider.ordenes;
-
-          if (misOrdenes.isEmpty) {
-            return const Center(
-              child: Text('No has enviado órdenes a producción.'),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              final authProvider = context.read<AuthProvider>();
-              await provider.fetchOrdenes(
-                refresh: true,
-                vendedorId: authProvider.id,
-              );
-            },
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: misOrdenes.length + (provider.hasMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == misOrdenes.length) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                }
-
-                final orden = misOrdenes[index];
-                return _buildOrdenCard(orden);
-              },
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:industria_california/core/themes/app_theme.dart';
 import 'package:provider/provider.dart';
 import '../../pedido/models/pedido.dart';
 import '../providers/pedido_form_provider.dart';
+import '../widgets/vendedor_mobile_wrapper.dart';
 import 'pedido/vendedor_pedido_info_screen.dart';
 import 'pedido/vendedor_pedido_catalogo_screen.dart';
 import 'pedido/vendedor_pedido_revision_screen.dart';
@@ -151,22 +152,7 @@ class _VendedorPedidoFlowContentState
       ),
     );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(
-                MediaQuery.of(context).size.width > 500 ? 20 : 0,
-              ),
-              child: scaffold,
-            ),
-          ),
-        ),
-      ),
-    );
+    return MobileWrapper(child: scaffold);
   }
 }
 

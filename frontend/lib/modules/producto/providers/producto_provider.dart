@@ -14,7 +14,7 @@ class ProductoProvider with ChangeNotifier {
   int _currentPage = 1;
   int _lastPage = 1;
   int _total = 0;
-  int _perPage = 5000; // Cargar todo el catálogo de una vez para el POS
+  final int _perPage = 5000; // Cargar todo el catálogo de una vez para el POS
 
   // Filtros activos
   String _search = '';

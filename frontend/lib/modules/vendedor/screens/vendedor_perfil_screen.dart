@@ -2,10 +2,12 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import '../../../core/widgets/general_header.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/services/profile_service.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../auth/screens/login_screen.dart';
+import '../widgets/vendedor_mobile_wrapper.dart';
 
 class VendedorPerfilScreen extends StatefulWidget {
   const VendedorPerfilScreen({super.key});
@@ -178,45 +180,48 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final themeStyle = Theme.of(context).textTheme;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: Text(
-          'Mi Perfil',
-          style: themeStyle.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: AppTheme.primaryBlue,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(12),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 4),
-                    _buildAvatarSection(authProvider),
-                    const SizedBox(height: 12),
-                    _buildInfoSection(),
-                    const SizedBox(height: 10),
-                    _buildSecuritySection(),
-                    const SizedBox(height: 16),
-                    _buildActionButtons(context),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
+    return MobileWrapper(
+      child: Scaffold(
+        body: Column(
+          children: [
+            GeneralHeader(
+              title: 'Mi Perfil',
+              icon: Icons.person,
+              iconColor: Colors.purple.shade500,
+              gradientColors: [AppTheme.primaryBlue, AppTheme.secondaryBlue],
+              onBackPressed: () => Navigator.pop(context),
             ),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(12),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 4),
+                            _buildAvatarSection(authProvider),
+                            const SizedBox(height: 12),
+                            _buildInfoSection(),
+                            const SizedBox(height: 10),
+                            _buildSecuritySection(),
+                            const SizedBox(height: 16),
+                            _buildActionButtons(context),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildAvatarSection(AuthProvider authProvider) {
+    // gradientColors: [AppTheme.primaryBlue, AppTheme.secondaryBlue],
     return Center(
       child: GestureDetector(
         onTap: _pickImage,
@@ -228,6 +233,9 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
+                gradient: LinearGradient(
+                  colors: [AppTheme.primaryBlue, AppTheme.secondaryBlue],
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.1),
@@ -263,9 +271,11 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryBlue,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
+                  gradient: LinearGradient(
+                    colors: [AppTheme.primaryBlue, AppTheme.secondaryBlue],
+                  ),
                 ),
                 child: const Icon(
                   Icons.camera_alt,

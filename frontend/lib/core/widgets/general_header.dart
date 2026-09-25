@@ -8,6 +8,9 @@ class GeneralHeader extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final List<Widget>? actions;
+  final List<Color>? gradientColors;
+  final bool showBackButton;
+  final VoidCallback? onBackPressed;
 
   const GeneralHeader({
     super.key,
@@ -16,21 +19,41 @@ class GeneralHeader extends StatelessWidget {
     required this.icon,
     this.iconColor = AppTheme.ledhouseBlue,
     this.actions,
+    this.gradientColors,
+    this.showBackButton = false,
+    this.onBackPressed,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorsToUse =
+        gradientColors ??
+        const [AppTheme.primaryColor, AppTheme.secondaryColor];
+
+    final shouldShowBack = showBackButton || onBackPressed != null;
+
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+          colors: colorsToUse,
         ),
       ),
       padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
       child: Row(
         children: [
+          if (shouldShowBack) ...[
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed:
+                  onBackPressed ?? () => Navigator.of(context).maybePop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              tooltip: 'Volver',
+            ),
+            const SizedBox(width: 12),
+          ],
           Container(
             width: 44,
             height: 44,
@@ -110,7 +133,7 @@ class GeneralHeader extends StatelessWidget {
               ],
             ),
           ),
-          if (actions != null) ...actions!,
+          ...?actions,
         ],
       ),
     );

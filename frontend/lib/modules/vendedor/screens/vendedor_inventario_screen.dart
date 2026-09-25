@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/themes/app_theme.dart';
+import '../../../core/widgets/general_header.dart';
 import '../../producto/providers/producto_provider.dart';
 import '../../producto/providers/categoria_provider.dart';
 import '../../producto/models/producto.dart';
@@ -83,19 +85,44 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      color: _primaryBlue,
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: const Text(
-        'Catálogo de Productos',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+    return GeneralHeader(
+      title: 'Catálogo de Productos',
+      icon: Icons.inventory,
+      iconColor: Colors.blue,
+      gradientColors: [AppTheme.primaryBlue, AppTheme.secondaryBlue],
+      // onBackPressed: () {
+      //   Navigator.pop(context);
+      // },
+      actions: [
+        HeaderButton(
+          icon: Icons.refresh_rounded,
+          tooltip: 'Actualizar',
+          onTap: () {
+            context.read<ProductoProvider>().fetchProductos();
+            context.read<CategoriaProvider>().fetchCategorias();
+            setState(() {
+              _searchQuery = '';
+              _selectedCategoriaId = null;
+              _searchController.clear();
+            });
+          },
         ),
-      ),
+      ],
     );
+
+    // Container(
+    //   color: _primaryBlue,
+    //   width: double.infinity,
+    //   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    //   child: const Text(
+    //     'Catálogo de Productos',
+    //     style: TextStyle(
+    //       color: Colors.white,
+    //       fontSize: 18,
+    //       fontWeight: FontWeight.bold,
+    //     ),
+    //   ),
+    // );
   }
 
   Widget _buildTopBar() {
