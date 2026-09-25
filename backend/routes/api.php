@@ -43,8 +43,6 @@ Route::get('/user', function (Request $request) {
 
 Route::prefix('v1')->group(function () {
 
-    // Ruta de token también bajo v1
-    Route::get('d/{token}', [PdfViewerController::class, 'ver']);
 
     // Rutas Públicas
     Route::post('login', [AuthController::class, 'login']);
@@ -96,7 +94,7 @@ Route::prefix('v1')->group(function () {
 
         // ── MÓDULO INDUSTRIA CALIFORNIA ───────────────────────
         foreach (['industria-california', 'ledhouse'] as $prefix) {
-            Route::prefix($prefix)->group(function () {
+            Route::prefix($prefix)->group(function () use ($prefix) {
                 Route::get('/estado-resultado/matriz', [LedhouseEstadoResultadoController::class, 'matriz']);
                 Route::get('/estado-resultado/matriz-pdf-url', [LedhouseEstadoResultadoController::class, 'getMatrizPdfUrl']);
                 Route::get('/estado-resultado/pdf-url', [LedhouseEstadoResultadoController::class, 'getEstadoResultadoPdfUrl']);
@@ -108,7 +106,14 @@ Route::prefix('v1')->group(function () {
                 Route::post('/estado-resultado/import', [LedhouseEstadoResultadoController::class, 'import']);
 
                 // CXP
-                Route::apiResource('cxp', LedhouseCxpController::class);
+                $routePrefix = str_replace('-', '_', $prefix);
+                Route::apiResource('cxp', LedhouseCxpController::class)->names([
+                    'index'   => "cxp.{$routePrefix}.index",
+                    'store'   => "cxp.{$routePrefix}.store",
+                    'show'    => "cxp.{$routePrefix}.show",
+                    'update'  => "cxp.{$routePrefix}.update",
+                    'destroy' => "cxp.{$routePrefix}.destroy",
+                ]);
 
                 // CXC
                 Route::get('cxc/reporte-general-pdf-url', [LedhouseCxcController::class, 'getReporteGeneralPdfUrl']);
