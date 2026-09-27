@@ -298,6 +298,15 @@ class VehiculoController extends Controller
         return response()->json(['url' => $url]);
     }
 
+    public function getGastosEstadisticasPdfUrl(Request $request): JsonResponse
+    {
+        $params = $request->only(['year']);
+        
+        $url = PdfSecurityService::generarUrl('gastos_estadisticas_flota', $params, Auth::id(), 30);
+
+        return response()->json(['url' => $url]);
+    }
+
     /**
      * Estadísticas de gastos por año para gráficos
      */

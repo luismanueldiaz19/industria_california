@@ -765,8 +765,8 @@ class LedhouseCxcController extends Controller
             });
         }
 
-        if ($request->boolean('paginate')) {
-            $perPage = $request->input('per_page', 20);
+        if ($request->boolean('paginate') || $request->has('page') || $request->has('limit')) {
+            $perPage = $request->input('limit', $request->input('per_page', 20));
             return response()->json($query->paginate($perPage));
         }
 
@@ -932,6 +932,22 @@ class LedhouseCxcController extends Controller
                 $cxc->update($updates);
             }
         }
+
+        return response()->json($alerta->load(['vendedor', 'revisador']));
+    }
+
+    /**
+     * Contabilidad actualiza el concepto (tipo) de una alerta.
+     */
+    public function updateTipoAlerta(Request $request, LedhouseCxcAlerta $alerta)
+    {
+        $validated = $request->validate([
+            'tipo' => 'required|string|max:50',
+        ]);
+
+        $alerta->update([
+            'tipo' => $validated['tipo'],
+        ]);
 
         return response()->json($alerta->load(['vendedor', 'revisador']));
     }

@@ -257,6 +257,20 @@ class GastoVehiculoProvider with ChangeNotifier {
     }
   }
 
+  Future<void> generarPdfEstadisticas(int year) async {
+    try {
+      final urlStr = await _service.getGastosEstadisticasPdfUrl(year);
+      final url = Uri.parse(urlStr);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        debugPrint("Could not launch $urlStr");
+      }
+    } catch (e) {
+      debugPrint("Error generando PDF de estadísticas: $e");
+    }
+  }
+
   Future<bool> createGasto(int vehiculoId, Map<String, dynamic> data) async {
     isLoading = true;
     error = null;

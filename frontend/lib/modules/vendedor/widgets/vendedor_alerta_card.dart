@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/constants.dart';
+import '../../../core/utils/alerta_utils.dart';
 import '../models/vendedor_alerta_model.dart';
 
 class CxcEvidencia {
@@ -185,7 +186,7 @@ class VendedorAlertaCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Tipo: ${tipoTexto.toString().replaceAll('_', ' ').toUpperCase()}',
+                            'Tipo: ${AlertaUtils.getTipoLabel(tipoTexto).toUpperCase()}',
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,

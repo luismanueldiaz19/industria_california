@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/alerta_utils.dart';
 import '../services/vendedor_cxc_service.dart';
 
 class VendedorCxcDetalleScreen extends StatefulWidget {
@@ -349,83 +350,20 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                           children: [
                             DropdownButtonFormField<String>(
                               isExpanded: true,
-                              value: _tipoAlerta,
+                              initialValue: _tipoAlerta,
                               decoration: _inputDeco(
                                 'Tipo de alerta',
                                 Icons.label_outline,
                               ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'pago_recibido',
+                              items: AlertaUtils.tiposDeAlerta.map((tipo) {
+                                return DropdownMenuItem(
+                                  value: tipo,
                                   child: Text(
-                                    '💰 Pago Recibido',
+                                    AlertaUtils.getTipoLabel(tipo),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'informacion',
-                                  child: Text(
-                                    '📋 Información',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'consulta',
-                                  child: Text(
-                                    '❓ Consulta',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'credito',
-                                  child: Text(
-                                    '📄 Nota de Crédito',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'debito',
-                                  child: Text(
-                                    '🧾 Nota de Débito',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'devolucion',
-                                  child: Text(
-                                    '🔄 Devolución',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'retencion',
-                                  child: Text(
-                                    '📑 Carta de Retención',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'diferencia',
-                                  child: Text(
-                                    '⚖️ Diferencia de precio',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'mer_no_entregada',
-                                  child: Text(
-                                    '📦 Mercancía no entregada',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'anular',
-                                  child: Text(
-                                    '❌ Anular Factura',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
+                                );
+                              }).toList(),
                               onChanged: (v) => setState(() {
                                 _tipoAlerta = v!;
                                 if (v != 'pago_recibido') {
@@ -439,29 +377,19 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: DropdownButtonFormField<String>(
                                   isExpanded: true,
-                                  value: _formaPago,
+                                  initialValue: _formaPago,
                                   decoration: _inputDeco(
                                     'Forma de pago (Opcional)',
                                     Icons.account_balance_wallet_outlined,
                                   ),
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: 'Efectivo',
-                                      child: Text('💵 Efectivo'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'Transferencia',
-                                      child: Text('🏦 Transferencia'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'Cheque',
-                                      child: Text('📝 Cheque'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'Otro',
-                                      child: Text('📌 Otro'),
-                                    ),
-                                  ],
+                                  items: AlertaUtils.formasDePago.map((forma) {
+                                    return DropdownMenuItem(
+                                      value: forma,
+                                      child: Text(
+                                        AlertaUtils.getFormaPagoLabel(forma),
+                                      ),
+                                    );
+                                  }).toList(),
                                   onChanged: (v) {
                                     setState(() => _formaPago = v);
                                     if (v != null) {
@@ -488,17 +416,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                                   },
                                 ),
                               ),
-                            if ([
-                              'pago_recibido',
-                              'credito',
-                              'debito',
-                              'devolucion',
-                              'retencion',
-                              'diferencia',
-                              'mer_no_entregada',
-                              'anular',
-                              'informacion',
-                            ].contains(_tipoAlerta))
+                            if (AlertaUtils.requiereMonto(_tipoAlerta))
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: TextFormField(

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/utils/alerta_utils.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../../core/utils/constants.dart';
 import '../../../core/themes/app_theme.dart';
 import '../services/vendedor_cxc_service.dart';
 import '../widgets/vendedor_alerta_card.dart';
@@ -39,19 +39,7 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
 
-  final List<String> _tiposAlerta = [
-    'todos',
-    'pago_recibido',
-    'credito',
-    'debito',
-    'retencion',
-    'devolucion',
-    'mer_no_entregada',
-    'anular',
-    'diferencia',
-    'informacion',
-    'consulta',
-  ];
+  final List<String> _tiposAlerta = ['todos', ...AlertaUtils.tiposDeAlerta];
 
   @override
   void initState() {
@@ -147,9 +135,9 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
 
   void _descargarPdf() async {
     final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Generando PDF...')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Generando PDF...')));
 
     try {
       final urlStr = await _service.obtenerUrlPdfMisAlertas(
@@ -157,8 +145,12 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
         search: _searchController.text.trim(),
         estado: _estadoFiltro,
         tipo: _tipoFiltro,
-        startDate: _startDate != null ? DateFormat('yyyy-MM-dd').format(_startDate!) : null,
-        endDate: _endDate != null ? DateFormat('yyyy-MM-dd').format(_endDate!) : null,
+        startDate: _startDate != null
+            ? DateFormat('yyyy-MM-dd').format(_startDate!)
+            : null,
+        endDate: _endDate != null
+            ? DateFormat('yyyy-MM-dd').format(_endDate!)
+            : null,
       );
 
       final uri = Uri.parse(urlStr);
@@ -169,9 +161,9 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al generar PDF: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al generar PDF: $e')));
       }
     }
   }
@@ -286,7 +278,9 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
                       return DropdownMenuItem(
                         value: t,
                         child: Text(
-                          t.replaceAll('_', ' ').toUpperCase(),
+                          t == 'todos'
+                              ? 'TODOS'
+                              : AlertaUtils.getTipoLabel(t).toUpperCase(),
                           style: const TextStyle(fontSize: 13),
                         ),
                       );

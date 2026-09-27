@@ -147,6 +147,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('cxc/alertas', [LedhouseCxcController::class, 'getAlertas']);
                 Route::post('cxc/{cxc}/alerta', [LedhouseCxcController::class, 'addAlerta']);
                 Route::patch('cxc/alertas/{alerta}/resolver', [LedhouseCxcController::class, 'resolverAlerta']);
+                Route::patch('cxc/alertas/{alerta}/tipo', [LedhouseCxcController::class, 'updateTipoAlerta']);
                 Route::delete('cxc/alertas/{alerta}', [LedhouseCxcController::class, 'destroyAlerta']);
                 // Evidencias (archivos PDF/JPG)
                 Route::post('cxc/{cxc}/evidencia', [LedhouseCxcController::class, 'uploadEvidencia']);
@@ -233,6 +234,7 @@ Route::prefix('v1')->group(function () {
                 // Gastos y Combustible
                 Route::get('vehiculos/gastos/todos', [VehiculoController::class, 'gastosTodos']);
                 Route::get('vehiculos/gastos/pdf-url', [VehiculoController::class, 'getGastosPdfUrl']);
+                Route::get('vehiculos/gastos/estadisticas/pdf-url', [VehiculoController::class, 'getGastosEstadisticasPdfUrl']);
                 Route::get('vehiculos/gastos/estadisticas', [VehiculoController::class, 'gastosEstadisticas']);
                 Route::get('vehiculos/{vehiculo}/gastos', [VehiculoController::class, 'gastosIndex']);
                 Route::post('vehiculos/{vehiculo}/gastos', [VehiculoController::class, 'gastosStore']);

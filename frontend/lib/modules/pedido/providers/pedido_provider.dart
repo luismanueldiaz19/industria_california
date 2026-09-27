@@ -195,18 +195,6 @@ class PedidoProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> assignRuta(List<int> pedidoIds, int rutaId) async {
-    try {
-      await _service.assignRuta(pedidoIds, rutaId);
-      await fetchPedidos();
-      return true;
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      return false;
-    }
-  }
-
   Future<String> getPdfUrl(int id) async {
     return await _service.getPdfUrl(id);
   }

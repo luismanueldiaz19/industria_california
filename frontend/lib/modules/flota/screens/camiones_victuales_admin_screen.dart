@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/utils/formatters.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../camion_victual/providers/camion_victual_provider.dart';
 import '../widgets/camiones/camion_victual_form_modal.dart';
+import '../widgets/camiones/camion_victual_pedidos_modal.dart';
 
 class CamionesVictualesAdminScreen extends StatefulWidget {
   const CamionesVictualesAdminScreen({super.key});
@@ -24,13 +27,36 @@ class _CamionesVictualesAdminScreenState
     });
   }
 
+  Future<void> _imprimirCamion(int camionId) async {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Generando PDF...')));
+    try {
+      final urlStr = await context
+          .read<CamionVictualProvider>()
+          .getConducePdfUrl(camionId);
+      final url = Uri.parse(urlStr);
+      if (!await launchUrl(url)) {
+        throw Exception('No se pudo abrir el enlace');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al abrir PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1C1E),
       appBar: AppBar(
         title: const Text(
-          'Administrar Camiones',
+          'Camiones Victuales',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -155,12 +181,10 @@ class _CamionesVictualesAdminScreenState
 
                             return GestureDetector(
                               onTap: () {
-                                showModalBottomSheet(
+                                showDialog(
                                   context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
                                   builder: (context) =>
-                                      CamionVictualFormModal(camion: camion),
+                                      CamionVictualPedidosModal(camion: camion),
                                 );
                               },
                               child: Container(
@@ -235,14 +259,10 @@ class _CamionesVictualesAdminScreenState
                                                   mainAxisSize:
                                                       MainAxisSize.min,
                                                   children: [
-                                                    const Icon(
-                                                      Icons.attach_money,
-                                                      color: Colors.greenAccent,
-                                                      size: 16,
-                                                    ),
                                                     Text(
-                                                      camion.montoTotal
-                                                          .toStringAsFixed(2),
+                                                      Formatters.formatCurrency(
+                                                        camion.montoTotal,
+                                                      ),
                                                       style: const TextStyle(
                                                         color:
                                                             Colors.greenAccent,
@@ -310,6 +330,49 @@ class _CamionesVictualesAdminScreenState
                                               fontSize: 10,
                                             ),
                                           ),
+                                          const SizedBox(height: 12),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.edit,
+                                                  color: Colors.white54,
+                                                  size: 20,
+                                                ),
+                                                constraints:
+                                                    const BoxConstraints(),
+                                                padding: EdgeInsets.zero,
+                                                tooltip: 'Editar Camión',
+                                                onPressed: () {
+                                                  showModalBottomSheet(
+                                                    context: context,
+                                                    isScrollControlled: true,
+                                                    backgroundColor:
+                                                        Colors.transparent,
+                                                    builder: (context) =>
+                                                        CamionVictualFormModal(
+                                                          camion: camion,
+                                                        ),
+                                                  );
+                                                },
+                                              ),
+                                              const SizedBox(width: 12),
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.print_rounded,
+                                                  color: Colors.white54,
+                                                  size: 22,
+                                                ),
+                                                constraints:
+                                                    const BoxConstraints(),
+                                                padding: EdgeInsets.zero,
+                                                tooltip: 'Imprimir Conduce',
+                                                onPressed: () =>
+                                                    _imprimirCamion(camion.id),
+                                              ),
+                                            ],
+                                          ),
                                         ],
                                       ),
                                     ],
@@ -350,7 +413,7 @@ class _CamionesVictualesAdminScreenState
         children: [
           Expanded(
             child: DropdownButtonFormField<String>(
-              value: _filtroEstado,
+              initialValue: _filtroEstado,
               dropdownColor: const Color(0xFF3B3E43),
               style: const TextStyle(color: Colors.white, fontSize: 13),
               decoration: InputDecoration(
@@ -381,7 +444,7 @@ class _CamionesVictualesAdminScreenState
           const SizedBox(width: 12),
           Expanded(
             child: DropdownButtonFormField<int?>(
-              value: _filtroVendedorId,
+              initialValue: _filtroVendedorId,
               dropdownColor: const Color(0xFF3B3E43),
               style: const TextStyle(color: Colors.white, fontSize: 13),
               decoration: InputDecoration(

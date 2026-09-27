@@ -570,6 +570,46 @@ class PdfSecurityService
                 $filename = 'gastos_flota.pdf';
                 break;
 
+            case 'gastos_estadisticas_flota':
+                $year = $params['year'] ?? date('Y');
+                $gastos = \App\Models\VehiculoGasto::with('vehiculo:id,ficha')
+                    ->whereYear('fecha_gasto', $year)
+                    ->get();
+
+                $porVehiculo = [];
+                $porTipo = [];
+                $totalYear = 0.0;
+
+                foreach ($gastos as $g) {
+                    $mes = (int) $g->fecha_gasto->format('n');
+                    $monto = (float) $g->monto_total;
+                    $totalYear += $monto;
+
+                    $ficha = $g->vehiculo ? $g->vehiculo->ficha : 'Sin Vehículo';
+                    if (!isset($porVehiculo[$ficha])) {
+                        $porVehiculo[$ficha] = array_fill(1, 12, 0.0);
+                    }
+                    $porVehiculo[$ficha][$mes] += $monto;
+
+                    $tipo = ucfirst(strtolower($g->tipo_gasto ?? 'Sin tipo'));
+                    if (!isset($porTipo[$tipo])) {
+                        $porTipo[$tipo] = array_fill(1, 12, 0.0);
+                    }
+                    $porTipo[$tipo][$mes] += $monto;
+                }
+
+                ksort($porVehiculo);
+                ksort($porTipo);
+
+                $pdf = Pdf::loadView('pdf.gastos_estadisticas_flota', [
+                    'year' => $year,
+                    'totalYear' => $totalYear,
+                    'porVehiculo' => $porVehiculo,
+                    'porTipo' => $porTipo,
+                ])->setPaper('a4', 'landscape'); // we will use landscape since it has 14 columns
+                $filename = "gastos_estadisticas_{$year}.pdf";
+                break;
+
             case 'choferes':
                 $choferes = \App\Models\Chofer::with('user:id,name,email,username')->get();
                 $pdf = Pdf::loadView('pdf.choferes', compact('choferes'));

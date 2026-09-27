@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/widgets/general_header.dart';
 import '../providers/pedido_provider.dart';
 import '../widgets/pedidos_filter_bar.dart';
 import '../widgets/pedidos_table.dart';
@@ -41,71 +42,21 @@ class _PedidosScreenState extends State<PedidosScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(),
-          const PedidosFilterBar(),
-          const Expanded(child: PedidosTable()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Color(0xFF2C2F33),
-        border: Border(bottom: BorderSide(color: Colors.black26, width: 2)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.shopping_cart,
-                  color: Color(0xFFE31E24),
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Gestión de Pedidos',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    'Oficina / Administración',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
-                ],
+          GeneralHeader(
+            title: 'Gestión de Pedidos',
+            subtitle: 'Oficina / Administración',
+            icon: Icons.shopping_cart,
+            iconColor: Color(0xFFE31E24),
+            actions: [
+              HeaderButton(
+                icon: Icons.picture_as_pdf,
+                tooltip: 'Reporte General',
+                onTap: _generarReporteGeneralPdf,
               ),
             ],
           ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31E24),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            icon: const Icon(Icons.picture_as_pdf),
-            label: const Text(
-              'Reporte General',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            onPressed: _generarReporteGeneralPdf,
-          ),
+          const PedidosFilterBar(),
+          const Expanded(child: PedidosTable()),
         ],
       ),
     );

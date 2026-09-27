@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class CxcAlertaModel {
   final int id;
   final String tipo;
@@ -50,6 +52,22 @@ class CxcAlertaModel {
           [],
     );
   }
+
+  String toRawJson() => json.encode(toJson());
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "tipo": tipo,
+    "estado_alerta": estadoAlerta,
+    "nota": nota,
+    "monto_informado": montoInformado,
+    "fecha_revision": fechaRevision,
+    "created_at": createdAt,
+    "vendedor": vendedor?.toRawJson(),
+    "revisador": revisador?.toRawJson(),
+    "cxc": cxc?.toRawJson(),
+    "evidencias": List<dynamic>.from(evidencias.map((x) => x.toRawJson())),
+  };
 }
 
 class UserModel {
@@ -66,6 +84,14 @@ class UserModel {
       username: json['username'] ?? '',
     );
   }
+
+  String toRawJson() => json.encode(toJson());
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "name": name,
+    "username": username,
+  };
 }
 
 class CxcModel {
@@ -95,14 +121,12 @@ class CxcModel {
       totalFactura:
           double.tryParse(
             json['total_factura']?.toString() ??
-                json['monto_factura']?.toString() ?? '0',
+                json['monto_factura']?.toString() ??
+                '0',
           ) ??
           0.0,
       montoPendiente:
-          double.tryParse(
-            json['monto_pendiente']?.toString() ?? '0',
-          ) ??
-          0.0,
+          double.tryParse(json['monto_pendiente']?.toString() ?? '0') ?? 0.0,
       cliente: json['cliente'] != null
           ? ClienteModel.fromJson(json['cliente'])
           : null,
@@ -113,6 +137,18 @@ class CxcModel {
           [],
     );
   }
+
+  String toRawJson() => json.encode(toJson());
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "no_factura": noFactura,
+    "id_cliente_externo": idClienteExterno,
+    "total_factura": totalFactura,
+    "monto_pendiente": montoPendiente,
+    "cliente": cliente?.toJson(),
+    "evidencias": List<dynamic>.from(evidencias.map((x) => x.toJson())),
+  };
 }
 
 class ClienteModel {
@@ -127,6 +163,10 @@ class ClienteModel {
       nombre: json['nombre_cliente'] ?? json['nombre'] ?? '',
     );
   }
+
+  String toRawJson() => json.encode(toJson());
+
+  Map<String, dynamic> toJson() => {"id": id, "nombre_cliente": nombre};
 }
 
 class EvidenciaModel {
@@ -153,4 +193,13 @@ class EvidenciaModel {
 
   bool get isImage =>
       ['jpg', 'jpeg', 'png'].contains(tipoArchivo.toLowerCase());
+
+  String toRawJson() => json.encode(toJson());
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "nombre_archivo": nombreArchivo,
+    "ruta_archivo": rutaArchivo,
+    "tipo_archivo": tipoArchivo,
+  };
 }

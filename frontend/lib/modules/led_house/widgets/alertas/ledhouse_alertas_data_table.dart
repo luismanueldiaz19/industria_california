@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/themes/app_theme.dart';
+import '../../../../core/utils/alerta_utils.dart';
 import '../../models/cxc_alerta_model.dart';
 
 class LedhouseAlertasDataTable extends StatelessWidget {
@@ -13,6 +14,7 @@ class LedhouseAlertasDataTable extends StatelessWidget {
   final void Function(CxcAlertaModel) onProcesarAlerta;
   final void Function(List<EvidenciaModel>) onVerEvidencias;
   final void Function(CxcAlertaModel, Color) onVerNota;
+  final void Function(CxcAlertaModel) onEditarConcepto;
 
   const LedhouseAlertasDataTable({
     super.key,
@@ -24,6 +26,7 @@ class LedhouseAlertasDataTable extends StatelessWidget {
     required this.onProcesarAlerta,
     required this.onVerEvidencias,
     required this.onVerNota,
+    required this.onEditarConcepto,
   });
 
   String _formatCurrency(double amount) {
@@ -37,32 +40,6 @@ class LedhouseAlertasDataTable extends StatelessWidget {
       return DateFormat('dd-MM-yyyy').format(dt);
     } catch (_) {
       return ts;
-    }
-  }
-
-  String _tipoLabel(String tipo) {
-    switch (tipo) {
-      case 'pago_recibido':
-        return '💵 Pago Recibido';
-      case 'credito':
-        return '💳 Nota de credito';
-      case 'debito':
-        return '🧾 Nota de débito';
-      case 'devolucion':
-        return '↩️ Devolución';
-      case 'retencion':
-        return '✂️ Retención';
-      case 'diferencia':
-        return '⚖️ Diferencia de Precio';
-      case 'mer_no_entregada':
-        return '📦 Mercancía No Entregada';
-      case 'anular':
-        return '❌ Anular Factura';
-      case 'consulta':
-        return '❓ Consulta';
-      case 'informacion':
-      default:
-        return '📝 Información';
     }
   }
 
@@ -144,6 +121,7 @@ class LedhouseAlertasDataTable extends StatelessWidget {
                     DataColumn(label: Text('CONCEPTO')),
                     DataColumn(label: Text('FACTURA')),
                     DataColumn(label: Text('MONTO')),
+                    DataColumn(label: Text('VENDEDOR')),
                     DataColumn(label: Text('ACCIONES')),
                   ],
                   rows: alertas.map((a) => _buildDataRow(context, a)).toList(),
@@ -175,6 +153,9 @@ class LedhouseAlertasDataTable extends StatelessWidget {
       case 'retencion':
         tipoColor = Colors.purpleAccent;
         break;
+      case 'cheque_futurista':
+        tipoColor = Colors.tealAccent;
+        break;
       default:
         tipoColor = Colors.orangeAccent;
     }
@@ -197,6 +178,9 @@ class LedhouseAlertasDataTable extends StatelessWidget {
     }
 
     return DataRow(
+      onLongPress: () {
+        print(alerta.toRawJson());
+      },
       cells: [
         DataCell(
           Text(
@@ -205,12 +189,14 @@ class LedhouseAlertasDataTable extends StatelessWidget {
           ),
         ),
         DataCell(
-          Text(
-            cliente?.nombre ?? '-',
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              fontSize: 12,
+          SizedBox(
+            width: 120,
+            child: Text(
+              cliente?.nombre ?? '-',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.white24,
+              ),
             ),
           ),
         ),
@@ -221,34 +207,38 @@ class LedhouseAlertasDataTable extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: tipoColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: tipoColor.withValues(alpha: 0.2)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.local_offer_rounded,
-                        size: 11,
-                        color: tipoColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _tipoLabel(tipo),
-                        style: TextStyle(
+                InkWell(
+                  onTap: () => onEditarConcepto(alerta),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: tipoColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: tipoColor.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.local_offer_rounded,
+                          size: 11,
                           color: tipoColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          AlertaUtils.getTipoLabel(tipo),
+                          style: TextStyle(
+                            color: tipoColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 if (alerta.nota != null && alerta.nota!.isNotEmpty) ...[
@@ -325,6 +315,7 @@ class LedhouseAlertasDataTable extends StatelessWidget {
             ),
           ),
         ),
+        DataCell(Text(alerta.vendedor!.name ?? '----')),
         DataCell(
           Row(
             mainAxisSize: MainAxisSize.min,

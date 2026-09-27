@@ -18,7 +18,6 @@ class PedidosTable extends StatefulWidget {
 
 class _PedidosTableState extends State<PedidosTable> {
   final _currencyFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
-  final Set<int> _selectedIds = {};
 
   Color _getColorForEstado(String estado) {
     switch (estado) {
@@ -217,98 +216,6 @@ class _PedidosTableState extends State<PedidosTable> {
     );
   }
 
-  void _showAssignRouteDialog() {
-    final rutas = context.read<RutaProvider>().rutas;
-    int? selectedRuta;
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF2C2F33),
-              title: const Text(
-                'Asignar a Ruta',
-                style: TextStyle(color: Colors.white),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Seleccione la ruta para los ${_selectedIds.length} pedidos seleccionados:',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<int>(
-                    value: selectedRuta,
-                    dropdownColor: const Color(0xFF2C2F33),
-                    items: rutas
-                        .map(
-                          (r) => DropdownMenuItem(
-                            value: r.id,
-                            child: Text(
-                              r.nombre,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (val) {
-                      setDialogState(() => selectedRuta = val);
-                    },
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Color(0xFF1E2124),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.white54),
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2196F3),
-                  ),
-                  onPressed: selectedRuta == null
-                      ? null
-                      : () async {
-                          Navigator.pop(ctx);
-                          final provider = context.read<PedidoProvider>();
-                          final success = await provider.assignRuta(
-                            _selectedIds.toList(),
-                            selectedRuta!,
-                          );
-                          if (success && mounted) {
-                            setState(() => _selectedIds.clear());
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Pedidos asignados con éxito'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        },
-                  child: const Text(
-                    'Asignar',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<PedidoProvider>();
@@ -331,43 +238,6 @@ class _PedidosTableState extends State<PedidosTable> {
 
     return Column(
       children: [
-        if (_selectedIds.isNotEmpty && isAdmin)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            color: const Color(0xFF2196F3).withOpacity(0.1),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${_selectedIds.length} pedidos seleccionados',
-                  style: const TextStyle(
-                    color: Color(0xFF2196F3),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Row(
-                  children: [
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2196F3),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                      ),
-                      icon: const Icon(Icons.local_shipping, size: 16),
-                      label: const Text(
-                        'Asignar a Ruta',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      onPressed: _showAssignRouteDialog,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -392,24 +262,12 @@ class _PedidosTableState extends State<PedidosTable> {
                     Set<WidgetState> states,
                   ) {
                     if (states.contains(WidgetState.selected)) {
-                      return const Color(0xFF2196F3).withOpacity(0.15);
+                      return const Color(0xFF2196F3).withValues(alpha: 0.15);
                     }
                     return Colors.transparent;
                   }),
                   dividerThickness: 0.5,
-                  onSelectAll: isAdmin
-                      ? (val) {
-                          setState(() {
-                            if (val == true) {
-                              _selectedIds.addAll(
-                                provider.pedidos.map((e) => e.id),
-                              );
-                            } else {
-                              _selectedIds.clear();
-                            }
-                          });
-                        }
-                      : null,
+
                   columns: const [
                     DataColumn(
                       label: Text(
@@ -530,18 +388,6 @@ class _PedidosTableState extends State<PedidosTable> {
                           (det.cantidadEnProduccion * det.precioUnitario);
                     }
                     return DataRow(
-                      selected: _selectedIds.contains(pedido.id),
-                      onSelectChanged: isAdmin
-                          ? (val) {
-                              setState(() {
-                                if (val == true) {
-                                  _selectedIds.add(pedido.id);
-                                } else {
-                                  _selectedIds.remove(pedido.id);
-                                }
-                              });
-                            }
-                          : null,
                       cells: [
                         DataCell(
                           Text(
@@ -580,11 +426,15 @@ class _PedidosTableState extends State<PedidosTable> {
                           ),
                         ),
                         DataCell(
-                          Text(
-                            pedido.clienteNombre ?? 'N/A',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
+                          SizedBox(
+                            width: 120,
+                            child: Text(
+                              pedido.clienteNombre ?? 'N/A',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                overflow: TextOverflow.fade,
+                              ),
                             ),
                           ),
                         ),
@@ -595,10 +445,10 @@ class _PedidosTableState extends State<PedidosTable> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: colorEstado.withOpacity(0.1),
+                              color: colorEstado.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: colorEstado.withOpacity(0.5),
+                                color: colorEstado.withValues(alpha: 0.5),
                               ),
                             ),
                             child: Text(
@@ -666,6 +516,7 @@ class _PedidosTableState extends State<PedidosTable> {
                         DataCell(
                           Row(
                             mainAxisSize: MainAxisSize.min,
+                            spacing: 10,
                             children: [
                               IconButton(
                                 icon: const Icon(

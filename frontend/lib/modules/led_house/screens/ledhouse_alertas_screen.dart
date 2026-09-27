@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/themes/app_theme.dart';
+import '../../../core/utils/alerta_utils.dart';
 import '../../../core/utils/constants.dart';
 import '../../../core/services/http_service.dart';
 import '../../../core/widgets/general_header.dart';
@@ -31,6 +33,14 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
   List<CxcAlertaModel> _alertasPendientes = [];
   List<CxcAlertaModel> _alertasProcesadas = [];
   bool _isLoading = true;
+
+  // Paginación y fechas para Procesadas
+  DateTime? _startDate = DateTime.now();
+  DateTime? _endDate = DateTime.now();
+  int _currentPage = 1;
+  int _limit = 20;
+  int _totalRows = 0;
+  int _lastPage = 1;
 
   // Filtros
   String _filtroVendedor = 'Todos';
@@ -67,8 +77,39 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
       if (mounted) {
         await Provider.of<CxcProvider>(context, listen: false).fetchCxcs();
       }
-      final pendientes = await _service.getAlertas(estado: 'pendiente');
-      final procesadas = await _service.getAlertas(estado: 'procesada');
+
+      final pendientesRes = await _service.getAlertas(estado: 'pendiente');
+      List<CxcAlertaModel> pendientes = [];
+      if (pendientesRes is List) {
+        pendientes = pendientesRes.cast<CxcAlertaModel>();
+      } else if (pendientesRes is Map) {
+        pendientes = (pendientesRes['data'] as List).cast<CxcAlertaModel>();
+      }
+
+      final startStr = _startDate != null
+          ? DateFormat('yyyy-MM-dd').format(_startDate!)
+          : null;
+      final endStr = _endDate != null
+          ? DateFormat('yyyy-MM-dd').format(_endDate!)
+          : null;
+
+      final procesadasRes = await _service.getAlertas(
+        estado: 'procesada',
+        page: _currentPage,
+        limit: _limit,
+        startDate: startStr,
+        endDate: endStr,
+      );
+
+      List<CxcAlertaModel> procesadas = [];
+      if (procesadasRes is List) {
+        procesadas = procesadasRes.cast<CxcAlertaModel>();
+      } else if (procesadasRes is Map) {
+        procesadas = (procesadasRes['data'] as List).cast<CxcAlertaModel>();
+        _totalRows = procesadasRes['total'] ?? 0;
+        _lastPage = procesadasRes['last_page'] ?? 1;
+      }
+
       if (mounted) {
         setState(() {
           _alertasPendientes = pendientes;
@@ -81,32 +122,6 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
       if (mounted) {
         setState(() => _isLoading = false);
       }
-    }
-  }
-
-  String _tipoLabel(String tipo) {
-    switch (tipo) {
-      case 'pago_recibido':
-        return '💵 Pago Recibido';
-      case 'credito':
-        return '💳 Nota de credito';
-      case 'debito':
-        return '🧾 Nota de débito';
-      case 'devolucion':
-        return '↩️ Devolución';
-      case 'retencion':
-        return '✂️ Retención';
-      case 'diferencia':
-        return '⚖️ Diferencia de Precio';
-      case 'mer_no_entregada':
-        return '📦 Mercancía No Entregada';
-      case 'anular':
-        return '❌ Anular Factura';
-      case 'consulta':
-        return '❓ Consulta';
-      case 'informacion':
-      default:
-        return '📝 Información';
     }
   }
 
@@ -126,7 +141,7 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
         _mapaVendedores[a.vendedor!.name] = a.vendedor!.id;
       }
       if (a.tipo.isNotEmpty) {
-        _mapaTipos[_tipoLabel(a.tipo)] = a.tipo;
+        _mapaTipos[AlertaUtils.getTipoLabel(a.tipo)] = a.tipo;
       }
     }
 
@@ -147,7 +162,8 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
       final matchVendedor =
           _filtroVendedor == 'Todos' || (a.vendedor?.name == _filtroVendedor);
       final matchTipo =
-          _filtroTipo == 'Todos' || (_tipoLabel(a.tipo) == _filtroTipo);
+          _filtroTipo == 'Todos' ||
+          (AlertaUtils.getTipoLabel(a.tipo) == _filtroTipo);
 
       bool matchSearch = true;
       if (_searchQuery.isNotEmpty) {
@@ -404,6 +420,270 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
     );
   }
 
+  void _editarConcepto(CxcAlertaModel alerta) {
+    String nuevoTipo = alerta.tipo;
+    final screenContext = context;
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (statefulCtx, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppTheme.darkCardColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: AppTheme.darkBorderColor),
+              ),
+              title: const Text(
+                'Actualizar Concepto',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              content: DropdownButtonFormField<String>(
+                value: nuevoTipo,
+                dropdownColor: AppTheme.darkCardColor,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: AppTheme.darkInputColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+                items: AlertaUtils.tiposDeAlerta
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(
+                          AlertaUtils.getTipoLabel(t),
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => nuevoTipo = val);
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryBlue,
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(dialogCtx);
+                    final success = await _service.updateTipoAlerta(
+                      alertaId: alerta.id,
+                      nuevoTipo: nuevoTipo,
+                    );
+                    if (!mounted) return;
+                    if (success) {
+                      ScaffoldMessenger.of(screenContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('Concepto actualizado'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      _load();
+                    } else {
+                      ScaffoldMessenger.of(screenContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('Error al actualizar concepto'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text(
+                    'Actualizar',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildProcesadasFilters() {
+    final format = DateFormat('dd-MM-yyyy');
+    final startStr = _startDate != null ? format.format(_startDate!) : '-';
+    final endStr = _endDate != null ? format.format(_endDate!) : '-';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: AppTheme.darkCardColor,
+      child: Row(
+        children: [
+          Text(
+            'Fechas:',
+            style: TextStyle(
+              color: Colors.grey.shade400,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: _pickDateRange,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppTheme.darkBorderColor),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_today,
+                    size: 14,
+                    color: Colors.blueAccent,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$startStr  →  $endStr',
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (_startDate != null || _endDate != null)
+            IconButton(
+              icon: const Icon(Icons.clear, color: Colors.redAccent, size: 18),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                setState(() {
+                  _startDate = DateTime.now();
+                  _endDate = DateTime.now();
+                  _currentPage = 1;
+                });
+                _load();
+              },
+            ),
+          const Spacer(),
+          Text(
+            'Filas: ',
+            style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+          ),
+          DropdownButton<int>(
+            value: _limit,
+            dropdownColor: AppTheme.darkInputColor,
+            underline: const SizedBox(),
+            items: [20, 50, 100]
+                .map(
+                  (e) => DropdownMenuItem(
+                    value: e,
+                    child: Text(
+                      '$e',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) {
+              if (v != null) {
+                setState(() {
+                  _limit = v;
+                  _currentPage = 1;
+                });
+                _load();
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickDateRange() async {
+    final res = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDateRange: _startDate != null && _endDate != null
+          ? DateTimeRange(start: _startDate!, end: _endDate!)
+          : DateTimeRange(start: DateTime.now(), end: DateTime.now()),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Colors.blueAccent,
+              onPrimary: Colors.white,
+              surface: Color(0xFF1E1E1E),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (res != null) {
+      setState(() {
+        _startDate = res.start;
+        _endDate = res.end;
+        _currentPage = 1;
+      });
+      _load();
+    }
+  }
+
+  Widget _buildPaginationControls() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: AppTheme.darkCardColor,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            'Total: $_totalRows registros | Página $_currentPage de $_lastPage',
+            style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            color: _currentPage > 1 ? Colors.white : Colors.grey,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: _currentPage > 1
+                ? () {
+                    setState(() => _currentPage--);
+                    _load();
+                  }
+                : null,
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            color: _currentPage < _lastPage ? Colors.white : Colors.grey,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: _currentPage < _lastPage
+                ? () {
+                    setState(() => _currentPage++);
+                    _load();
+                  }
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAlertasListTab(
     List<CxcAlertaModel> alertas, {
     required bool isPendiente,
@@ -441,6 +721,7 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
 
     return Column(
       children: [
+        if (!isPendiente) _buildProcesadasFilters(),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _load,
@@ -454,9 +735,12 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
               onProcesarAlerta: _mostrarDialogoProcesar,
               onVerEvidencias: _verEvidencias,
               onVerNota: _verNota,
+              onEditarConcepto: _editarConcepto,
             ),
           ),
         ),
+        if (!isPendiente && _alertasProcesadas.isNotEmpty)
+          _buildPaginationControls(),
         if (alertas.isNotEmpty)
           LedhouseAlertasTotalsBar(
             totalInformado: totalInformado,

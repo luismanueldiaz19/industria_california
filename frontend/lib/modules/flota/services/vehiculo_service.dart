@@ -120,6 +120,14 @@ class VehiculoService {
     return response['url'];
   }
 
+  Future<String> getGastosEstadisticasPdfUrl(int year) async {
+    final response = await _http.get(
+      '$_base/gastos/estadisticas/pdf-url',
+      params: {'year': year.toString()},
+    );
+    return response['url'];
+  }
+
   Future<List<VehiculoGasto>> getGastos(int vehiculoId) async {
     final response = await _http.get('$_base/$vehiculoId/gastos');
     final List data = response is List ? response : [];

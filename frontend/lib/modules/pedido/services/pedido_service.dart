@@ -60,13 +60,6 @@ class PedidoService {
     await _http.delete('$_base/$id');
   }
 
-  Future<void> assignRuta(List<int> pedidoIds, int rutaId) async {
-    await _http.post('$_base/assign-ruta', {
-      'pedido_ids': pedidoIds,
-      'ruta_id': rutaId,
-    });
-  }
-
   Future<List<Pedido>> optimizeRoute(int rutaId, double lat, double lng) async {
     final response = await _http.post('$_base/optimize-route', {
       'ruta_id': rutaId,
