@@ -197,6 +197,15 @@ class CamionVictualService
                 'updated_at'       => now(),
             ]);
 
+        if ($nuevoEstado === EstadoEntrega::Entregado) {
+            DB::table('pedidos')
+                ->where('id', $pedidoId)
+                ->update([
+                    'estado' => 'entregado',
+                    'updated_at' => now(),
+                ]);
+        }
+
         // Verificar si todos los pedidos están terminados para poder cerrar
         $camionActualizado = $camion->fresh('pedidos');
         $this->verificarCierreAutomatico($camionActualizado);
@@ -242,6 +251,18 @@ class CamionVictualService
     /**
      * Recalcular el monto total del camión y actualizar el estado automáticamente.
      */
+    public function vaciar(CamionVictual $camion): CamionVictual
+    {
+        return DB::transaction(function () use ($camion) {
+            $camion->pedidos()->detach();
+            $camion->update([
+                'estado' => EstadoCamion::Vacio,
+                'monto_total' => 0.00
+            ]);
+            return $this->cargarRelaciones($camion->fresh());
+        });
+    }
+
     private function recalcularMonto(CamionVictual $camion): CamionVictual
     {
         $total = $camion->pedidos()->sum('pedidos.total');

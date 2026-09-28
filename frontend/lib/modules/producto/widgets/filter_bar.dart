@@ -33,9 +33,7 @@ class _InventarioFilterBarState extends State<InventarioFilterBar> {
   final _searchController = TextEditingController();
   Timer? _debounce;
   int? _selectedCategoriaId;
-  String _estadoStock = '';
-  String _orderBy = 'nombre';
-  String _orderDir = 'asc';
+  bool _soloNegativos = false;
 
   static const _dark = Color(0xFF1A1C1E);
   static const _card = Color(0xFF2C2F33);
@@ -46,9 +44,7 @@ class _InventarioFilterBarState extends State<InventarioFilterBar> {
     super.initState();
     _searchController.text = widget.provider.search;
     _selectedCategoriaId = widget.provider.categoriaId;
-    _estadoStock = widget.provider.estadoStock;
-    _orderBy = widget.provider.orderBy;
-    _orderDir = widget.provider.orderDir;
+    _soloNegativos = widget.provider.soloNegativos;
   }
 
   @override
@@ -62,9 +58,7 @@ class _InventarioFilterBarState extends State<InventarioFilterBar> {
     widget.provider.setFiltros(
       search: _searchController.text.trim(),
       categoriaId: _selectedCategoriaId,
-      estadoStock: _estadoStock,
-      orderBy: _orderBy,
-      orderDir: _orderDir,
+      soloNegativos: _soloNegativos,
     );
     widget.onApply();
   }
@@ -73,9 +67,7 @@ class _InventarioFilterBarState extends State<InventarioFilterBar> {
     setState(() {
       _searchController.clear();
       _selectedCategoriaId = null;
-      _estadoStock = '';
-      _orderBy = 'nombre';
-      _orderDir = 'asc';
+      _soloNegativos = false;
     });
     widget.provider.clearFiltros();
     widget.onApply();
@@ -159,45 +151,17 @@ class _InventarioFilterBarState extends State<InventarioFilterBar> {
                 ),
               ),
 
-              // Filtro estado stock
-              _buildDropdown<String>(
-                value: _estadoStock,
-                hint: 'Estado',
-                items: const [
-                  DropdownMenuItem(value: '', child: Text('Todos')),
-                  DropdownMenuItem(
-                    value: 'disponible',
-                    child: Text('Disponible'),
-                  ),
-                  DropdownMenuItem(value: 'alerta', child: Text('En alerta')),
-                  DropdownMenuItem(value: 'agotado', child: Text('Agotado')),
-                  DropdownMenuItem(value: 'negativo', child: Text('Negativos')),
-                ],
-                onChanged: (v) {
-                  setState(() => _estadoStock = v ?? '');
+              // Toggle Agotados (soloNegativos)
+              _toggleButton(
+                icon: Icons.warning_amber_rounded,
+                label: 'Agotados',
+                isActive: _soloNegativos,
+                activeColor: Colors.orange,
+                onTap: () {
+                  setState(() => _soloNegativos = !_soloNegativos);
                   _applyFilters();
                 },
               ),
-
-              // Order by
-              _buildDropdown<String>(
-                value: _orderBy,
-                hint: 'Ordenar',
-                items: const [
-                  DropdownMenuItem(value: 'nombre', child: Text('Nombre')),
-                  DropdownMenuItem(value: 'codigo', child: Text('Código')),
-                  DropdownMenuItem(value: 'stock', child: Text('Stock')),
-                  DropdownMenuItem(value: 'costo', child: Text('Costo')),
-                  DropdownMenuItem(value: 'venta', child: Text('Venta')),
-                ],
-                onChanged: (v) {
-                  setState(() => _orderBy = v ?? 'nombre');
-                  _applyFilters();
-                },
-              ),
-
-              // Order dir toggle
-              _orderDirButton(),
 
               // Botón aplicar
               _actionButton(
@@ -370,31 +334,6 @@ class _InventarioFilterBarState extends State<InventarioFilterBar> {
     );
   }
 
-  Widget _orderDirButton() {
-    return InkWell(
-      onTap: () {
-        setState(() => _orderDir = _orderDir == 'asc' ? 'desc' : 'asc');
-        _applyFilters();
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        height: 36,
-        width: 36,
-        decoration: BoxDecoration(
-          color: _card.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          _orderDir == 'asc'
-              ? Icons.arrow_upward_rounded
-              : Icons.arrow_downward_rounded,
-          color: Colors.white54,
-          size: 16,
-        ),
-      ),
-    );
-  }
-
   Widget _actionButton({
     required IconData icon,
     required String label,
@@ -411,6 +350,51 @@ class _InventarioFilterBarState extends State<InventarioFilterBar> {
           color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 14),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 11.5,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _toggleButton({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required Color activeColor,
+    VoidCallback? onTap,
+  }) {
+    final color = isActive ? activeColor : Colors.white38;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: isActive
+              ? activeColor.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isActive
+                ? activeColor.withValues(alpha: 0.3)
+                : Colors.white12,
+            width: 1,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

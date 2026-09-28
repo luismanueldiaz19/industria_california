@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'reporte_vendedores_constants.dart';
+import '../../../core/utils/app_date_picker_dark.dart';
 
 /// Barra de filtros del reporte: búsqueda de vendedor y rango de fechas.
 /// Llama [onApply] con los valores actuales y [onClear] para resetear.
@@ -44,7 +45,7 @@ class _ReporteVendedoresFilterBarState
   }
 
   Future<void> _abrirDatePicker() async {
-    final result = await showDateRangePicker(
+    final result = await AppDatePickerDark.showRangePicker(
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 365)),

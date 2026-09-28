@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/utils/app_date_picker.dart';
+import '../../../core/utils/app_date_picker_dark.dart';
 import '../../../core/widgets/quick_date_filter.dart';
 import '../providers/gasto_vehiculo_provider.dart';
 import '../widgets/vehiculos/gasto_form_modal.dart';
@@ -178,7 +178,7 @@ class _GastosVehiculosScreenState extends State<GastosVehiculosScreen> {
                             InkWell(
                               onTap: () async {
                                 final picked =
-                                    await AppDatePicker.showRangePicker(
+                                    await AppDatePickerDark.showRangePicker(
                                       context: context,
                                       initialDateRange:
                                           provider.filtroRangoFecha,

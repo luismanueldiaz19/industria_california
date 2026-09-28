@@ -71,6 +71,14 @@ class OrdenProduccion {
     this.detalles = const [],
   });
 
+  double get totalDinero {
+    return detalles.fold(0.0, (sum, detalle) {
+      final cant = detalle.cantidadFaltante > 0 ? detalle.cantidadFaltante : detalle.cantidadProducida;
+      final precio = detalle.producto?.precio ?? 0.0;
+      return sum + (cant * precio);
+    });
+  }
+
   factory OrdenProduccion.fromJson(Map<String, dynamic> json) {
     return OrdenProduccion(
       id: json['id'],

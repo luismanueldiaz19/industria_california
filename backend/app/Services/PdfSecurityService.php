@@ -202,12 +202,14 @@ class PdfSecurityService
                 $clienteId = $params['cliente_id'] ?? null;
                 $cliente = LedhouseCliente::findOrFail($clienteId);
                 $cxcs = LedhouseCxc::where('cliente_id', $clienteId)->get();
+                $userGenerador = $pdfToken->user ? $pdfToken->user->name : 'Sistema';
                 $pdf = Pdf::loadView('pdf.example_temp_url', [
                     'cliente'  => $cliente,
                     'cxcs'     => $cxcs,
                     'imageUrl' => null,
+                    'usuario'  => $userGenerador,
                 ]);
-                $filename = "Reporte_CXC_{$cliente->nombre}.pdf";
+                $filename = 'Reporte_CXC_' . preg_replace('/[^A-Za-z0-9\-]/', '_', $cliente->nombre) . '_' . date('Ymd_Hi') . '.pdf';
                 break;
 
             case 'cxc_alertas':
@@ -319,8 +321,12 @@ class PdfSecurityService
             case 'inventario_productos':
                 $query = ModuleProducto::with('categoria')->where('activo', true);
                 if (!empty($params['search'])) {
-                    $s = strtoupper($params['search']);
-                    $query->where(fn($q) => $q->where('codigo', 'LIKE', "%{$s}%")->orWhere('descripcion', 'LIKE', "%{$s}%"));
+                    $search = $params['search'];
+                    $query->where(function($q) use ($search) {
+                        $operator = \DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+                        $q->whereRaw("CONCAT_WS(' ', descripcion, medidas, capacidad, NULLIF(UPPER(unidad), 'UNIDAD')) $operator ?", ['%' . $search . '%'])
+                          ->orWhere('codigo', $operator, '%' . $search . '%');
+                    });
                 }
                 if (!empty($params['categoria_id'])) {
                     $query->where('category_id', $params['categoria_id']);
@@ -334,8 +340,8 @@ class PdfSecurityService
                         default      => null,
                     };
                 }
-                if (!empty($params['solo_negativos'])) {
-                    $query->where('stock', '<', 0);
+                if (!empty($params['solo_negativos']) && $params['solo_negativos'] == 'true') {
+                    $query->where('stock', '<=', 0);
                 }
                 
                 $orderByMap = [
@@ -614,6 +620,39 @@ class PdfSecurityService
                 $choferes = \App\Models\Chofer::with('user:id,name,email,username')->get();
                 $pdf = Pdf::loadView('pdf.choferes', compact('choferes'));
                 $filename = 'reporte_choferes.pdf';
+                break;
+
+            case 'produccion_agrupada':
+                $tipo = $params['tipo'] ?? 'producto';
+                $search = $params['search'] ?? null;
+                $repo = app(\App\Modules\Produccion\Repositories\Contracts\ProduccionRepositoryInterface::class);
+                
+                // Get maximum possible items for PDF (e.g. 500)
+                $perPage = 500;
+                
+                switch ($tipo) {
+                    case 'pedido':
+                        $resultados = $repo->getAgrupadoPorPedido($perPage, $search);
+                        break;
+                    case 'cliente':
+                        $resultados = $repo->getAgrupadoPorCliente($perPage, $search);
+                        break;
+                    case 'fecha':
+                        $resultados = $repo->getAgrupadoPorFecha($perPage, $search);
+                        break;
+                    case 'producto':
+                    default:
+                        $resultados = $repo->getAgrupadoPorProducto($perPage, $search);
+                        $tipo = 'producto';
+                        break;
+                }
+                
+                $pdf = Pdf::loadView('pdf.produccion_agrupada', [
+                    'resultados' => $resultados->items(),
+                    'tipo' => $tipo,
+                    'search' => $search
+                ]);
+                $filename = 'Produccion_Agrupada_' . ucfirst($tipo) . '_' . date('Ymd_His') . '.pdf';
                 break;
 
             default:

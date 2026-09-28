@@ -89,4 +89,21 @@ class CamionVictualService {
     });
     return CamionVictual.fromJson(response);
   }
+
+  Future<CamionVictual> actualizarEntrega(
+    int camionId,
+    int pedidoId,
+    String estadoEntrega,
+  ) async {
+    final response = await _http.patch(
+      '$_base/$camionId/pedidos/$pedidoId/entrega',
+      {'estado_entrega': estadoEntrega},
+    );
+    return CamionVictual.fromJson(response);
+  }
+
+  Future<CamionVictual> vaciarCamion(int camionId) async {
+    final response = await _http.patch('$_base/$camionId/vaciar', {});
+    return CamionVictual.fromJson(response);
+  }
 }

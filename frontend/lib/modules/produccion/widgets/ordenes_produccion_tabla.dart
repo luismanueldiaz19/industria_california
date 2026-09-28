@@ -102,6 +102,16 @@ class OrdenesProduccionTabla extends StatelessWidget {
                         ),
                         DataColumn(
                           label: Text(
+                            'Monto',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
                             'Estado',
                             style: TextStyle(
                               color: Colors.white,
@@ -178,6 +188,16 @@ class OrdenesProduccionTabla extends StatelessWidget {
                               ),
                             ),
                             DataCell(
+                              Text(
+                                NumberFormat.currency(symbol: '\$').format(orden.totalDinero),
+                                style: const TextStyle(
+                                  color: Colors.greenAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            DataCell(
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 6,
@@ -201,33 +221,69 @@ class OrdenesProduccionTabla extends StatelessWidget {
                               ),
                             ),
                             DataCell(
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (ctx) =>
-                                        OrdenProduccionDetallesDialog(
-                                          orden: orden,
-                                        ),
-                                  );
-                                },
-                                icon: const Icon(Icons.settings, size: 14),
-                                label: const Text(
-                                  'Administrar',
-                                  style: TextStyle(fontSize: 11),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF2196F3),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (ctx) =>
+                                            OrdenProduccionDetallesDialog(
+                                              orden: orden,
+                                              readOnly: true,
+                                            ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.visibility, size: 14),
+                                    label: const Text(
+                                      'Ver Detalles',
+                                      style: TextStyle(fontSize: 11),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white12,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      minimumSize: const Size(0, 28),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                    ),
                                   ),
-                                  minimumSize: const Size(0, 28),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
+                                  const SizedBox(width: 8),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (ctx) =>
+                                            OrdenProduccionDetallesDialog(
+                                              orden: orden,
+                                              readOnly: false,
+                                            ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.settings, size: 14),
+                                    label: const Text(
+                                      'Administrar',
+                                      style: TextStyle(fontSize: 11),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF2196F3),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      minimumSize: const Size(0, 28),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
                             ),
                           ],

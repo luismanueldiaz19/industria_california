@@ -5,15 +5,15 @@ import '../models/categoria.dart';
 import '../providers/producto_provider.dart';
 import '../widgets/producto_grid_card.dart';
 import '../../../core/widgets/general_header.dart';
-import '../../../core/services/http_service.dart';
 
 class CategoriaProductosScreen extends StatefulWidget {
   final Categoria categoria;
-  
+
   const CategoriaProductosScreen({super.key, required this.categoria});
 
   @override
-  State<CategoriaProductosScreen> createState() => _CategoriaProductosScreenState();
+  State<CategoriaProductosScreen> createState() =>
+      _CategoriaProductosScreenState();
 }
 
 class _CategoriaProductosScreenState extends State<CategoriaProductosScreen> {
@@ -51,7 +51,8 @@ class _CategoriaProductosScreenState extends State<CategoriaProductosScreen> {
 
   void _onScroll() {
     final prodProvider = context.read<ProductoProvider>();
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       if (prodProvider.hasMore && !prodProvider.isLoadingMore) {
         prodProvider.fetchMore();
       }
@@ -63,20 +64,30 @@ class _CategoriaProductosScreenState extends State<CategoriaProductosScreen> {
       type: FileType.custom,
       allowedExtensions: ['xls', 'xlsx', 'csv'],
     );
-    
+
     if (file != null && mounted) {
       final bytes = await file.readAsBytes();
       final prov = context.read<ProductoProvider>();
-      final result = await prov.importExcelPorCategoria(widget.categoria.id!, bytes, file.name);
-      
+      final result = await prov.importExcelPorCategoria(
+        widget.categoria.id!,
+        bytes,
+        file.name,
+      );
+
       if (mounted) {
         if (result) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Productos importados exitosamente'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Text('Productos importados exitosamente'),
+              backgroundColor: Colors.green,
+            ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${prov.error ?? 'Ocurrió un error'}'), backgroundColor: Colors.red),
+            SnackBar(
+              content: Text('Error: ${prov.error ?? 'Ocurrió un error'}'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
@@ -87,29 +98,29 @@ class _CategoriaProductosScreenState extends State<CategoriaProductosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF141517),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: Column(
         children: [
           GeneralHeader(
             title: 'Productos: ${widget.categoria.nombre}',
             subtitle: 'Catálogo de productos de esta categoría',
             icon: Icons.inventory_2_outlined,
+            onBackPressed: () => Navigator.pop(context),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 ElevatedButton.icon(
                   onPressed: _importarExcel,
-                  icon: const Icon(Icons.upload_file, size: 18, color: Colors.white),
+                  icon: const Icon(
+                    Icons.upload_file,
+                    size: 18,
+                    color: Colors.white,
+                  ),
                   label: const Text(
                     'IMPORTAR EXCEL',
                     style: TextStyle(color: Colors.white),
@@ -123,14 +134,19 @@ class _CategoriaProductosScreenState extends State<CategoriaProductosScreen> {
             child: Consumer<ProductoProvider>(
               builder: (context, provider, child) {
                 if (provider.isLoading && provider.productos.isEmpty) {
-                  return const Center(child: CircularProgressIndicator(color: _accentRed));
+                  return const Center(
+                    child: CircularProgressIndicator(color: _accentRed),
+                  );
                 }
 
                 if (provider.productos.isEmpty) {
                   return Center(
                     child: Text(
                       'No hay productos en esta categoría',
-                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 16),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 16,
+                      ),
                     ),
                   );
                 }
@@ -144,7 +160,9 @@ class _CategoriaProductosScreenState extends State<CategoriaProductosScreen> {
                     mainAxisSpacing: 8,
                     childAspectRatio: 1.15,
                   ),
-                  itemCount: provider.productos.length + (provider.isLoadingMore ? 1 : 0),
+                  itemCount:
+                      provider.productos.length +
+                      (provider.isLoadingMore ? 1 : 0),
                   itemBuilder: (ctx, i) {
                     if (i == provider.productos.length) {
                       return const Center(
@@ -157,9 +175,8 @@ class _CategoriaProductosScreenState extends State<CategoriaProductosScreen> {
                     final prod = provider.productos[i];
                     return ProductoGridCard(
                       producto: prod,
-                      onEdit: () {}, 
+                      onEdit: () {},
                       onDelete: () {},
-                      onMovimiento: () {},
                     );
                   },
                 );

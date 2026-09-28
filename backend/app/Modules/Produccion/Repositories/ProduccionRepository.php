@@ -15,21 +15,33 @@ class ProduccionRepository implements ProduccionRepositoryInterface
         $query = DB::table('orden_produccion_detalles')
             ->join('orden_produccions', 'orden_produccions.id', '=', 'orden_produccion_detalles.orden_produccion_id')
             ->join('products', 'products.id', '=', 'orden_produccion_detalles.producto_id')
+            ->join('ledhouse_clientes', 'ledhouse_clientes.id', '=', 'orden_produccions.cliente_id')
             ->where('orden_produccion_detalles.estado', 'pendiente')
             ->where('orden_produccions.estado', '!=', 'lista')
             ->select(
                 'products.id as producto_id',
                 'products.codigo as producto_codigo',
-                'products.descripcion as producto_nombre',
+                DB::raw("CONCAT_WS(' ', products.descripcion, products.medidas, products.capacidad, NULLIF(UPPER(products.unidad), 'UNIDAD')) as producto_nombre"),
+                'ledhouse_clientes.id as cliente_id',
+                'ledhouse_clientes.nombre as cliente_nombre',
                 DB::raw('SUM(orden_produccion_detalles.cantidad_faltante) as cantidad_total')
             )
-            ->groupBy('products.id', 'products.codigo', 'products.descripcion');
+            ->groupBy(
+                'products.id', 
+                'products.codigo', 
+                'products.descripcion', 
+                'products.medidas', 
+                'products.capacidad', 
+                'products.unidad',
+                'ledhouse_clientes.id',
+                'ledhouse_clientes.nombre'
+            );
 
         if ($search) {
             $normalizedSearch = TextNormalizer::normalize($search);
             $query->where(function($q) use ($normalizedSearch) {
                 $q->where(DB::raw('LOWER(products.codigo)'), 'like', "%{$normalizedSearch}%")
-                  ->orWhere(DB::raw('LOWER(products.descripcion)'), 'like', "%{$normalizedSearch}%");
+                  ->orWhere(DB::raw("LOWER(CONCAT_WS(' ', products.descripcion, products.medidas, products.capacidad, NULLIF(UPPER(products.unidad), 'UNIDAD')))"), 'like', "%{$normalizedSearch}%");
             });
         }
 

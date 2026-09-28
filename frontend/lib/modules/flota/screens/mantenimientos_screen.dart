@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/utils/app_date_picker.dart';
+import '../../../core/utils/app_date_picker_dark.dart';
 import '../../../core/widgets/quick_date_filter.dart';
 import '../providers/mantenimiento_provider.dart';
 import '../widgets/vehiculos/mantenimiento_form_modal.dart';
@@ -22,17 +22,30 @@ class _MantenimientosScreenState extends State<MantenimientosScreen> {
     });
   }
 
-  void _confirmDelete(BuildContext context, MantenimientoProvider provider, dynamic mant) {
+  void _confirmDelete(
+    BuildContext context,
+    MantenimientoProvider provider,
+    dynamic mant,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF2C2F33),
-        title: const Text('Eliminar Mantenimiento', style: TextStyle(color: Colors.white, fontSize: 16)),
-        content: const Text('¿Está seguro de eliminar este mantenimiento?', style: TextStyle(color: Colors.white70, fontSize: 13)),
+        title: const Text(
+          'Eliminar Mantenimiento',
+          style: TextStyle(color: Colors.white, fontSize: 16),
+        ),
+        content: const Text(
+          '¿Está seguro de eliminar este mantenimiento?',
+          style: TextStyle(color: Colors.white70, fontSize: 13),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('CANCELAR', style: TextStyle(color: Colors.white54)),
+            child: const Text(
+              'CANCELAR',
+              style: TextStyle(color: Colors.white54),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -41,18 +54,27 @@ class _MantenimientosScreenState extends State<MantenimientosScreen> {
                 await provider.deleteMantenimiento(mant.vehiculoId, mant.id);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Eliminado'), backgroundColor: Colors.green),
+                    const SnackBar(
+                      content: Text('Eliminado'),
+                      backgroundColor: Colors.green,
+                    ),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Error al eliminar'), backgroundColor: Colors.red),
+                    const SnackBar(
+                      content: Text('Error al eliminar'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
             },
-            child: const Text('ELIMINAR', style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'ELIMINAR',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -166,20 +188,24 @@ class _MantenimientosScreenState extends State<MantenimientosScreen> {
                           children: [
                             QuickDateFilter(
                               selectedOption: provider.quickDateFilter,
-                              onChanged: (val) => provider.setQuickDateFilter(val),
+                              onChanged: (val) =>
+                                  provider.setQuickDateFilter(val),
                             ),
                             const SizedBox(width: 4),
                             InkWell(
                               onTap: () async {
-                                final picked = await AppDatePicker.showRangePicker(
-                                  context: context,
-                                  initialDateRange: provider.filtroRangoFecha,
-                                );
+                                final picked =
+                                    await AppDatePickerDark.showRangePicker(
+                                      context: context,
+                                      initialDateRange:
+                                          provider.filtroRangoFecha,
+                                    );
                                 if (picked != null) {
                                   provider.setFiltroRangoFecha(picked);
                                 }
                               },
-                              onLongPress: () => provider.setFiltroRangoFecha(null),
+                              onLongPress: () =>
+                                  provider.setFiltroRangoFecha(null),
                               child: Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
@@ -221,7 +247,10 @@ class _MantenimientosScreenState extends State<MantenimientosScreen> {
                           children: [
                             const Text(
                               'Por pág: ',
-                              style: TextStyle(color: Colors.white54, fontSize: 10),
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 10,
+                              ),
                             ),
                             SizedBox(
                               width: 45,
@@ -385,15 +414,30 @@ class _MantenimientosScreenState extends State<MantenimientosScreen> {
                                           context: context,
                                           isScrollControlled: true,
                                           backgroundColor: Colors.transparent,
-                                          builder: (context) => MantenimientoFormModal(mantenimiento: mant),
+                                          builder: (context) =>
+                                              MantenimientoFormModal(
+                                                mantenimiento: mant,
+                                              ),
                                         );
                                       },
-                                      child: const Icon(Icons.edit, color: Colors.white54, size: 16),
+                                      child: const Icon(
+                                        Icons.edit,
+                                        color: Colors.white54,
+                                        size: 16,
+                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     InkWell(
-                                      onTap: () => _confirmDelete(context, provider, mant),
-                                      child: const Icon(Icons.delete, color: Colors.redAccent, size: 16),
+                                      onTap: () => _confirmDelete(
+                                        context,
+                                        provider,
+                                        mant,
+                                      ),
+                                      child: const Icon(
+                                        Icons.delete,
+                                        color: Colors.redAccent,
+                                        size: 16,
+                                      ),
                                     ),
                                   ],
                                 ),

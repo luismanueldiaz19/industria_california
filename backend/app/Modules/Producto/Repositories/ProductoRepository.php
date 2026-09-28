@@ -34,6 +34,10 @@ class ProductoRepository implements ProductoRepositoryInterface
             if ($estado === 'critico') $query->where('stock', '=', 0);
         }
 
+        if (request()->boolean('solo_negativos') || request('solo_negativos') === 'true') {
+            $query->where('stock', '<=', 0);
+        }
+
         $perPage = request('per_page', 100);
         return $query->paginate($perPage);
     }

@@ -181,4 +181,44 @@ class CamionVictualProvider extends ChangeNotifier {
       _camiones.add(camion);
     }
   }
+
+  Future<bool> actualizarEntrega(
+    int camionId,
+    int pedidoId,
+    String estadoEntrega,
+  ) async {
+    _isActualizando = true;
+    notifyListeners();
+    try {
+      final actualizado = await _service.actualizarEntrega(
+        camionId,
+        pedidoId,
+        estadoEntrega,
+      );
+      _actualizarEnLista(actualizado);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isActualizando = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> vaciarCamion(int camionId) async {
+    _isActualizando = true;
+    notifyListeners();
+    try {
+      final actualizado = await _service.vaciarCamion(camionId);
+      _actualizarEnLista(actualizado);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isActualizando = false;
+      notifyListeners();
+    }
+  }
 }

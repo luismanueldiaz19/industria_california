@@ -4,6 +4,7 @@ import '../../pedido/models/pedido.dart';
 import '../../pedido/providers/pedido_provider.dart';
 import '../../../core/utils/formatters.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/utils/app_date_picker_dark.dart';
 import 'vendedor_pedido_flow_screen.dart';
 import 'vendedor_pedido_detalle_screen.dart';
 
@@ -29,6 +30,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
     'borrador',
     'enviado',
     'facturado',
+    'entregado',
     'cancelado',
   ];
   int _estadoIndex = 0;
@@ -39,6 +41,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
     'borrador': const Color(0xFFFF9800),
     'enviado': const Color(0xFF2196F3),
     'facturado': const Color(0xFF4CAF50),
+    'entregado': const Color(0xFF8D6E63),
     'cancelado': const Color(0xFFE53935),
   };
 
@@ -86,7 +89,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
   }
 
   Future<void> _selectDateRange() async {
-    final picked = await showDateRangePicker(
+    final picked = await AppDatePickerDark.showRangePicker(
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 365)),

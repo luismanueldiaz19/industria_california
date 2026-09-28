@@ -207,6 +207,8 @@ Route::prefix('v1')->group(function () {
                 Route::get('produccion/agrupada/fecha', [ProduccionAgrupadaController::class, 'porFecha']);
                 Route::get('produccion/{id}', [OrdenProduccionController::class, 'show']);
                 Route::patch('produccion/detalles/{detalleId}/listo', [OrdenProduccionController::class, 'marcarDetalleListo']);
+                Route::post('produccion/agrupada/marcar-listo', [ProduccionAgrupadaController::class, 'marcarListoAgrupadoProducto']);
+                Route::get('produccion-agrupada/pdf-url', [ProduccionAgrupadaController::class, 'getPdfUrl']);
 
                 // ── MÓDULO CAMIONES VICTUALES ─────────────────────────
                 Route::get('camiones-victuales/monto-minimo', [CamionVictualController::class, 'montoMinimo']);
@@ -217,6 +219,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('camiones-victuales/{camionVictual}/pedidos/{pedidoId}/entrega', [CamionVictualController::class, 'actualizarEntrega']);
                 Route::patch('camiones-victuales/{camionVictual}/en-ruta', [CamionVictualController::class, 'ponerEnRuta']);
                 Route::patch('camiones-victuales/{camionVictual}/cerrar', [CamionVictualController::class, 'cerrar']);
+                Route::patch('camiones-victuales/{camionVictual}/vaciar', [CamionVictualController::class, 'vaciar']);
                 Route::get('camiones-victuales/{id}/pdf-url', [CamionVictualController::class, 'getConducePdfUrl']);
                 Route::apiResource('camiones-victuales', CamionVictualController::class)->parameters([
                     'camiones-victuales' => 'camionVictual'

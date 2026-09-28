@@ -10,28 +10,22 @@ class ProductoService {
   Future<Map<String, dynamic>> getProductos({
     String? search,
     int? categoriaId,
-    String? estadoStock,
     bool soloNegativos = false,
-    String orderBy = 'nombre',
-    String orderDir = 'asc',
+
     int page = 1,
     int perPage = 24,
   }) async {
     final params = <String, String>{
       'page': page.toString(),
       'per_page': perPage.toString(),
-      'order_by': orderBy,
-      'order_dir': orderDir,
     };
 
     print('🔍 params: $params');
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (categoriaId != null) params['categoria_id'] = categoriaId.toString();
-    if (estadoStock != null && estadoStock.isNotEmpty) {
-      params['estado_stock'] = estadoStock;
-    }
-    if (soloNegativos) params['solo_negativos'] = 'true';
 
+    if (soloNegativos) params['solo_negativos'] = 'true';
+    print('_http.baseUrl : ${_http.baseUrl}');
     final response = await _http.get(_base, params: params);
     final data = response as Map<String, dynamic>;
 
@@ -124,15 +118,12 @@ class ProductoService {
   Future<String?> getInventarioPdfUrl({
     String? search,
     int? categoriaId,
-    String? estadoStock,
-    String orderBy = 'nombre',
-    String orderDir = 'asc',
+    bool soloNegativos = false,
   }) async {
-    final params = <String, String>{'order_by': orderBy, 'order_dir': orderDir};
+    final params = <String, String>{};
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (categoriaId != null) params['categoria_id'] = categoriaId.toString();
-    if (estadoStock != null && estadoStock.isNotEmpty)
-      params['estado_stock'] = estadoStock;
+    if (soloNegativos) params['solo_negativos'] = 'true';
 
     final response = await _http.get('$_base/pdf-url', params: params);
     return response?['url'] as String?;

@@ -8,7 +8,6 @@ class ProductoGridCard extends StatefulWidget {
   final bool isAdmin;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
-  final VoidCallback? onMovimiento;
   final VoidCallback? onTap;
 
   const ProductoGridCard({
@@ -17,7 +16,7 @@ class ProductoGridCard extends StatefulWidget {
     this.isAdmin = false,
     this.onEdit,
     this.onDelete,
-    this.onMovimiento,
+
     this.onTap,
   });
 

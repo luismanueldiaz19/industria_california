@@ -13,6 +13,7 @@ import '../widgets/producto_form_dialog.dart';
 import '../screens/sync_screen.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/widgets/general_header.dart';
+import '../../../core/utils/grid_utils.dart';
 
 class ProductosScreen extends StatefulWidget {
   const ProductosScreen({super.key});
@@ -136,36 +137,6 @@ class _ProductosScreenState extends State<ProductosScreen>
     }
   }
 
-  Future<void> _openMovimientoDialog(int index) async {
-    // final prodProvider = context.read<ProductoProvider>();
-    // final movProvider = context.read<InventarioMovimientoProvider>();
-    // final producto = prodProvider.productos[index];
-
-    // final result = await showDialog<bool>(
-    //   context: context,
-    //   barrierColor: Colors.black.withValues(alpha: 0.7),
-    //   builder: (_) => MovimientoFormDialog(
-    //     producto: producto,
-    //     movimientoProvider: movProvider,
-    //   ),
-    // );
-    // if (result == true) {
-    //   _showSnack('Movimiento registrado', isError: false);
-    //   await prodProvider.fetchProductos(); // refresca el stock en pantalla
-    // }
-  }
-
-  // Future<void> _openSyncScreen() async {
-  //   await Navigator.push(
-  //     context,
-  //     MaterialPageRoute(builder: (_) => const InventarioSyncScreen()),
-  //   );
-  //   // Al volver, refrescar inventario (puede haber cambios)
-  //   if (mounted) {
-  //     await context.read<ProductoProvider>().fetchProductos();
-  //   }
-  // }
-
   Future<void> _openPdf() async {
     final url = await context.read<ProductoProvider>().getPdfUrl();
     if (!mounted) return;
@@ -199,13 +170,7 @@ class _ProductosScreenState extends State<ProductosScreen>
     final catProvider = context.watch<CategoriaProvider>();
     final prodProvider = context.watch<ProductoProvider>();
 
-    final crossAxisCount = MediaQuery.of(context).size.width > 1400
-        ? 5
-        : MediaQuery.of(context).size.width > 1100
-        ? 4
-        : MediaQuery.of(context).size.width > 700
-        ? 3
-        : 2;
+    final crossAxisCount = GridUtils.getCrossAxisCount(context);
 
     return Scaffold(
       body: Column(
@@ -218,7 +183,6 @@ class _ProductosScreenState extends State<ProductosScreen>
             icon: Icons.inventory_2_outlined,
           ),
 
-          // Filter bar
           InventarioFilterBar(
             provider: prodProvider,
             categorias: catProvider.categorias,
@@ -358,7 +322,6 @@ class _ProductosScreenState extends State<ProductosScreen>
             onDelete: isAdmin
                 ? () => _confirmDelete(producto.id!, producto.descripcion)
                 : null,
-            onMovimiento: () => _openMovimientoDialog(index),
           );
         },
       ),

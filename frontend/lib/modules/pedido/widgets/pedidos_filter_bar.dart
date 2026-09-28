@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/app_date_picker_dark.dart';
 
 import '../../ruta/providers/ruta_provider.dart';
 import '../providers/pedido_provider.dart';
@@ -128,6 +129,7 @@ class _PedidosFilterBarState extends State<PedidosFilterBar> {
               DropdownMenuItem(value: 'borrador', child: Text('Borrador')),
               DropdownMenuItem(value: 'enviado', child: Text('Enviado')),
               DropdownMenuItem(value: 'facturado', child: Text('Facturado')),
+              DropdownMenuItem(value: 'entregado', child: Text('Entregado')),
               DropdownMenuItem(value: 'cancelado', child: Text('Cancelado')),
             ],
             onChanged: (v) {
@@ -357,7 +359,7 @@ class _PedidosFilterBarState extends State<PedidosFilterBar> {
 
     return InkWell(
       onTap: () async {
-        final result = await showDateRangePicker(
+        final result = await AppDatePickerDark.showRangePicker(
           context: context,
           firstDate: DateTime(2020),
           lastDate: DateTime.now().add(const Duration(days: 365)),

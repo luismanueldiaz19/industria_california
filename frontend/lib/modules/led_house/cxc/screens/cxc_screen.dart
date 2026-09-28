@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../../../core/utils/app_date_picker_dark.dart';
 import '../../../../core/themes/app_theme.dart';
 import '../models/cxc_model.dart';
 import '../providers/cxc_provider.dart';
@@ -901,7 +902,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
     }
     return InkWell(
       onTap: () async {
-        final result = await showDateRangePicker(
+        final result = await AppDatePickerDark.showRangePicker(
           context: context,
           firstDate: DateTime(2020),
           lastDate: DateTime.now().add(const Duration(days: 365)),

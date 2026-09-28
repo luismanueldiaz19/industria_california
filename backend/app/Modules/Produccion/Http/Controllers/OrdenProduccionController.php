@@ -15,7 +15,7 @@ class OrdenProduccionController extends Controller
         $query = OrdenProduccion::with([
             'cliente:id,nombre',
             'vendedor:id,name',
-            'detalles.producto:id,codigo,descripcion as nombre,unidad',
+            'detalles.producto:id,codigo,descripcion,unidad,precio,medidas,capacidad',
         ]);
 
         if ($request->filled('estado')) {

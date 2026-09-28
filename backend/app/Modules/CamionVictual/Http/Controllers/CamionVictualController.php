@@ -223,6 +223,19 @@ class CamionVictualController extends Controller
     }
 
     /**
+     * Vacia el camión (remueve todos los pedidos y lo pone en vacío).
+     */
+    public function vaciar(CamionVictual $camionVictual): JsonResponse
+    {
+        try {
+            $camion = $this->service->vaciar($camionVictual);
+            return response()->json($camion);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
      * Devuelve el monto mínimo configurado.
      * Usado por el frontend para mostrar el progress bar.
      */

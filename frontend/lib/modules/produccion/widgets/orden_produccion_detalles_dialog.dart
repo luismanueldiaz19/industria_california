@@ -5,8 +5,13 @@ import '../providers/orden_produccion_provider.dart';
 
 class OrdenProduccionDetallesDialog extends StatelessWidget {
   final OrdenProduccion orden;
+  final bool readOnly;
 
-  const OrdenProduccionDetallesDialog({super.key, required this.orden});
+  const OrdenProduccionDetallesDialog({
+    super.key,
+    required this.orden,
+    this.readOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +114,7 @@ class OrdenProduccionDetallesDialog extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  detalle.producto?.descripcion ?? 'Producto Desconocido',
+                  detalle.producto?.nombreCompleto ?? 'Producto Desconocido',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -135,11 +140,25 @@ class OrdenProduccionDetallesDialog extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            'Cantidad a Producir: ${detalle.cantidadFaltante}',
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Cantidad a Producir: ${detalle.cantidadFaltante}',
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              if (detalle.producto != null)
+                Text(
+                  'Monto: \$${(detalle.cantidadFaltante * detalle.producto!.precio).toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Colors.greenAccent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+            ],
           ),
-          if (!isListo) ...[
+          if (!isListo && !readOnly) ...[
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerRight,

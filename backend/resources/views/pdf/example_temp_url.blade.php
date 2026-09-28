@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reporte PDF con URLs Temporales</title>
+    <title>Reporte CXC - {{ $cliente->nombre ?? 'Cliente' }}</title>
     <style>
         /* Márgenes de página normales (sin footer fijo) */
         @page {
@@ -50,7 +50,37 @@
 </head>
 <body>
 
-    <x-pdf-header title="Reporte Completo de CXC" subtitle="Demo" />
+    <x-pdf-header title="Reporte Completo de CXC" subtitle="Cliente: {{ $cliente->nombre ?? 'N/A' }}" usuario="{{ $usuario ?? '' }}" />
+
+    @php
+        $totalFacturado = 0;
+        $totalPagado = 0;
+        $totalPendiente = 0;
+        $totalVencido = 0;
+        
+        foreach($cxcs as $cxc) {
+            $totalFacturado += $cxc->monto_factura;
+            $totalPagado += $cxc->monto_pagado;
+            $totalPendiente += $cxc->monto_pendiente;
+            
+            $fechaVencimiento = \Carbon\Carbon::parse($cxc->fecha_vencimiento);
+            $estaVencido = $fechaVencimiento->isPast() && strtolower($cxc->estado) !== 'pagado';
+            
+            if ($estaVencido) {
+                $totalVencido += $cxc->monto_pendiente;
+            }
+        }
+    @endphp
+
+    <div style="margin-bottom: 20px;">
+        <h3 style="margin: 0 0 5px 0; color: #1a1a2e; text-transform: uppercase;">{{ $cliente->nombre ?? 'Cliente Desconocido' }}</h3>
+        <p style="margin: 0; font-size: 12px; color: #475569;">
+            @if(!empty($cliente->documento)) <strong>Doc:</strong> {{ $cliente->documento }} &nbsp;|&nbsp; @endif
+            @if(!empty($cliente->whatsapp)) <strong>WhatsApp:</strong> {{ $cliente->whatsapp }} &nbsp;|&nbsp; @endif
+            @if(!empty($cliente->dias_credito)) <strong>Días:</strong> {{ $cliente->dias_credito }} &nbsp;|&nbsp; @endif
+            @if(!empty($cliente->direccion)) <strong>Dirección:</strong> {{ $cliente->direccion }} @endif
+        </p>
+    </div>
 
     <!-- ========================================== -->
     <!-- TABLA DE DATOS (CXC)                       -->
@@ -67,18 +97,8 @@
             </tr>
         </thead>
         <tbody>
-            @php
-                $totalFacturado = 0;
-                $totalPagado = 0;
-                $totalPendiente = 0;
-            @endphp
             @forelse($cxcs as $cxc)
                 @php
-                    $totalFacturado += $cxc->monto_factura;
-                    $totalPagado += $cxc->monto_pagado;
-                    $totalPendiente += $cxc->monto_pendiente;
-                    
-                    // Determinar estado y días vencidos
                     $fechaVencimiento = \Carbon\Carbon::parse($cxc->fecha_vencimiento);
                     $estaVencido = $fechaVencimiento->isPast() && strtolower($cxc->estado) !== 'pagado';
                     $diasVencido = $estaVencido ? abs(floor(now()->diffInDays($fechaVencimiento))) : 0;
@@ -105,31 +125,29 @@
                 </tr>
             @endforelse
             
-            <!-- Fila de Totales -->
-            <tr style="background-color: #f8f9fa; font-weight: bold; font-size: 15px;">
-                <td style="text-align: right; color: #555;">TOTALES:</td>
-                <td>${{ number_format($totalFacturado, 2) }}</td>
-                <td>${{ number_format($totalPagado, 2) }}</td>
-                <td style="color: #d93025;">${{ number_format($totalPendiente, 2) }}</td>
-                <td colspan="2"></td>
-            </tr>
         </tbody>
     </table>
 
-    <!-- ========================================== -->
-    <!-- DEMOSTRACIÓN DE URL TEMPORAL (OPCIONAL)    -->
-    <!-- ========================================== -->
-    @if(isset($imageUrl))
-    <div style="page-break-before: always; margin-top: 30px;">
-        <h4 style="color: #4f46e5;">Anexos / Documentos de Soporte (URL Temporal)</h4>
-        <p style="font-size: 11px; color: #666;">
-            Esta imagen ha sido cargada usando una <strong>URL temporal segura</strong> firmada desde tu bucket en S3/Disco local.
-        </p>
-        <div class="image-container">
-            <img src="{{ $imageUrl }}" alt="Soporte Adjunto">
+    <div style="margin-top: 20px; page-break-inside: avoid;">
+        <div style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; background-color: #f8fafc;">
+            <table style="width: 100%; border: none; margin: 0;">
+                <tr style="border: none;">
+                    <td style="border: none; text-align: center; border-right: 1px solid #e2e8f0;">
+                        <span style="font-size: 10px; color: #64748b; font-weight: bold;">TOTAL FACTURADO</span><br>
+                        <span style="font-size: 14px; color: #0f172a; font-weight: bold;">${{ number_format($totalFacturado, 2) }}</span>
+                    </td>
+                    <td style="border: none; text-align: center; border-right: 1px solid #e2e8f0;">
+                        <span style="font-size: 10px; color: #64748b; font-weight: bold;">DEUDA PENDIENTE</span><br>
+                        <span style="font-size: 14px; color: #d97706; font-weight: bold;">${{ number_format($totalPendiente, 2) }}</span>
+                    </td>
+                    <td style="border: none; text-align: center;">
+                        <span style="font-size: 10px; color: #64748b; font-weight: bold;">TOTAL VENCIDO</span><br>
+                        <span style="font-size: 14px; color: #dc2626; font-weight: bold;">${{ number_format($totalVencido, 2) }}</span>
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
-    @endif
 
 </body>
 </html>

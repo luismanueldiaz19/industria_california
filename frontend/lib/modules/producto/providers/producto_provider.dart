@@ -19,11 +19,7 @@ class ProductoProvider with ChangeNotifier {
   // Filtros activos
   String _search = '';
   int? _categoriaId;
-  String _estadoStock = '';
   bool _soloNegativos = false;
-  String _orderBy = 'nombre';
-  String _orderDir = 'asc';
-
   // Getters
   List<Producto> get productos => _productos;
   bool get isLoading => _isLoading;
@@ -35,34 +31,18 @@ class ProductoProvider with ChangeNotifier {
   bool get hasMore => _currentPage < _lastPage;
   String get search => _search;
   int? get categoriaId => _categoriaId;
-  String get estadoStock => _estadoStock;
   bool get soloNegativos => _soloNegativos;
-  String get orderBy => _orderBy;
-  String get orderDir => _orderDir;
 
-  void setFiltros({
-    String? search,
-    int? categoriaId,
-    String? estadoStock,
-    bool? soloNegativos,
-    String? orderBy,
-    String? orderDir,
-  }) {
+  void setFiltros({String? search, int? categoriaId, bool? soloNegativos}) {
     _search = search ?? _search;
     _categoriaId = categoriaId;
-    _estadoStock = estadoStock ?? _estadoStock;
     _soloNegativos = soloNegativos ?? _soloNegativos;
-    _orderBy = orderBy ?? _orderBy;
-    _orderDir = orderDir ?? _orderDir;
   }
 
   void clearFiltros() {
     _search = '';
     _categoriaId = null;
-    _estadoStock = '';
     _soloNegativos = false;
-    _orderBy = 'nombre';
-    _orderDir = 'asc';
   }
 
   /// Carga la primera página con los filtros actuales
@@ -76,10 +56,8 @@ class ProductoProvider with ChangeNotifier {
       final result = await _service.getProductos(
         search: _search.isNotEmpty ? _search.toUpperCase() : null,
         categoriaId: _categoriaId,
-        estadoStock: _estadoStock.isNotEmpty ? _estadoStock : null,
         soloNegativos: _soloNegativos,
-        orderBy: _orderBy,
-        orderDir: _orderDir,
+
         page: 1,
         perPage: _perPage,
       );
@@ -106,10 +84,8 @@ class ProductoProvider with ChangeNotifier {
       final result = await _service.getProductos(
         search: _search.isNotEmpty ? _search : null,
         categoriaId: _categoriaId,
-        estadoStock: _estadoStock.isNotEmpty ? _estadoStock : null,
         soloNegativos: _soloNegativos,
-        orderBy: _orderBy,
-        orderDir: _orderDir,
+
         page: nextPage,
         perPage: _perPage,
       );
@@ -249,9 +225,7 @@ class ProductoProvider with ChangeNotifier {
       return await _service.getInventarioPdfUrl(
         search: _search.isNotEmpty ? _search : null,
         categoriaId: _categoriaId,
-        estadoStock: _estadoStock.isNotEmpty ? _estadoStock : null,
-        orderBy: _orderBy,
-        orderDir: _orderDir,
+        soloNegativos: _soloNegativos,
       );
     } catch (e) {
       _error = e.toString();

@@ -36,6 +36,7 @@ class _VendedorPedidoDetalleScreenState
     'borrador': const Color(0xFFFF9800),
     'enviado': AppTheme.primaryBlue,
     'facturado': const Color(0xFF4CAF50),
+    'entregado': const Color(0xFF8D6E63),
     'cancelado': const Color(0xFFE53935),
   };
 

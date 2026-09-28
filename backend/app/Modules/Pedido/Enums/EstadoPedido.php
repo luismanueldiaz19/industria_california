@@ -6,5 +6,6 @@ enum EstadoPedido: string
     case Borrador = 'borrador';
     case Enviado = 'enviado';
     case Facturado = 'facturado';
+    case Entregado = 'entregado';
     case Cancelado = 'cancelado';
 }

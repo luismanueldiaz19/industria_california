@@ -270,27 +270,6 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                   'Por Producto',
                                   accentColor,
                                 ),
-                                _buildMenuItem(
-                                  21,
-                                  Icons.receipt_long_outlined,
-                                  Icons.receipt_long_rounded,
-                                  'Por Pedido',
-                                  accentColor,
-                                ),
-                                _buildMenuItem(
-                                  22,
-                                  Icons.group_outlined,
-                                  Icons.group_rounded,
-                                  'Por Cliente',
-                                  accentColor,
-                                ),
-                                _buildMenuItem(
-                                  23,
-                                  Icons.calendar_month_outlined,
-                                  Icons.calendar_month_rounded,
-                                  'Por Fecha Entrega',
-                                  accentColor,
-                                ),
                               ],
                             ),
 

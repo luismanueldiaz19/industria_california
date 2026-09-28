@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/app_date_picker_dark.dart';
 
 import '../../../core/themes/app_theme.dart';
 import '../../../core/utils/alerta_utils.dart';
@@ -611,7 +612,7 @@ class _LedhouseAlertasScreenState extends State<LedhouseAlertasScreen>
   }
 
   Future<void> _pickDateRange() async {
-    final res = await showDateRangePicker(
+    final res = await AppDatePickerDark.showRangePicker(
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),

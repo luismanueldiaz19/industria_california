@@ -86,6 +86,6 @@
             <div class="doc-subtitle">{{ $subtitle }}</div>
         @endif
         <strong>Generado:</strong> {{ \Carbon\Carbon::now()->subHours(4)->format('d/m/Y') }}<br>
-        <strong>Usuario:</strong> {{ request()->user() ? request()->user()->name : 'Sistema' }}
+        <strong>Usuario:</strong> {{ !empty($usuario) ? $usuario : (request()->user() ? request()->user()->name : 'Sistema') }}
     </div>
 </div>

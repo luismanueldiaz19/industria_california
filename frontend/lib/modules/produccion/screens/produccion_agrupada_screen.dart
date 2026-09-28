@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/produccion_agrupada_provider.dart';
 
 class ProduccionAgrupadaScreen extends StatefulWidget {
@@ -60,7 +61,9 @@ class _ProduccionAgrupadaScreenState extends State<ProduccionAgrupadaScreen> {
         return const [
           DataColumn(label: Text('Cód.', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
           DataColumn(label: Text('Producto', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Cliente', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
           DataColumn(label: Text('Cantidad Faltante', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+          DataColumn(label: Text('Acciones', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
         ];
       case TipoAgrupacion.pedido:
         return const [
@@ -88,10 +91,41 @@ class _ProduccionAgrupadaScreenState extends State<ProduccionAgrupadaScreen> {
         return DataRow(cells: [
           DataCell(Text(rowData['producto_codigo']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.white70))),
           DataCell(Text(rowData['producto_nombre']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.white))),
+          DataCell(Text(rowData['cliente_nombre']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.white70))),
           DataCell(Text(
             rowData['cantidad_total']?.toString() ?? '0',
             style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
           )),
+          DataCell(
+            ElevatedButton.icon(
+              onPressed: () async {
+                final provider = context.read<ProduccionAgrupadaProvider>();
+                final success = await provider.marcarListoAgrupadoProducto(
+                  rowData['producto_id'],
+                  rowData['cliente_id'],
+                );
+                if (success && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Producción marcada como lista'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.check, size: 16),
+              label: const Text('Marcar Listo'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: const Size(0, 28),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+            ),
+          ),
         ]);
       case TipoAgrupacion.pedido:
         return DataRow(cells: [
@@ -171,6 +205,37 @@ class _ProduccionAgrupadaScreenState extends State<ProduccionAgrupadaScreen> {
                 ],
               ),
             ],
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final provider = context.read<ProduccionAgrupadaProvider>();
+              final url = await provider.getPdfUrl(widget.tipo);
+              if (url != null) {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No se pudo abrir el PDF.')),
+                    );
+                  }
+                }
+              } else {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Error al generar el PDF.')),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.picture_as_pdf, color: Colors.white, size: 20),
+            label: const Text('Descargar PDF', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE31E24),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
           ),
         ],
       ),
