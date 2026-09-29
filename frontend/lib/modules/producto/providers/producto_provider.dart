@@ -58,7 +58,6 @@ class ProductoProvider with ChangeNotifier {
         search: _search.isNotEmpty ? _search.toUpperCase() : null,
         categoriaId: _categoriaId,
         soloNegativos: _soloNegativos,
-
         page: 1,
         perPage: _perPage,
       );
