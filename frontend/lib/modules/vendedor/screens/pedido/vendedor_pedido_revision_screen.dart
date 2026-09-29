@@ -316,120 +316,129 @@ class _VendedorPedidoRevisionScreenState
             ),
           ),
 
-            if (provider.comentario.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.notes, size: 16, color: Colors.amber.shade800),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Notas / Comentarios Generales',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber.shade900,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            provider.comentario,
-                            style: TextStyle(
-                              color: Colors.amber.shade900,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+          if (provider.comentario.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(8),
               ),
-
-            // Campos Generales de Entrega y Producción
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Información de Entrega y Producción',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: _primaryBlue,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: provider.fechaEntrega ?? DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (date != null) {
-                        provider.setFechaEntrega(date);
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              provider.fechaEntrega == null
-                                  ? 'Seleccionar Fecha de Entrega'
-                                  : 'Entrega: ${DateFormat('dd/MM/yyyy').format(provider.fechaEntrega!)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: provider.fechaEntrega == null ? Colors.grey : Colors.black87,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                  Icon(Icons.notes, size: 16, color: Colors.amber.shade800),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Notas / Comentarios Generales',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber.shade900,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          provider.comentario,
+                          style: TextStyle(
+                            color: Colors.amber.shade900,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    initialValue: provider.notaProduccion,
-                    onChanged: provider.setNotaProduccion,
-                    maxLines: 2,
-                    style: const TextStyle(fontSize: 12),
-                    decoration: InputDecoration(
-                      hintText: 'Ej. Pintar de azul, cortes especiales...',
-                      hintStyle: const TextStyle(fontSize: 12),
-                      labelText: 'Nota para Producción (Opcional)',
-                      labelStyle: const TextStyle(fontSize: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      isDense: true,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
                 ],
               ),
             ),
+
+          // Campos Generales de Entrega y Producción
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Información de Entrega y Producción',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: _primaryBlue,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: provider.fechaEntrega ?? DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      provider.setFechaEntrega(date);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            provider.fechaEntrega == null
+                                ? 'Seleccionar Fecha de Entrega'
+                                : 'Entrega: ${DateFormat('dd/MM/yyyy').format(provider.fechaEntrega!)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: provider.fechaEntrega == null
+                                  ? Colors.grey
+                                  : Colors.black87,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  initialValue: provider.notaProduccion,
+                  onChanged: provider.setNotaProduccion,
+                  maxLines: 2,
+                  style: const TextStyle(fontSize: 12),
+                  decoration: InputDecoration(
+                    hintText: 'Ej. Pintar de azul, cortes especiales...',
+                    hintStyle: const TextStyle(fontSize: 12),
+                    labelText: 'Nota para Producción (Opcional)',
+                    labelStyle: const TextStyle(fontSize: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
         ],
       ),
     );

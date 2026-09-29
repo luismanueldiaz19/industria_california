@@ -11,7 +11,6 @@ class ProductoService {
     String? search,
     int? categoriaId,
     bool soloNegativos = false,
-
     int page = 1,
     int perPage = 24,
   }) async {

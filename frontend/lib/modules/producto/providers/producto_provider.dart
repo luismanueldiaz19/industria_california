@@ -50,6 +50,7 @@ class ProductoProvider with ChangeNotifier {
     _isLoading = true;
     _error = null;
     _currentPage = 1;
+    print('llega aqui -> fetchProductos');
     notifyListeners();
 
     try {

@@ -35,6 +35,7 @@ class _VendedorInventarioScreenState extends State<VendedorInventarioScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final prov = context.read<ProductoProvider>();
+
       if (prov.productos.isEmpty) {
         prov.fetchProductos();
       }
