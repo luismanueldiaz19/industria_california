@@ -57,8 +57,13 @@ if (Test-Path "$buildWebDir\index.html") {
     $htmlContent = Get-Content -Path "$buildWebDir\index.html" -Raw
     # Reemplazamos la ruta estática de Flutter por el asset dinámico de Laravel
     $htmlContent = $htmlContent -replace '<base href="/">', '<base href="{{ asset(''/'') }}">'
+    
+    # Agregar un token de versión para evitar el caché del navegador al actualizar
+    $timestamp = Get-Date -Format "yyyyMMddHHmmss"
+    $htmlContent = $htmlContent -replace 'src="flutter_bootstrap.js"', "src=`"flutter_bootstrap.js?v=$timestamp`""
+    
     Set-Content -Path $bladeViewPath -Value $htmlContent -Force
-    Write-Host "Se actualizo app.blade.php con el nuevo index.html (y base href dinamico)." -ForegroundColor Green
+    Write-Host "Se actualizo app.blade.php con el nuevo index.html (y base href dinamico, sin cache)." -ForegroundColor Green
 }
 
 # 6. Borrar index.html del public de Laravel para evitar conflictos con las rutas amigables de Laravel
