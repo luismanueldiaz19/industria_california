@@ -17,6 +17,7 @@ class PedidoService {
     bool? faltantes,
     String? startDate,
     String? endDate,
+    String? search,
     int page = 1,
   }) async {
     final queryParams = {
@@ -27,6 +28,7 @@ class PedidoService {
       if (faltantes == true) 'has_faltantes': '1',
       if (startDate != null) 'start_date': startDate,
       if (endDate != null) 'end_date': endDate,
+      if (search != null && search.isNotEmpty) 'search': search,
       'page': page.toString(),
     };
 
@@ -82,14 +84,18 @@ class PedidoService {
     String? estado,
     String? startDate,
     String? endDate,
+    bool? faltantes,
+    String? search,
   }) async {
     final queryParams = {
       if (clienteId != null) 'cliente_id': clienteId.toString(),
       if (rutaId != null) 'ruta_id': rutaId.toString(),
       if (vendedorId != null) 'vendedor_id': vendedorId.toString(),
-      if (estado != null) 'estado': estado,
-      if (startDate != null) 'start_date': startDate,
-      if (endDate != null) 'end_date': endDate,
+      'estado': ?estado,
+      'start_date': ?startDate,
+      'end_date': ?endDate,
+      if (faltantes == true) 'has_faltantes': '1',
+      if (search != null && search.isNotEmpty) 'search': search,
     };
     // Ojo: la ruta de backend es /industria-california/pedidos-pdf-url
     final response = await _http.get(

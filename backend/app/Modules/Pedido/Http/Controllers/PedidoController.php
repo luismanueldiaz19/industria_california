@@ -30,6 +30,21 @@ class PedidoController extends Controller
         if ($request->filled('cliente_id')) {
             $query->where('cliente_id', $request->input('cliente_id'));
         }
+        
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                // Remove non-numeric characters to check if it's an ID like #126
+                $num = preg_replace('/[^0-9]/', '', $search);
+                if (!empty($num)) {
+                    $q->where('id', $num);
+                }
+                
+                $q->orWhereHas('cliente', function ($q2) use ($search) {
+                    $q2->whereRaw('LOWER(nombre) LIKE ?', ['%' . mb_strtolower($search) . '%']);
+                });
+            });
+        }
         if ($request->filled('ruta_id')) {
             $query->where('ruta_id', $request->input('ruta_id'));
         }
@@ -135,7 +150,7 @@ class PedidoController extends Controller
 
     public function getGeneralPdfUrl(Request $request)
     {
-        $params = $request->only(['cliente_id', 'ruta_id', 'vendedor_id', 'estado', 'start_date', 'end_date']);
+        $params = $request->only(['cliente_id', 'ruta_id', 'vendedor_id', 'estado', 'start_date', 'end_date', 'has_faltantes', 'search']);
         if (!Auth::user()->hasRole('admin')) {
             $params['vendedor_id'] = Auth::id();
         }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_date_picker_dark.dart';
+import '../../../core/widgets/quick_date_filter.dart';
 
 import '../../ruta/providers/ruta_provider.dart';
 import '../providers/pedido_provider.dart';
@@ -27,6 +28,8 @@ class _PedidosFilterBarState extends State<PedidosFilterBar> {
   String _estadoFiltro = 'todos';
   DateTime? _startDate;
   DateTime? _endDate;
+  DateFilterOption _selectedQuickDate = DateFilterOption.todos;
+  bool _soloFaltantes = false;
 
   @override
   void initState() {
@@ -48,6 +51,8 @@ class _PedidosFilterBarState extends State<PedidosFilterBar> {
       vendedorId: _vendedorFiltro,
       startDate: _startDate != null ? _dateFmt.format(_startDate!) : null,
       endDate: _endDate != null ? _dateFmt.format(_endDate!) : null,
+      faltantes: _soloFaltantes ? true : null,
+      search: _clienteSearchCtrl?.text.isNotEmpty == true ? _clienteSearchCtrl!.text : null,
     );
     provider.fetchPedidos();
   }
@@ -61,6 +66,8 @@ class _PedidosFilterBarState extends State<PedidosFilterBar> {
       _estadoFiltro = 'todos';
       _startDate = null;
       _endDate = null;
+      _selectedQuickDate = DateFilterOption.todos;
+      _soloFaltantes = false;
     });
     _loadData();
   }
@@ -137,6 +144,65 @@ class _PedidosFilterBarState extends State<PedidosFilterBar> {
             },
           ),
           _dateRangeButton(),
+          QuickDateFilter(
+            isDark: true,
+            selectedOption: _selectedQuickDate,
+            onChanged: (option) {
+              setState(() {
+                _selectedQuickDate = option;
+                final range = QuickDateFilter.getRangeForFilter(option);
+                if (range != null) {
+                  _startDate = range.start;
+                  _endDate = range.end;
+                } else {
+                  _startDate = null;
+                  _endDate = null;
+                }
+              });
+              _loadData();
+            },
+          ),
+          InkWell(
+            onTap: () {
+              setState(() => _soloFaltantes = !_soloFaltantes);
+              _loadData();
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              height: 36,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: _soloFaltantes
+                    ? Colors.redAccent.withValues(alpha: 0.2)
+                    : const Color(0xFF2C2F33).withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _soloFaltantes
+                      ? Colors.redAccent.withValues(alpha: 0.5)
+                      : Colors.transparent,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: _soloFaltantes ? Colors.redAccent : Colors.white54,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Faltantes',
+                    style: TextStyle(
+                      color: _soloFaltantes ? Colors.redAccent : Colors.white,
+                      fontSize: 12,
+                      fontWeight: _soloFaltantes ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           _actionButton(
             icon: Icons.filter_list,
             label: 'Aplicar',
@@ -188,7 +254,7 @@ class _PedidosFilterBarState extends State<PedidosFilterBar> {
                 focusNode: focusNode,
                 style: const TextStyle(color: Colors.white, fontSize: 12),
                 decoration: InputDecoration(
-                  hintText: 'Buscar cliente...',
+                  hintText: 'Buscar cliente o pedido...',
                   hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: 0.35),
                     fontSize: 12,

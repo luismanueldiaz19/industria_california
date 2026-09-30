@@ -23,10 +23,13 @@ class QuickDateFilter extends StatelessWidget {
   final DateFilterOption selectedOption;
   final ValueChanged<DateFilterOption> onChanged;
 
+  final bool isDark;
+
   const QuickDateFilter({
     super.key,
     required this.selectedOption,
     required this.onChanged,
+    this.isDark = false,
   });
 
   _FilterMenuData _getMenuData(DateFilterOption option) {
@@ -63,16 +66,17 @@ class QuickDateFilter extends StatelessWidget {
         tooltip: 'Filtros rápidos',
         offset: const Offset(0, 48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        color: Colors.white,
+        color: isDark ? const Color(0xFF2C2F33) : Colors.white,
         elevation: 4,
         onSelected: onChanged,
         icon: Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: Colors.blueGrey.shade50,
+            color: isDark ? const Color(0xFF2C2F33).withValues(alpha: 0.7) : Colors.blueGrey.shade50,
             borderRadius: BorderRadius.circular(8),
+            border: isDark ? Border.all(color: Colors.white10) : null,
           ),
-          child: const Icon(Icons.bolt, color: Color(0xFF1E293B)),
+          child: Icon(Icons.bolt, color: isDark ? Colors.white70 : const Color(0xFF1E293B)),
         ),
         itemBuilder: (context) => [
           _buildMenuItem(DateFilterOption.esteMes),
@@ -102,13 +106,13 @@ class QuickDateFilter extends StatelessWidget {
           Icon(
             data.icon,
             size: 20,
-            color: isSelected ? AppTheme.primaryColor : Colors.grey[700],
+            color: isSelected ? AppTheme.primaryColor : (isDark ? Colors.white54 : Colors.grey[700]),
           ),
           const SizedBox(width: 12),
           Text(
             data.label,
             style: TextStyle(
-              color: isSelected ? AppTheme.primaryColor : Colors.black87,
+              color: isSelected ? AppTheme.primaryColor : (isDark ? Colors.white : Colors.black87),
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
               fontSize: 14,
             ),
@@ -161,6 +165,54 @@ class QuickDateFilter extends StatelessWidget {
         final end = DateTime(now.year - 1, 12, 31, 23, 59, 59);
         return date.isAfter(start.subtract(const Duration(seconds: 1))) &&
             date.isBefore(end.add(const Duration(seconds: 1)));
+    }
+  }
+
+  static DateTimeRange? getRangeForFilter(DateFilterOption filter) {
+    final now = DateTime.now();
+    switch (filter) {
+      case DateFilterOption.todos:
+        return null;
+      case DateFilterOption.ultimos7Dias:
+        return DateTimeRange(
+          start: now.subtract(const Duration(days: 7)),
+          end: now,
+        );
+      case DateFilterOption.ultimos30Dias:
+        return DateTimeRange(
+          start: now.subtract(const Duration(days: 30)),
+          end: now,
+        );
+      case DateFilterOption.esteMes:
+        return DateTimeRange(
+          start: DateTime(now.year, now.month, 1),
+          end: DateTime(now.year, now.month + 1, 0, 23, 59, 59),
+        );
+      case DateFilterOption.mesPasado:
+        return DateTimeRange(
+          start: DateTime(now.year, now.month - 1, 1),
+          end: DateTime(now.year, now.month, 0, 23, 59, 59),
+        );
+      case DateFilterOption.hace2Meses:
+        return DateTimeRange(
+          start: DateTime(now.year, now.month - 2, 1),
+          end: DateTime(now.year, now.month - 1, 0, 23, 59, 59),
+        );
+      case DateFilterOption.hace3Meses:
+        return DateTimeRange(
+          start: DateTime(now.year, now.month - 3, 1),
+          end: DateTime(now.year, now.month - 2, 0, 23, 59, 59),
+        );
+      case DateFilterOption.esteAno:
+        return DateTimeRange(
+          start: DateTime(now.year, 1, 1),
+          end: DateTime(now.year, 12, 31, 23, 59, 59),
+        );
+      case DateFilterOption.anoPasado:
+        return DateTimeRange(
+          start: DateTime(now.year - 1, 1, 1),
+          end: DateTime(now.year - 1, 12, 31, 23, 59, 59),
+        );
     }
   }
 }

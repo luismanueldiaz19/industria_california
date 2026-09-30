@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:industria_california/modules/ruta/providers/ruta_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/pedido.dart';
 import '../providers/pedido_provider.dart';
+import '../utils/pedido_utils.dart';
 import 'pedido_detalle_dialog.dart';
 
 class PedidosTable extends StatefulWidget {
@@ -18,21 +18,6 @@ class PedidosTable extends StatefulWidget {
 
 class _PedidosTableState extends State<PedidosTable> {
   final _currencyFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
-
-  Color _getColorForEstado(String estado) {
-    switch (estado) {
-      case 'borrador':
-        return const Color(0xFFFF9800);
-      case 'enviado':
-        return const Color(0xFF2196F3);
-      case 'facturado':
-        return const Color(0xFF4CAF50);
-      case 'cancelado':
-        return const Color(0xFFE53935);
-      default:
-        return Colors.grey;
-    }
-  }
 
   Future<void> _generarPdf(int id) async {
     ScaffoldMessenger.of(
@@ -136,10 +121,10 @@ class _PedidosTableState extends State<PedidosTable> {
   ) {
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
-        backgroundColor: _getColorForEstado(estado).withValues(alpha: 0.2),
-        foregroundColor: _getColorForEstado(estado),
+        backgroundColor: PedidoUtils.getColorForEstado(estado).withValues(alpha: 0.2),
+        foregroundColor: PedidoUtils.getColorForEstado(estado),
         elevation: 0,
-        side: BorderSide(color: _getColorForEstado(estado)),
+        side: BorderSide(color: PedidoUtils.getColorForEstado(estado)),
       ),
       icon: Icon(icon, size: 16),
       label: Text(label),
@@ -381,7 +366,7 @@ class _PedidosTableState extends State<PedidosTable> {
                     ),
                   ],
                   rows: provider.pedidos.map((pedido) {
-                    final colorEstado = _getColorForEstado(pedido.estado);
+                    final colorEstado = PedidoUtils.getColorForEstado(pedido.estado);
                     double faltante = 0;
                     for (var det in pedido.detalles) {
                       faltante +=
@@ -584,8 +569,6 @@ class _PedidosTableState extends State<PedidosTable> {
   }
 
   Widget _buildPagination(PedidoProvider provider) {
-    if (provider.lastPage <= 1) return const SizedBox.shrink();
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: const BoxDecoration(
@@ -593,29 +576,43 @@ class _PedidosTableState extends State<PedidosTable> {
         border: Border(top: BorderSide(color: Colors.black26, width: 2)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left, color: Colors.white),
-            onPressed: provider.currentPage > 1
-                ? () => provider.fetchPage(provider.currentPage - 1)
-                : null,
-          ),
-          const SizedBox(width: 10),
           Text(
-            'Página ${provider.currentPage} de ${provider.lastPage}',
+            'Total: ${provider.total}',
             style: const TextStyle(
-              color: Colors.white,
+              color: Colors.white70,
               fontWeight: FontWeight.bold,
+              fontSize: 14,
             ),
           ),
-          const SizedBox(width: 10),
-          IconButton(
-            icon: const Icon(Icons.chevron_right, color: Colors.white),
-            onPressed: provider.currentPage < provider.lastPage
-                ? () => provider.fetchPage(provider.currentPage + 1)
-                : null,
-          ),
+          if (provider.lastPage > 1)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left, color: Colors.white),
+                  onPressed: provider.currentPage > 1
+                      ? () => provider.fetchPage(provider.currentPage - 1)
+                      : null,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Página ${provider.currentPage} de ${provider.lastPage}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right, color: Colors.white),
+                  onPressed: provider.currentPage < provider.lastPage
+                      ? () => provider.fetchPage(provider.currentPage + 1)
+                      : null,
+                ),
+              ],
+            ),
         ],
       ),
     );
