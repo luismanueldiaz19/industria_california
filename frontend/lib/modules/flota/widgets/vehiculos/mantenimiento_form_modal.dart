@@ -7,8 +7,9 @@ import '../../models/vehiculo_mantenimiento.dart';
 
 class MantenimientoFormModal extends StatefulWidget {
   final VehiculoMantenimiento? mantenimiento;
+  final int? vehiculoIdFijo;
 
-  const MantenimientoFormModal({super.key, this.mantenimiento});
+  const MantenimientoFormModal({super.key, this.mantenimiento, this.vehiculoIdFijo});
 
   @override
   State<MantenimientoFormModal> createState() => _MantenimientoFormModalState();
@@ -33,6 +34,8 @@ class _MantenimientoFormModalState extends State<MantenimientoFormModal> {
       _estado = widget.mantenimiento!.estado;
       _descripcionController.text = widget.mantenimiento!.descripcion;
       _costoController.text = widget.mantenimiento!.costo.toString();
+    } else if (widget.vehiculoIdFijo != null) {
+      _vehiculoId = widget.vehiculoIdFijo;
     }
   }
 
@@ -80,7 +83,7 @@ class _MantenimientoFormModalState extends State<MantenimientoFormModal> {
       if (mounted) {
         context.read<MantenimientoProvider>().loadMantenimientos();
         context.read<VehiculoProvider>().loadVehiculos(); // Refresh stats
-        Navigator.pop(context);
+        Navigator.pop(context, true); // true indicates success/added
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -155,27 +158,29 @@ class _MantenimientoFormModalState extends State<MantenimientoFormModal> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<int>(
-                  value: _vehiculoId,
-                  isExpanded: true,
-                  iconSize: 20,
-                  decoration: _inputDecoration('Vehículo'),
-                  dropdownColor: const Color(0xFF2C2F33),
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                  items: vehiculos.map((v) {
-                    return DropdownMenuItem<int>(
-                      value: v.id,
-                      child: Text('${v.ficha} - ${v.placa ?? 'S/N'}'),
-                    );
-                  }).toList(),
-                  onChanged: widget.mantenimiento == null
-                      ? (val) {
-                          setState(() => _vehiculoId = val);
-                        }
-                      : null, // Disable changing vehicle on edit
-                  validator: (val) => val == null ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 8),
+                if (widget.vehiculoIdFijo == null) ...[
+                  DropdownButtonFormField<int>(
+                    value: _vehiculoId,
+                    isExpanded: true,
+                    iconSize: 20,
+                    decoration: _inputDecoration('Vehículo'),
+                    dropdownColor: const Color(0xFF2C2F33),
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    items: vehiculos.map((v) {
+                      return DropdownMenuItem<int>(
+                        value: v.id,
+                        child: Text('${v.ficha} - ${v.placa ?? 'S/N'}'),
+                      );
+                    }).toList(),
+                    onChanged: widget.mantenimiento == null
+                        ? (val) {
+                            setState(() => _vehiculoId = val);
+                          }
+                        : null, // Disable changing vehicle on edit
+                    validator: (val) => val == null ? 'Requerido' : null,
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Row(
                   children: [
                     Expanded(

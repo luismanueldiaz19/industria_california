@@ -55,17 +55,6 @@ class _ChoferesScreenState extends State<ChoferesScreen> {
               context.read<ChoferProvider>().fetchChoferes();
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.add, color: Color(0xFFE31E24), size: 20),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const ChoferFormModal(),
-              );
-            },
-          ),
         ],
       ),
       body: Consumer<ChoferProvider>(

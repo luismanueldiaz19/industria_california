@@ -60,7 +60,23 @@ class RolesAndPermissionsSeeder extends Seeder {
             'enviar_pedidos',
             'facturar_pedidos',
             
-   
+        // VEHICULOS Y LOGISTICA
+            'ver_vehiculos',
+            'crear_vehiculos',
+            'editar_vehiculos',
+            'eliminar_vehiculos',
+            
+            'ver_mantenimientos',
+            'crear_mantenimientos',
+            'editar_mantenimientos',
+            'eliminar_mantenimientos',
+            
+            'ver_choferes',
+            'crear_choferes',
+            'editar_choferes',
+            'eliminar_choferes',
+            
+            'ver_estadisticas',
         ];
 
         foreach ($permisos as $permiso) {
@@ -99,6 +115,16 @@ class RolesAndPermissionsSeeder extends Seeder {
             'eliminar_pedidos',
             'enviar_pedidos',
             'facturar_pedidos'
+        ]);
+
+        // 🚛 5. ENCARGADO DE VEHICULOS (Crea, Edita, Ve, pero NO Elimina, en sus modulos)
+        $encargadoVehiculos = Role::firstOrCreate(['name' => 'encargado_vehiculos', 'description' => 'Encargado de Vehiculos']);
+        $encargadoVehiculos->givePermissionTo([
+            'ver_vehiculos', 'crear_vehiculos', 'editar_vehiculos',
+            'ver_mantenimientos', 'crear_mantenimientos', 'editar_mantenimientos',
+            'ver_choferes', 'editar_choferes',
+            'ver_gastos', 'crear_gastos', // Asumiendo que también edita gastos si fuera necesario, o solo crear
+            'ver_estadisticas'
         ]);
     }
 }

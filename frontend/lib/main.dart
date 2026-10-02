@@ -163,6 +163,20 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    // Determinar la pantalla inicial según el rol
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.isEncargadoVehiculos) {
+        setState(() {
+          _selectedIndex = 15; // Vehículos (Dashboard principal de su rol)
+        });
+      }
+    });
+  }
+
   final List<Widget> _screens = [
     const LedhouseDetallesScreen(), //0
     const CxcScreen(), // 1

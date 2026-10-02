@@ -26,28 +26,15 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1C1E),
-      appBar: AppBar(
-        title: const Text(
-          'Flota de Vehículos',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: const Color(0xFF2C2F33),
-        iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Color(0xFFE31E24)),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const VehiculoFormModal(),
-              );
-            },
-          ),
-        ],
-      ),
+      // appBar: AppBar(
+      //   title: const Text(
+      //     'Flota de Vehículos',
+      //     style: TextStyle(color: Colors.white),
+      //   ),
+      //   backgroundColor: const Color(0xFF2C2F33),
+      //   iconTheme: const IconThemeData(color: Colors.white),
+      //   elevation: 0,
+      // ),
       body: Consumer<VehiculoProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
@@ -62,15 +49,15 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
               final isTablet =
                   constraints.maxWidth >= 600 && constraints.maxWidth < 1000;
 
-              int crossAxisCount = 4;
-              double aspectRatio = 2.5;
+              int crossAxisCount = 3;
+              double aspectRatio = 2.0;
 
               if (isMobile) {
+                crossAxisCount = 1;
+                aspectRatio = 2.2;
+              } else if (isTablet) {
                 crossAxisCount = 2;
                 aspectRatio = 1.8;
-              } else if (isTablet) {
-                crossAxisCount = 3;
-                aspectRatio = 2.2;
               }
 
               return Padding(

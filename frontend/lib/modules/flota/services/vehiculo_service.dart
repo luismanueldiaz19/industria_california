@@ -46,6 +46,28 @@ class VehiculoService {
     return data.map((json) => VehiculoMantenimiento.fromJson(json)).toList();
   }
 
+  Future<Map<String, dynamic>> getMantenimientosPaginated(
+    int vehiculoId, {
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    String? tipo,
+    String? estado,
+    String? year,
+  }) async {
+    final params = <String, String>{
+      'page': page.toString(),
+      'per_page': perPage.toString(),
+    };
+    if (search != null && search.isNotEmpty) params['search'] = search;
+    if (tipo != null && tipo != 'Todos') params['tipo'] = tipo;
+    if (estado != null && estado != 'Todos') params['estado'] = estado;
+    if (year != null && year != 'Todos') params['year'] = year;
+
+    final response = await _http.get('$_base/$vehiculoId/mantenimientos-paginated', params: params);
+    return response as Map<String, dynamic>;
+  }
+
   Future<List<VehiculoMantenimiento>> getMantenimientosTodos() async {
     final response = await _http.get('$_base/mantenimientos/todos');
     final List data = response is List ? response : [];

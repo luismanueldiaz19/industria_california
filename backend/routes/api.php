@@ -230,6 +230,7 @@ Route::prefix('v1')->group(function () {
                 // Mantenimientos
                 Route::get('vehiculos/mantenimientos/todos', [VehiculoController::class, 'mantenimientosTodos']);
                 Route::get('vehiculos/mantenimientos/pdf-url', [VehiculoController::class, 'getMantenimientosPdfUrl']);
+                Route::get('vehiculos/{vehiculo}/mantenimientos-paginated', [VehiculoController::class, 'mantenimientosPaginated']);
                 Route::get('vehiculos/{vehiculo}/mantenimientos', [VehiculoController::class, 'mantenimientosIndex']);
                 Route::post('vehiculos/{vehiculo}/mantenimientos', [VehiculoController::class, 'mantenimientosStore']);
                 Route::patch('vehiculos/{vehiculo}/mantenimientos/{mantenimiento}', [VehiculoController::class, 'mantenimientosUpdate']);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/gasto_vehiculo_provider.dart';
 import '../../models/tipo_gasto.dart';
+import '../../../auth/providers/auth_provider.dart';
 
 class TipoGastoManagerDialog extends StatefulWidget {
   const TipoGastoManagerDialog({super.key});
@@ -178,10 +179,11 @@ class _TipoGastoManagerDialogState extends State<TipoGastoManagerDialog> {
                                     });
                                   },
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                                  onPressed: () => _delete(provider, tipo),
-                                ),
+                                if (context.read<AuthProvider>().isAdmin)
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                    onPressed: () => _delete(provider, tipo),
+                                  ),
                               ],
                             ),
                           ),

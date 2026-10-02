@@ -32,7 +32,7 @@ class AppDatePickerDark {
               headerBackgroundColor: AppTheme.primaryBlue,
               headerForegroundColor: Colors.white,
               rangeSelectionBackgroundColor: AppTheme.primaryBlue.withValues(
-                alpha: 0.2,
+                alpha: 0.45,
               ),
               rangePickerBackgroundColor: _darkBg,
               dayBackgroundColor: WidgetStateProperty.resolveWith((states) {

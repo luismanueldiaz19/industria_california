@@ -6,6 +6,7 @@ import '../../../core/widgets/quick_date_filter.dart';
 import '../providers/gasto_vehiculo_provider.dart';
 import '../widgets/vehiculos/gasto_form_modal.dart';
 import 'gastos_estadisticas_screen.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class GastosVehiculosScreen extends StatefulWidget {
   const GastosVehiculosScreen({super.key});
@@ -403,18 +404,19 @@ class _GastosVehiculosScreenState extends State<GastosVehiculosScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    InkWell(
-                                      onTap: () => _confirmDelete(
-                                        context,
-                                        provider,
-                                        gasto,
+                                    if (context.read<AuthProvider>().isAdmin)
+                                      InkWell(
+                                        onTap: () => _confirmDelete(
+                                          context,
+                                          provider,
+                                          gasto,
+                                        ),
+                                        child: const Icon(
+                                          Icons.delete,
+                                          color: Colors.redAccent,
+                                          size: 16,
+                                        ),
                                       ),
-                                      child: const Icon(
-                                        Icons.delete,
-                                        color: Colors.redAccent,
-                                        size: 16,
-                                      ),
-                                    ),
                                   ],
                                 ),
                               ],

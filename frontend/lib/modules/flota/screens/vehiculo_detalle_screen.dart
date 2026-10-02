@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/vehiculo.dart';
+import '../widgets/vehiculos/vehiculo_mantenimientos_tab.dart';
 
 class VehiculoDetalleScreen extends StatelessWidget {
   final Vehiculo vehiculo;
@@ -13,7 +14,10 @@ class VehiculoDetalleScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: const Color(0xFF1A1C1E),
         appBar: AppBar(
-          title: Text('Vehículo: ${vehiculo.ficha}', style: const TextStyle(color: Colors.white)),
+          title: Text(
+            'Vehículo: ${vehiculo.ficha}',
+            style: const TextStyle(color: Colors.white),
+          ),
           backgroundColor: const Color(0xFF2C2F33),
           iconTheme: const IconThemeData(color: Colors.white),
           elevation: 0,
@@ -47,9 +51,15 @@ class VehiculoDetalleScreen extends StatelessWidget {
         children: [
           _buildInfoRow('Ficha:', vehiculo.ficha),
           _buildInfoRow('Placa:', vehiculo.placa ?? 'S/N'),
-          _buildInfoRow('Marca / Modelo:', '${vehiculo.marca ?? 'N/A'} ${vehiculo.modelo ?? ''}'),
+          _buildInfoRow(
+            'Marca / Modelo:',
+            '${vehiculo.marca ?? 'N/A'} ${vehiculo.modelo ?? ''}',
+          ),
           _buildInfoRow('Energía:', vehiculo.tipoEnergia.toUpperCase()),
-          _buildInfoRow('Estado:', vehiculo.estado.toUpperCase().replaceAll('_', ' ')),
+          _buildInfoRow(
+            'Estado:',
+            vehiculo.estado.toUpperCase().replaceAll('_', ' '),
+          ),
         ],
       ),
     );
@@ -66,7 +76,11 @@ class VehiculoDetalleScreen extends StatelessWidget {
           ),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -74,12 +88,7 @@ class VehiculoDetalleScreen extends StatelessWidget {
   }
 
   Widget _buildMantenimientosTab() {
-    return const Center(
-      child: Text(
-        'Historial de Mantenimientos y Averías',
-        style: TextStyle(color: Colors.white54, fontSize: 16),
-      ),
-    );
+    return VehiculoMantenimientosTab(vehiculoId: vehiculo.id);
   }
 
   Widget _buildGastosTab() {

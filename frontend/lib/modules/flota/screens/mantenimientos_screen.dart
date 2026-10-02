@@ -5,6 +5,7 @@ import '../../../core/utils/app_date_picker_dark.dart';
 import '../../../core/widgets/quick_date_filter.dart';
 import '../providers/mantenimiento_provider.dart';
 import '../widgets/vehiculos/mantenimiento_form_modal.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class MantenimientosScreen extends StatefulWidget {
   const MantenimientosScreen({super.key});
@@ -427,18 +428,19 @@ class _MantenimientosScreenState extends State<MantenimientosScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    InkWell(
-                                      onTap: () => _confirmDelete(
-                                        context,
-                                        provider,
-                                        mant,
+                                    if (context.read<AuthProvider>().isAdmin)
+                                      InkWell(
+                                        onTap: () => _confirmDelete(
+                                          context,
+                                          provider,
+                                          mant,
+                                        ),
+                                        child: const Icon(
+                                          Icons.delete,
+                                          color: Colors.redAccent,
+                                          size: 16,
+                                        ),
                                       ),
-                                      child: const Icon(
-                                        Icons.delete,
-                                        color: Colors.redAccent,
-                                        size: 16,
-                                      ),
-                                    ),
                                   ],
                                 ),
                               ],

@@ -211,6 +211,45 @@ class VehiculoController extends Controller
     }
 
     /**
+     * Listar los mantenimientos de un vehículo con paginación, filtros de año y búsqueda libre.
+     */
+    public function mantenimientosPaginated(Vehiculo $vehiculo, Request $request): JsonResponse
+    {
+        $query = $vehiculo->mantenimientos()->with('reportador:id,name');
+
+        // Filtro por estado
+        if ($request->filled('estado') && $request->estado !== 'Todos') {
+            $query->where('estado', $request->estado);
+        }
+
+        // Filtro por tipo
+        if ($request->filled('tipo') && $request->tipo !== 'Todos') {
+            $query->where('tipo', $request->tipo);
+        }
+        
+        // Filtro por buscador libre (search)
+        if ($request->filled('search')) {
+            $busqueda = $request->search;
+            $query->where(function ($q) use ($busqueda) {
+                $q->where('descripcion', 'like', "%{$busqueda}%")
+                  ->orWhere('estado', 'like', "%{$busqueda}%")
+                  ->orWhere('tipo', 'like', "%{$busqueda}%");
+            });
+        }
+        
+        // Filtro por año (por defecto el año actual si no se provee y si no se especifica 'Todos')
+        $year = $request->get('year', date('Y'));
+        if ($year !== 'todos' && $year !== 'Todos') {
+            $query->whereYear('fecha_reporte', $year);
+        }
+
+        $perPage = $request->get('per_page', 20);
+        $paginated = $query->orderBy('fecha_reporte', 'desc')->paginate($perPage);
+
+        return response()->json($paginated);
+    }
+
+    /**
      * Registrar un nuevo mantenimiento para un vehículo.
      */
     public function mantenimientosStore(StoreMantenimientoRequest $request, Vehiculo $vehiculo): JsonResponse
