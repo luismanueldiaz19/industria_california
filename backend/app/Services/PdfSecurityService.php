@@ -391,6 +391,9 @@ class PdfSecurityService
                 $filename = 'Movimientos_Inventario_' . date('Ymd') . '.pdf';
                 break;
 
+            case 'cheques_futuristas_general':
+                return app(\App\Modules\ChequeFuturista\Services\ChequeFuturistaPdfService::class)->renderizarPdf($pdfToken->tipo, $params);
+
             case 'pedidos_general':
             case 'pedido':
             case 'pedidos_vendedores':

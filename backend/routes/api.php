@@ -25,6 +25,7 @@ use App\Modules\CamionVictual\Http\Controllers\CamionVictualController;
 use App\Modules\Vehiculo\Http\Controllers\VehiculoController;
 use App\Modules\Vehiculo\Http\Controllers\TipoGastoController;
 use App\Http\Controllers\Api\ChoferController;
+use App\Modules\ChequeFuturista\Http\Controllers\ChequeFuturistaController;
 
 // =========================================================
 // RUTA PÚBLICA DE DOCUMENTOS SEGUROS CON TOKEN (COMPATIBLE CON APACHE)
@@ -250,6 +251,18 @@ Route::prefix('v1')->group(function () {
                 Route::apiResource('vehiculos', VehiculoController::class);
                 // Roles
                 Route::apiResource('roles', \App\Http\Controllers\Api\RoleController::class);
+
+                // ── MÓDULO CHEQUES FUTURISTAS ─────────────────────────
+                Route::get('cheques-futuristas/pdf-url', [ChequeFuturistaController::class, 'getPdfUrl']);
+                Route::get('cheques-futuristas/resumen', [ChequeFuturistaController::class, 'resumen']);
+                // Sub-recursos: documentos
+                Route::get('cheques-futuristas/{chequeFuturista}/documentos', [ChequeFuturistaController::class, 'documentosIndex']);
+                Route::post('cheques-futuristas/{chequeFuturista}/documentos', [ChequeFuturistaController::class, 'documentosStore']);
+                Route::delete('cheques-futuristas/{chequeFuturista}/documentos/{documento}', [ChequeFuturistaController::class, 'documentosDestroy']);
+                // CRUD base
+                Route::apiResource('cheques-futuristas', ChequeFuturistaController::class)->parameters([
+                    'cheques-futuristas' => 'chequeFuturista'
+                ]);
             });
         }
     });

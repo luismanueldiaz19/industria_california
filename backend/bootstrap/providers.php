@@ -9,4 +9,5 @@ return [
     App\Modules\Produccion\Providers\ProduccionServiceProvider::class,
     App\Modules\CamionVictual\Providers\CamionVictualServiceProvider::class,
     App\Modules\Vehiculo\Providers\VehiculoServiceProvider::class,
+    App\Modules\ChequeFuturista\Providers\ChequeFuturistaServiceProvider::class,
 ];

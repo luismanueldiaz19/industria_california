@@ -60,6 +60,8 @@ import 'modules/pedido/providers/reporte_vendedores_provider.dart';
 import 'modules/produccion/providers/orden_produccion_provider.dart';
 // Módulo Camiones Victuales
 import 'modules/camion_victual/providers/camion_victual_provider.dart';
+// Módulo Cheques Futuristas
+import 'modules/cheque_futurista/providers/cheque_list_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -96,6 +98,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => CamionVictualProvider()),
         // Usuarios y Roles
         ChangeNotifierProvider(create: (_) => RoleProvider()),
+        // Módulo Cheques Futuristas
+        ChangeNotifierProvider(create: (_) => ChequeListProvider()),
       ],
       child: const ConstruccionERP(),
     ),

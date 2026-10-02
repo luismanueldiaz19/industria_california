@@ -99,6 +99,9 @@ class _LoginScreenState extends State<LoginScreen>
       } else if (role == 'vendedor') {
         _usernameController.text = "wagner";
         _passwordController.text = "123456";
+      } else if (role == 'vehiculo') {
+        _usernameController.text = "vehiculo";
+        _passwordController.text = "199512";
       }
     });
   }
@@ -117,8 +120,9 @@ class _LoginScreenState extends State<LoginScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _roleOption('admin', 'Admin', const Color(0xFFE31E24)),
-            _roleOption('gerente', 'Gerente', const Color(0xFF4CAF50)),
+            // _roleOption('gerente', 'Gerente', const Color(0xFF4CAF50)),
             _roleOption('vendedor', 'Vendedor', const Color(0xFF2196F3)),
+            _roleOption('vehiculo', 'Vehiculo', Colors.teal),
           ],
         ),
       ],
@@ -480,7 +484,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
 
               // Comentar esto en producción para ocultar los botones de prueba
-              // _buildQuickLoginRoles(),
+              _buildQuickLoginRoles(),
             ],
           ),
         ),
