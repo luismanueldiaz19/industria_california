@@ -80,6 +80,74 @@ class ChequeFuturistaService
         return $resultado;
     }
 
+    /**
+     * Listado global para gestión contable/administrativa.
+     * Igual que obtenerListadoFiltrado pero sin restricción por vendedor.
+     * Incluye filtro opcional por id_vendedor para buscar por vendedor específico.
+     */
+    public function obtenerListadoAdmin(array $filtros): array
+    {
+        $query = ChequeFuturista::query()
+            ->with(['cliente:id,nombre', 'vendedor:id,name', 'creador:id,name']);
+
+        // 1. Filtros de búsqueda
+        if (!empty($filtros['buscar'])) {
+            $buscar = TextNormalizer::normalize($filtros['buscar']);
+            $buscar = preg_replace('/\s+/', ' ', $buscar);
+
+            $query->where(function ($q) use ($buscar) {
+                $q->whereHas('cliente', function ($sub) use ($buscar) {
+                    $sub->whereRaw('LOWER(nombre) LIKE ?', ['%' . $buscar . '%']);
+                })->orWhereRaw('LOWER(num_cheque) LIKE ?', ['%' . $buscar . '%']);
+            });
+        }
+
+        if (!empty($filtros['estado'])) {
+            $query->where('estado', $filtros['estado']);
+        }
+
+        if (!empty($filtros['id_cliente'])) {
+            $query->where('id_cliente', $filtros['id_cliente']);
+        }
+
+        // Filtro opcional por vendedor (para admin que quiera ver solo uno)
+        if (!empty($filtros['id_vendedor'])) {
+            $query->where('id_vendedor', $filtros['id_vendedor']);
+        }
+
+        // 2. Rango de Fechas, Atrasados o Regla por Defecto
+        $atrasados = filter_var($filtros['atrasados'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        if ($atrasados) {
+            $query->where('created_at', '<', now()->subDays(20));
+        } elseif (!empty($filtros['fecha_inicio']) && !empty($filtros['fecha_fin'])) {
+            $query->whereBetween('created_at', [
+                $filtros['fecha_inicio'] . ' 00:00:00',
+                $filtros['fecha_fin'] . ' 23:59:59',
+            ]);
+        } else {
+            $query->where(function ($q) {
+                $q->where('estado', EstadoCheque::Pendiente->value)
+                  ->orWhere(function ($sub) {
+                      $sub->whereMonth('created_at', now()->month)
+                          ->whereYear('created_at', now()->year);
+                  });
+            });
+        }
+
+        $perPage    = $filtros['per_page'] ?? 20;
+        $montoTotal = (float) $query->sum('monto');
+        $paginator  = $query->orderByDesc('id')->paginate($perPage);
+
+        $resultado = $paginator->toArray();
+        $resultado['resumen_filtro'] = [
+            'total_filas' => $paginator->total(),
+            'monto_total' => $montoTotal,
+        ];
+
+        return $resultado;
+    }
+
     public function crear(array $datos, User $responsable): ChequeFuturista
     {
         $datos['created_by'] = $responsable->id;

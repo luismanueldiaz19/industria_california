@@ -29,6 +29,13 @@ class ChequeFuturistaController extends Controller
         return response()->json($cheques);
     }
 
+    /** Listado global para gestión contable (sin restricción por vendedor). */
+    public function indexAdmin(Request $request): JsonResponse
+    {
+        $cheques = $this->service->obtenerListadoAdmin($request->all());
+        return response()->json($cheques);
+    }
+
     public function getPdfUrl(Request $request): JsonResponse
     {
         $params = $request->all();

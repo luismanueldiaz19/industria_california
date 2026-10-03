@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/themes/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/widgets/general_header.dart';
@@ -38,7 +39,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1E2124),
+      backgroundColor: AppTheme.darkBgColor,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

@@ -62,6 +62,8 @@ import 'modules/produccion/providers/orden_produccion_provider.dart';
 import 'modules/camion_victual/providers/camion_victual_provider.dart';
 // Módulo Cheques Futuristas
 import 'modules/cheque_futurista/providers/cheque_list_provider.dart';
+import 'modules/cheque_futurista/providers/cheque_admin_provider.dart';
+import 'modules/cheque_futurista/screens/cheques_admin_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -100,6 +102,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => RoleProvider()),
         // Módulo Cheques Futuristas
         ChangeNotifierProvider(create: (_) => ChequeListProvider()),
+        ChangeNotifierProvider(create: (_) => ChequeAdminProvider()),
       ],
       child: const ConstruccionERP(),
     ),
@@ -212,6 +215,7 @@ class _MainLayoutState extends State<MainLayout> {
     const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.cliente), // 22
     const ProduccionAgrupadaScreen(tipo: TipoAgrupacion.fecha), // 23
     const CamionesVictualesAdminScreen(), // 24
+    const ChequesAdminScreen(), // 25 — Admin Cheques Futuristas
   ];
 
   @override

@@ -9,6 +9,16 @@ class AppTheme {
   static const textPrimary = Color(0xFF1A1A1A);
   static const textSecondary = Color(0xFF666666);
 
+  static const bg = Color(0xFF0F1117);
+  static const surface = Color(0xFF1A1D27);
+  static const surfaceAlt = Color(0xFF141720);
+  static const border = Color(0xFF2A2D3A);
+  static const accent = Color(0xFF4F8EF7);
+  static const accentGlow = Color(0xFF2563EB);
+  static const textPrimarySec = Color(0xFFE8EAF0);
+  static const textSecond = Color(0xFF8B90A7);
+  static const textMuted = Color(0xFF555A70);
+
   // ── Ledhouse Module Colors ─────────────────────────────────────
   static const ledhouseBlue = Color(0xFF1A73E8); // Google Blue
   static const ledhouseBlueDark = Color(0xFF0D47A1); // Google Blue Dark

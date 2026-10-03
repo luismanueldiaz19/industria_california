@@ -24,6 +24,28 @@ class ChequeFuturistaService {
     return response as Map<String, dynamic>;
   }
 
+  /// Obtiene TODOS los cheques de TODOS los vendedores (panel administrativo)
+  Future<Map<String, dynamic>> obtenerChequesAdmin({
+    int page = 1,
+    String? fechaInicio,
+    String? fechaFin,
+    String? buscar,
+    String? estado,
+    int? idVendedor,
+    bool atrasados = false,
+  }) async {
+    final Map<String, String> params = {'page': page.toString()};
+    if (atrasados) params['atrasados'] = 'true';
+    if (fechaInicio != null) params['fecha_inicio'] = fechaInicio;
+    if (fechaFin != null) params['fecha_fin'] = fechaFin;
+    if (buscar != null && buscar.trim().isNotEmpty) params['buscar'] = buscar.trim();
+    if (estado != null) params['estado'] = estado;
+    if (idVendedor != null) params['id_vendedor'] = idVendedor.toString();
+
+    final response = await _http.get('industria-california/admin/cheques-futuristas', params: params);
+    return response as Map<String, dynamic>;
+  }
+
   /// Crea un nuevo cheque futurista con datos de texto (Paso 1 del upload)
   Future<Map<String, dynamic>> crear(Map<String, dynamic> payload) async {
     final response = await _http.post(_endpoint, payload);

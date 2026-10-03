@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../modules/auth/providers/auth_provider.dart';
 import '../utils/constants.dart';
@@ -180,6 +180,13 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                     Icons.notifications_none_rounded,
                                     Icons.notifications_active_rounded,
                                     'Alertas Vendedores',
+                                    accentColor,
+                                  ),
+                                  _buildMenuItem(
+                                    25,
+                                    Icons.cake_outlined,
+                                    Icons.cake,
+                                    'Queque Futurista',
                                     accentColor,
                                   ),
                                 ],
