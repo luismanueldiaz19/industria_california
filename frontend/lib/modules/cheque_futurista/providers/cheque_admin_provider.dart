@@ -22,6 +22,7 @@ class ChequeAdminProvider extends ChangeNotifier {
   String? _estado;
   int? _idVendedor;
   bool _soloAtrasados = false;
+  String _tipoFecha = 'creacion';
 
   // Getters
   List<ChequeFuturista> get cheques => _cheques;
@@ -35,6 +36,7 @@ class ChequeAdminProvider extends ChangeNotifier {
   String? get estado => _estado;
   int? get idVendedor => _idVendedor;
   bool get soloAtrasados => _soloAtrasados;
+  String get tipoFecha => _tipoFecha;
   int get totalFilas => _totalFilas;
   double get montoTotal => _montoTotal;
 
@@ -71,6 +73,26 @@ class ChequeAdminProvider extends ChangeNotifier {
     fetchCheques(refresh: true);
   }
 
+  /// Aplica todos los filtros de una sola vez (estilo barra de Pedidos).
+  void aplicarFiltros({
+    String? buscar,
+    String? estado,
+    int? idVendedor,
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
+    bool soloAtrasados = false,
+    String tipoFecha = 'creacion',
+  }) {
+    _buscar = (buscar == null || buscar.trim().isEmpty) ? null : buscar.trim();
+    _estado = estado;
+    _idVendedor = idVendedor;
+    _fechaInicio = fechaInicio;
+    _fechaFin = fechaFin;
+    _soloAtrasados = soloAtrasados;
+    _tipoFecha = tipoFecha;
+    fetchCheques(refresh: true);
+  }
+
   void clearAllFilters() {
     _fechaInicio = null;
     _fechaFin = null;
@@ -78,7 +100,56 @@ class ChequeAdminProvider extends ChangeNotifier {
     _estado = null;
     _idVendedor = null;
     _soloAtrasados = false;
+    _tipoFecha = 'creacion';
     fetchCheques(refresh: true);
+  }
+
+  // ── Acciones administrativas ─────────────────────────────
+
+  /// Cambia el estado de un cheque y actualiza la fila localmente.
+  Future<void> cambiarEstado(ChequeFuturista cheque, String nuevoEstado) async {
+    await _service.actualizarEstado(cheque.id, nuevoEstado);
+    _reemplazar(cheque.id, (c) => c.copyWith(estado: nuevoEstado));
+  }
+
+  /// Elimina una evidencia (solo admin) y descuenta el contador local.
+  Future<void> eliminarDocumento(
+    ChequeFuturista cheque,
+    int documentoId,
+  ) async {
+    await _service.eliminarDocumento(cheque.id, documentoId);
+    _reemplazar(
+      cheque.id,
+      (c) => c.copyWith(
+        documentosCount: c.documentosCount > 0 ? c.documentosCount - 1 : 0,
+      ),
+    );
+  }
+
+  /// Notifica que se subió una evidencia nueva.
+  void documentoAgregado(int chequeId) {
+    _reemplazar(
+      chequeId,
+      (c) => c.copyWith(documentosCount: c.documentosCount + 1),
+    );
+  }
+
+  /// Elimina el cheque completo (solo admin).
+  Future<void> eliminarCheque(ChequeFuturista cheque) async {
+    await _service.eliminarCheque(cheque.id);
+    _cheques.removeWhere((c) => c.id == cheque.id);
+    if (_totalFilas > 0) _totalFilas--;
+    _montoTotal = _montoTotal - cheque.monto < 0
+        ? 0.0
+        : _montoTotal - cheque.monto;
+    notifyListeners();
+  }
+
+  void _reemplazar(int id, ChequeFuturista Function(ChequeFuturista) fn) {
+    final i = _cheques.indexWhere((c) => c.id == id);
+    if (i == -1) return;
+    _cheques[i] = fn(_cheques[i]);
+    notifyListeners();
   }
 
   Future<void> fetchCheques({bool refresh = false}) async {
@@ -99,10 +170,12 @@ class ChequeAdminProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final String? startStr =
-          _fechaInicio != null ? _fechaInicio!.toIso8601String().split('T')[0] : null;
-      final String? endStr =
-          _fechaFin != null ? _fechaFin!.toIso8601String().split('T')[0] : null;
+      final String? startStr = _fechaInicio != null
+          ? _fechaInicio!.toIso8601String().split('T')[0]
+          : null;
+      final String? endStr = _fechaFin != null
+          ? _fechaFin!.toIso8601String().split('T')[0]
+          : null;
 
       final data = await _service.obtenerChequesAdmin(
         page: _currentPage,
@@ -112,12 +185,15 @@ class ChequeAdminProvider extends ChangeNotifier {
         estado: _estado,
         idVendedor: _idVendedor,
         atrasados: _soloAtrasados,
+        tipoFecha: _tipoFecha,
       );
 
       final List rawList = data['data'] ?? [];
       final int lastPage = data['last_page'] ?? 1;
 
-      final newCheques = rawList.map((json) => ChequeFuturista.fromJson(json)).toList();
+      final newCheques = rawList
+          .map((json) => ChequeFuturista.fromJson(json))
+          .toList();
       _cheques.addAll(newCheques);
 
       if (data['resumen_filtro'] != null) {

@@ -98,7 +98,7 @@
                         <td>{{ $cheque->cliente->nombre ?? 'N/A' }}</td>
                         <td>{{ $cheque->vendedor->name ?? 'N/A' }}</td>
                         <td>{{ $cheque->num_cheque ?? 'N/A' }}</td>
-                        <td class="center">{{ strtoupper($cheque->estado) }}</td>
+                        <td class="center">{{ strtoupper($cheque->estado->value ?? $cheque->estado) }}</td>
                         <td class="right">${{ number_format($cheque->monto, 2) }}</td>
                     </tr>
                 @endforeach

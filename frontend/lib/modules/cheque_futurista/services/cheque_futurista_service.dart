@@ -56,6 +56,50 @@ class ChequeFuturistaService {
     return response as Map<String, dynamic>;
   }
 
+  /// Obtiene la URL firmada para el PDF
+  Future<String> getPdfUrl({
+    String? fechaInicio,
+    String? fechaFin,
+    String? buscar,
+    String? estado,
+    int? idVendedor,
+    bool atrasados = false,
+  }) async {
+    final Map<String, String> params = {};
+    if (atrasados) params['atrasados'] = 'true';
+    if (fechaInicio != null) params['fecha_inicio'] = fechaInicio;
+    if (fechaFin != null) params['fecha_fin'] = fechaFin;
+    if (buscar != null && buscar.trim().isNotEmpty) {
+      params['buscar'] = buscar.trim();
+    }
+    if (estado != null) params['estado'] = estado;
+    if (idVendedor != null) params['id_vendedor'] = idVendedor.toString();
+
+    final response = await _http.get(
+      'industria-california/cheques-futuristas/pdf-url',
+      params: params,
+    );
+    return response['url'];
+  }
+
+  /// Obtiene el reporte agrupado por vendedores y estados
+  Future<List<dynamic>> obtenerReporteVendedores({
+    String? fechaInicio,
+    String? fechaFin,
+    String tipoFecha = 'creacion',
+  }) async {
+    final Map<String, String> params = {};
+    if (fechaInicio != null) params['fecha_inicio'] = fechaInicio;
+    if (fechaFin != null) params['fecha_fin'] = fechaFin;
+    params['tipo_fecha'] = tipoFecha;
+
+    final response = await _http.get(
+      'industria-california/admin/cheques-futuristas/reporte-vendedores',
+      params: params,
+    );
+    return response as List<dynamic>;
+  }
+
   /// Crea un nuevo cheque futurista con datos de texto (Paso 1 del upload)
   Future<Map<String, dynamic>> crear(Map<String, dynamic> payload) async {
     final response = await _http.post(_endpoint, payload);
@@ -98,24 +142,35 @@ class ChequeFuturistaService {
   /// Actualiza el estado de un cheque
   Future<bool> actualizarEstado(int chequeId, String nuevoEstado) async {
     try {
-      final response = await _http.put('$_endpoint/$chequeId', {
-        'estado': nuevoEstado,
-      });
-      return response != null;
+      await _http.put('$_endpoint/$chequeId', {'estado': nuevoEstado});
+      return true;
     } catch (e) {
-      print('Error al actualizar estado: $e');
-      return false;
+      throw _limpiarError(e);
     }
   }
 
   /// Elimina un cheque (Solo Admin)
   Future<bool> eliminarCheque(int chequeId) async {
     try {
-      final response = await _http.delete('$_endpoint/$chequeId');
-      return response != null;
+      await _http.delete('$_endpoint/$chequeId');
+      return true;
     } catch (e) {
-      print('Error al eliminar cheque: $e');
-      return false;
+      throw _limpiarError(e);
     }
   }
+
+  /// Elimina una imagen/evidencia de un cheque (Solo Admin)
+  Future<bool> eliminarDocumento(int chequeId, int documentoId) async {
+    try {
+      await _http.delete('$_endpoint/$chequeId/documentos/$documentoId');
+      return true;
+    } catch (e) {
+      throw _limpiarError(e);
+    }
+  }
+
+  String _limpiarError(Object e) => e
+      .toString()
+      .replaceAll('Error inesperado: ', '')
+      .replaceAll('Exception: ', '');
 }

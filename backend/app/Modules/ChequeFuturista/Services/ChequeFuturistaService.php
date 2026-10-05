@@ -91,7 +91,8 @@ class ChequeFuturistaService
     public function obtenerListadoAdmin(array $filtros): array
     {
         $query = ChequeFuturista::query()
-            ->with(['cliente:id,nombre', 'vendedor:id,name', 'creador:id,name']);
+            ->with(['cliente:id,nombre', 'vendedor:id,name', 'creador:id,name'])
+            ->withCount('documentos');
 
         // 1. Filtros de búsqueda
         if (!empty($filtros['buscar'])) {
@@ -196,6 +197,45 @@ class ChequeFuturistaService
             'cancelado'  => $totales[EstadoCheque::Cancelado->value] ?? 0,
             'vencido'    => $totales[EstadoCheque::Vencido->value] ?? 0,
         ];
+    }
+
+    public function reporteVendedores(array $filtros = []): array
+    {
+        $query = DB::table('cheques_futuristas')
+            ->join('users', 'cheques_futuristas.id_vendedor', '=', 'users.id')
+            ->select('users.name as vendedor', 'cheques_futuristas.estado', DB::raw('count(*) as cantidad'));
+
+        if (!empty($filtros['fecha_inicio']) && !empty($filtros['fecha_fin'])) {
+            $tipoFecha = $filtros['tipo_fecha'] ?? 'creacion';
+            $columnaFecha = $tipoFecha === 'deposito' ? 'fecha_deposito' : 'created_at';
+            $query->whereBetween('cheques_futuristas.' . $columnaFecha, [
+                $filtros['fecha_inicio'] . ' 00:00:00',
+                $filtros['fecha_fin'] . ' 23:59:59',
+            ]);
+        }
+
+        $resultados = $query->groupBy('users.id', 'users.name', 'cheques_futuristas.estado')
+            ->get();
+
+        $reporte = [];
+        foreach ($resultados as $row) {
+            $vendedor = $row->vendedor;
+            if (!isset($reporte[$vendedor])) {
+                $reporte[$vendedor] = [
+                    'vendedor'   => $vendedor,
+                    'pendiente'  => 0,
+                    'depositado' => 0,
+                    'cancelado'  => 0,
+                    'vencido'    => 0,
+                    'total'      => 0,
+                ];
+            }
+            $estado = $row->estado;
+            $reporte[$vendedor][$estado] = $row->cantidad;
+            $reporte[$vendedor]['total'] += $row->cantidad;
+        }
+
+        return array_values($reporte);
     }
 
     // ── CRUD Documentos ───────────────────────────────────────

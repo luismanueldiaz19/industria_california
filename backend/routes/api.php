@@ -255,6 +255,7 @@ Route::prefix('v1')->group(function () {
                 // ── MÓDULO CHEQUES FUTURISTAS ─────────────────────────
                 Route::get('cheques-futuristas/pdf-url', [ChequeFuturistaController::class, 'getPdfUrl']);
                 Route::get('cheques-futuristas/resumen', [ChequeFuturistaController::class, 'resumen']);
+                Route::get('admin/cheques-futuristas/reporte-vendedores', [ChequeFuturistaController::class, 'reporteVendedores']);
                 Route::get('admin/cheques-futuristas', [ChequeFuturistaController::class, 'indexAdmin']);
                 // Sub-recursos: documentos
                 Route::get('cheques-futuristas/{chequeFuturista}/documentos', [ChequeFuturistaController::class, 'documentosIndex']);

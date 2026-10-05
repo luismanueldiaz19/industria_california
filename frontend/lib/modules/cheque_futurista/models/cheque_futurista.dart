@@ -9,6 +9,8 @@ class ChequeFuturista {
   final String? comentario;
   final String createdAt;
   final String? fechaDeposito;
+  final String? nombreVendedor;
+  final int documentosCount;
 
   ChequeFuturista({
     required this.id,
@@ -21,6 +23,8 @@ class ChequeFuturista {
     this.comentario,
     required this.createdAt,
     this.fechaDeposito,
+    this.nombreVendedor,
+    this.documentosCount = 0,
   });
 
   factory ChequeFuturista.fromJson(Map<String, dynamic> json) {
@@ -37,6 +41,27 @@ class ChequeFuturista {
       comentario: json['comentario'],
       createdAt: json['created_at'] ?? '',
       fechaDeposito: json['fecha_deposito'],
+      nombreVendedor: json['vendedor']?['name'],
+      documentosCount: json['documentos_count'] is int
+          ? json['documentos_count']
+          : int.tryParse('${json['documentos_count'] ?? 0}') ?? 0,
+    );
+  }
+
+  ChequeFuturista copyWith({String? estado, int? documentosCount}) {
+    return ChequeFuturista(
+      id: id,
+      idCliente: idCliente,
+      nombreCliente: nombreCliente,
+      numCheque: numCheque,
+      numPedido: numPedido,
+      monto: monto,
+      estado: estado ?? this.estado,
+      comentario: comentario,
+      createdAt: createdAt,
+      fechaDeposito: fechaDeposito,
+      nombreVendedor: nombreVendedor,
+      documentosCount: documentosCount ?? this.documentosCount,
     );
   }
 }

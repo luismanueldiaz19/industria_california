@@ -36,14 +36,6 @@ class ChequeFuturistaController extends Controller
         return response()->json($cheques);
     }
 
-    public function getPdfUrl(Request $request): JsonResponse
-    {
-        $params = $request->all();
-        $params['id_vendedor'] = Auth::id(); // Asegurar que sea el vendedor actual
-        $url = PdfSecurityService::generarUrl('cheques_futuristas_general', $params, Auth::id(), 30);
-        return response()->json(['url' => $url]);
-    }
-
     public function store(StoreChequeFuturistaRequest $request): JsonResponse {
         try {
             $cheque = $this->service->crear($request->validated(), Auth::user());
@@ -70,9 +62,13 @@ class ChequeFuturistaController extends Controller
 
     public function destroy(ChequeFuturista $chequeFuturista): JsonResponse
     {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'Solo el administrador puede eliminar cheques.'], 403);
+        }
+
         try {
             $this->service->eliminar($chequeFuturista);
-            return response()->json(null, 204);
+            return response()->json(['message' => 'Cheque eliminado correctamente.']);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
@@ -81,6 +77,11 @@ class ChequeFuturistaController extends Controller
     public function resumen(): JsonResponse
     {
         return response()->json($this->service->resumen());
+    }
+
+    public function reporteVendedores(Request $request): JsonResponse
+    {
+        return response()->json($this->service->reporteVendedores($request->all()));
     }
 
     // ── Sub-recurso: Documentos ───────────────────────────────
@@ -104,13 +105,35 @@ class ChequeFuturistaController extends Controller
         }
     }
 
+    /** Elimina una imagen/evidencia del cheque. Solo administradores. */
     public function documentosDestroy(ChequeFuturista $chequeFuturista, DocumentoCheque $documento): JsonResponse
     {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'Solo el administrador puede eliminar evidencias.'], 403);
+        }
+
+        if ((int) $documento->cheque_futurista_id !== (int) $chequeFuturista->id) {
+            return response()->json(['message' => 'El documento no pertenece a este cheque.'], 404);
+        }
+
         try {
             $this->service->eliminarDocumento($documento);
-            return response()->json(null, 204);
+            return response()->json(['message' => 'Evidencia eliminada correctamente.']);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
+    }
+
+    public function getPdfUrl(Request $request): JsonResponse
+    {
+        $params = $request->only(['fecha_inicio', 'fecha_fin', 'buscar', 'estado', 'id_vendedor', 'atrasados']);
+        
+        if (!Auth::user()->hasRole('admin')) {
+            $params['id_vendedor'] = Auth::id();
+        }
+        
+        $url = PdfSecurityService::generarUrl('cheques_futuristas_general', $params, Auth::id(), 30);
+        
+        return response()->json(['url' => $url]);
     }
 }

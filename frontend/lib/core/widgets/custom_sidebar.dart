@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../modules/auth/providers/auth_provider.dart';
 import '../utils/constants.dart';
@@ -187,6 +187,13 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                     Icons.cake_outlined,
                                     Icons.cake,
                                     'Queque Futurista',
+                                    accentColor,
+                                  ),
+                                  _buildMenuItem(
+                                    26,
+                                    Icons.bar_chart_outlined,
+                                    Icons.bar_chart_rounded,
+                                    'Reporte Cheques',
                                     accentColor,
                                   ),
                                 ],

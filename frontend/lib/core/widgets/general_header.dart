@@ -134,14 +134,12 @@ class GeneralHeader extends StatelessWidget {
             ),
           ),
           if (actions != null && actions!.isNotEmpty)
-            Flexible(
-              child: Wrap(
-                alignment: WrapAlignment.end,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 0,
-                runSpacing: 4,
-                children: actions!,
-              ),
+            Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 0,
+              runSpacing: 4,
+              children: actions!,
             ),
         ],
       ),
