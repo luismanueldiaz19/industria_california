@@ -63,15 +63,7 @@ class _ChequeFormStep1ScreenState extends State<ChequeFormStep1Screen> {
             selected: form.cliente,
             onChanged: (c) => context.read<ChequeFormProvider>().setCliente(c),
           ),
-          const SizedBox(height: 20),
 
-          // ── Vendedor (usuario logueado — solo lectura) ────
-          _sectionLabel('Vendedor', Icons.badge_outlined),
-          const SizedBox(height: 8),
-          _VendedorReadOnly(
-            name: auth.name ?? auth.username ?? 'Usuario',
-            username: auth.username ?? '',
-          ),
           const SizedBox(height: 20),
 
           // ── Número de Cheque (Obligatorio) ────────────────
@@ -119,6 +111,20 @@ class _ChequeFormStep1ScreenState extends State<ChequeFormStep1Screen> {
           _EstadoSelector(
             selected: form.estado,
             onChanged: (v) => context.read<ChequeFormProvider>().setEstado(v),
+          ),
+          const SizedBox(height: 20),
+
+          // ── Fecha de Depósito ─────────────────────────────
+          _sectionLabel(
+            'Fecha para futuro depósito',
+            Icons.calendar_today_outlined,
+            optional: true,
+          ),
+          const SizedBox(height: 8),
+          _DatePickerField(
+            selectedDate: form.fechaDeposito,
+            onChanged: (date) =>
+                context.read<ChequeFormProvider>().setFechaDeposito(date),
           ),
           const SizedBox(height: 20),
 
@@ -255,61 +261,6 @@ class _ChequeFormStep1ScreenState extends State<ChequeFormStep1Screen> {
   }
 }
 
-// ── Vendedor Read-Only ────────────────────────────────────────────────────────
-
-class _VendedorReadOnly extends StatelessWidget {
-  final String name;
-  final String username;
-
-  const _VendedorReadOnly({required this.name, required this.username});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFB71C1C).withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: const Color(0xFFB71C1C).withValues(alpha: 0.2),
-        ),
-      ),
-      child: ListTile(
-        dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFFB71C1C).withValues(alpha: 0.12),
-          radius: 16,
-          child: const Icon(Icons.badge, color: Color(0xFFB71C1C), size: 18),
-        ),
-        title: Text(
-          name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-            color: Color(0xFF1E2F4C),
-          ),
-        ),
-        subtitle: Text('@$username', style: const TextStyle(fontSize: 11)),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: const Color(0xFFB71C1C).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Text(
-            'Tú',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFB71C1C),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ── Selector de Estado ────────────────────────────────────────────────────────
 
 class _EstadoSelector extends StatelessWidget {
@@ -385,6 +336,90 @@ class _EstadoOption {
   final String label;
   final Color color;
   const _EstadoOption(this.value, this.label, this.color);
+}
+
+// ── Selector de Fecha ─────────────────────────────────────────────────────────
+
+class _DatePickerField extends StatelessWidget {
+  final String? selectedDate;
+  final ValueChanged<String?> onChanged;
+
+  const _DatePickerField({required this.selectedDate, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final DateTime? picked = await showDatePicker(
+          context: context,
+          initialDate: selectedDate != null
+              ? DateTime.tryParse(selectedDate!) ?? DateTime.now()
+              : DateTime.now(),
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: Color(0xFFB71C1C), // header background color
+                  onPrimary: Colors.white, // header text color
+                  onSurface: Colors.black, // body text color
+                ),
+                textButtonTheme: TextButtonThemeData(
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(
+                      0xFFB71C1C,
+                    ), // button text color
+                  ),
+                ),
+              ),
+              child: child!,
+            );
+          },
+        );
+        if (picked != null) {
+          // Format YYYY-MM-DD
+          onChanged(picked.toIso8601String().split('T').first);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_month, size: 18, color: Colors.grey.shade500),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                selectedDate ?? 'Selecciona una fecha',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: selectedDate != null
+                      ? Colors.black87
+                      : Colors.grey.shade400,
+                ),
+              ),
+            ),
+            if (selectedDate != null)
+              GestureDetector(
+                onTap: () => onChanged(null),
+                child: Icon(Icons.close, size: 18, color: Colors.grey.shade400),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Uploader de Imágenes ──────────────────────────────────────────────────────

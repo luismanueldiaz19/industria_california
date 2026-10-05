@@ -13,12 +13,15 @@ class ChequeFuturistaService {
     String? fechaFin,
     String? buscar,
     bool atrasados = false,
+    String tipoFecha = 'creacion',
   }) async {
     final Map<String, String> params = {'page': page.toString()};
     if (atrasados) params['atrasados'] = 'true';
     if (fechaInicio != null) params['fecha_inicio'] = fechaInicio;
     if (fechaFin != null) params['fecha_fin'] = fechaFin;
-    if (buscar != null && buscar.trim().isNotEmpty) params['buscar'] = buscar.trim();
+    if (buscar != null && buscar.trim().isNotEmpty)
+      params['buscar'] = buscar.trim();
+    params['tipo_fecha'] = tipoFecha;
 
     final response = await _http.get(_endpoint, params: params);
     return response as Map<String, dynamic>;
@@ -33,16 +36,23 @@ class ChequeFuturistaService {
     String? estado,
     int? idVendedor,
     bool atrasados = false,
+    String tipoFecha = 'creacion',
   }) async {
     final Map<String, String> params = {'page': page.toString()};
     if (atrasados) params['atrasados'] = 'true';
     if (fechaInicio != null) params['fecha_inicio'] = fechaInicio;
     if (fechaFin != null) params['fecha_fin'] = fechaFin;
-    if (buscar != null && buscar.trim().isNotEmpty) params['buscar'] = buscar.trim();
+    if (buscar != null && buscar.trim().isNotEmpty) {
+      params['buscar'] = buscar.trim();
+    }
     if (estado != null) params['estado'] = estado;
     if (idVendedor != null) params['id_vendedor'] = idVendedor.toString();
+    params['tipo_fecha'] = tipoFecha;
 
-    final response = await _http.get('industria-california/admin/cheques-futuristas', params: params);
+    final response = await _http.get(
+      'industria-california/admin/cheques-futuristas',
+      params: params,
+    );
     return response as Map<String, dynamic>;
   }
 
@@ -73,6 +83,7 @@ class ChequeFuturistaService {
       throw 'No se pudo subir la imagen: $e';
     }
   }
+
   /// Obtiene los documentos de un cheque
   Future<List<dynamic>> obtenerDocumentos(int chequeId) async {
     try {
@@ -87,7 +98,9 @@ class ChequeFuturistaService {
   /// Actualiza el estado de un cheque
   Future<bool> actualizarEstado(int chequeId, String nuevoEstado) async {
     try {
-      final response = await _http.put('$_endpoint/$chequeId', {'estado': nuevoEstado});
+      final response = await _http.put('$_endpoint/$chequeId', {
+        'estado': nuevoEstado,
+      });
       return response != null;
     } catch (e) {
       print('Error al actualizar estado: $e');

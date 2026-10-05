@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/app_date_picker.dart';
@@ -182,6 +183,43 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
                           vertical: 14,
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: CupertinoSlidingSegmentedControl<String>(
+                      backgroundColor: Colors.grey.shade200,
+                      thumbColor: Colors.white,
+                      groupValue: provider.tipoFecha,
+                      padding: const EdgeInsets.all(4),
+                      children: {
+                        'creacion': Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Text(
+                            'Por Creación',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: provider.tipoFecha == 'creacion' ? FontWeight.bold : FontWeight.normal,
+                              color: provider.tipoFecha == 'creacion' ? _redMain : Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                        'deposito': Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Text(
+                            'Por Depósito',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: provider.tipoFecha == 'deposito' ? FontWeight.bold : FontWeight.normal,
+                              color: provider.tipoFecha == 'deposito' ? _redMain : Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      },
+                      onValueChanged: (val) {
+                        if (val != null) provider.setTipoFecha(val);
+                      },
                     ),
                   ),
                 ],
@@ -370,26 +408,41 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
                 final cheque = provider.cheques[index];
                 final color = _getColorPorEstado(cheque.estado);
 
-                String fechaFormat = cheque.createdAt;
-                int diasTranscurridos = 0;
+                String fechaRegistro = cheque.createdAt;
+                String? fechaDepositoStr;
+                int diasDesdeCreacion = 0;
+                int? diasDesdeDeposito;
+                
                 try {
-                  final dt = DateTime.parse(cheque.createdAt);
-                  diasTranscurridos = DateTime.now().difference(dt).inDays;
-                  fechaFormat = DateFormat('dd MMM yyyy, hh:mm a').format(dt);
+                  final dtCreacion = DateTime.parse(cheque.createdAt);
+                  diasDesdeCreacion = DateTime.now().difference(dtCreacion).inDays;
+                  fechaRegistro = DateFormat('dd MMM yyyy').format(dtCreacion);
+                  
+                  if (cheque.fechaDeposito != null) {
+                    final dtDeposito = DateTime.parse(cheque.fechaDeposito!);
+                    diasDesdeDeposito = DateTime.now().difference(dtDeposito).inDays;
+                    fechaDepositoStr = DateFormat('dd MMM yyyy').format(dtDeposito);
+                  }
                 } catch (_) {}
 
-                final bool atrasado = diasTranscurridos > 20;
+                final bool alertaMayor = diasDesdeDeposito != null && diasDesdeDeposito > 15;
+                final bool alertaMenor = diasDesdeCreacion > 20;
+                final bool atrasado = alertaMayor || alertaMenor;
 
                 return Container(
                   decoration: BoxDecoration(
-                    color: atrasado
-                        ? Colors.red.withValues(alpha: 0.05)
-                        : Colors.white,
+                    color: alertaMayor
+                        ? Colors.red.withValues(alpha: 0.08)
+                        : alertaMenor 
+                            ? Colors.orange.withValues(alpha: 0.05)
+                            : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: atrasado
-                          ? Colors.red.withValues(alpha: 0.3)
-                          : Colors.grey.shade200,
+                      color: alertaMayor
+                          ? Colors.red.withValues(alpha: 0.4)
+                          : alertaMenor
+                              ? Colors.orange.withValues(alpha: 0.4)
+                              : Colors.grey.shade200,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -429,30 +482,34 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
                                 _estadoBadge(cheque.estado, color),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildDateIndicator(
+                                    label: 'REGISTRO',
+                                    date: fechaRegistro,
+                                    icon: Icons.history,
+                                    color: Colors.blueGrey,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _buildDateIndicator(
+                                    label: 'DEPÓSITO',
+                                    date: fechaDepositoStr ?? 'No definido',
+                                    icon: Icons.event,
+                                    color: _redMain,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
                             Wrap(
                               spacing: 16,
                               runSpacing: 8,
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.calendar_today_outlined,
-                                      size: 14,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      fechaFormat,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -514,45 +571,101 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: atrasado
-                                    ? Colors.red.withValues(alpha: 0.1)
-                                    : Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    atrasado
-                                        ? Icons.warning_amber_rounded
-                                        : Icons.access_time,
-                                    size: 14,
-                                    color: atrasado
-                                        ? Colors.red
-                                        : Colors.grey.shade700,
+                            if (atrasado) ...[
+                              if (alertaMayor)
+                                Container(
+                                  margin: EdgeInsets.only(bottom: alertaMenor ? 6 : 0),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Transcurridos: $diasTranscurridos días',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: atrasado
-                                          ? Colors.red
-                                          : Colors.grey.shade700,
-                                      fontWeight: atrasado
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade700,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.warning_amber_rounded,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          '🚨 Vencido: Han pasado $diasDesdeDeposito días desde el depósito programado',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              if (alertaMenor)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.shade700,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.warning_amber_rounded,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          '⚠️ Precaución: Han pasado $diasDesdeCreacion días desde su registro',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ] else
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 14,
+                                      color: Colors.grey.shade700,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Transcurridos: $diasDesdeCreacion días',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
                             if (cheque.comentario != null &&
                                 cheque.comentario!.isNotEmpty) ...[
                               const SizedBox(height: 8),
@@ -1060,6 +1173,54 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDateIndicator({
+    required String label,
+    required String date,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: color.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Text(
+                  date,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade800,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

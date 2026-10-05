@@ -8,6 +8,7 @@ class ChequeFuturista {
   final String estado;
   final String? comentario;
   final String createdAt;
+  final String? fechaDeposito;
 
   ChequeFuturista({
     required this.id,
@@ -19,6 +20,7 @@ class ChequeFuturista {
     required this.estado,
     this.comentario,
     required this.createdAt,
+    this.fechaDeposito,
   });
 
   factory ChequeFuturista.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,7 @@ class ChequeFuturista {
       estado: json['estado'] ?? 'pendiente',
       comentario: json['comentario'],
       createdAt: json['created_at'] ?? '',
+      fechaDeposito: json['fecha_deposito'],
     );
   }
 }

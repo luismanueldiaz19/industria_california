@@ -20,6 +20,7 @@ class ChequeListProvider extends ChangeNotifier {
   DateTime? _fechaFin;
   String? _buscar;
   bool _soloAtrasados = false;
+  String _tipoFecha = 'creacion';
 
   List<ChequeFuturista> get cheques => _cheques;
   bool get isLoading => _isLoading;
@@ -30,6 +31,7 @@ class ChequeListProvider extends ChangeNotifier {
   DateTime? get fechaFin => _fechaFin;
   String? get buscar => _buscar;
   bool get soloAtrasados => _soloAtrasados;
+  String get tipoFecha => _tipoFecha;
   int get totalFilas => _totalFilas;
   double get montoTotal => _montoTotal;
 
@@ -53,6 +55,12 @@ class ChequeListProvider extends ChangeNotifier {
 
   void toggleAtrasados() {
     _soloAtrasados = !_soloAtrasados;
+    fetchCheques(refresh: true);
+  }
+
+  void setTipoFecha(String tipo) {
+    if (_tipoFecha == tipo) return;
+    _tipoFecha = tipo;
     fetchCheques(refresh: true);
   }
 
@@ -83,6 +91,7 @@ class ChequeListProvider extends ChangeNotifier {
         fechaFin: endStr,
         buscar: _buscar,
         atrasados: _soloAtrasados,
+        tipoFecha: _tipoFecha,
       );
 
       final List rawList = data['data'] ?? [];

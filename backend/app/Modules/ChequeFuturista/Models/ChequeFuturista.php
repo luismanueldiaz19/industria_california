@@ -25,6 +25,7 @@ class ChequeFuturista extends Model
         'estado',
         'comentario',
         'created_by',
+        'fecha_deposito',
     ];
 
     protected $casts = [
@@ -58,5 +59,12 @@ class ChequeFuturista extends Model
     public function estaPendiente(): bool
     {
         return $this->estado === EstadoCheque::Pendiente;
+    }
+
+
+    // Accesor para obtener la fecha + 20 días automáticamente
+    public function getFechaLimiteDepositoAttribute()
+    {
+        return $this->fecha_deposito ? $this->fecha_deposito->addDays(20) : null;
     }
 }

@@ -13,6 +13,7 @@ class ChequeFormProvider extends ChangeNotifier {
   String _monto = '';
   String _estado = 'pendiente';
   String _comentario = '';
+  String? _fechaDeposito;
   List<XFile> _archivos = [];
 
   LedhouseCliente? get cliente => _cliente;
@@ -21,6 +22,7 @@ class ChequeFormProvider extends ChangeNotifier {
   String get monto => _monto;
   String get estado => _estado;
   String get comentario => _comentario;
+  String? get fechaDeposito => _fechaDeposito;
   List<XFile> get archivos => _archivos;
 
   // ── Validación ────────────────────────────────────────────
@@ -59,6 +61,11 @@ class ChequeFormProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setFechaDeposito(String? v) {
+    _fechaDeposito = v;
+    notifyListeners();
+  }
+
   void addArchivos(List<XFile> nuevosArchivos) {
     _archivos.addAll(nuevosArchivos);
     notifyListeners();
@@ -83,6 +90,7 @@ class ChequeFormProvider extends ChangeNotifier {
       'monto': double.parse(_monto),
       'estado': _estado,
       if (_comentario.trim().isNotEmpty) 'comentario': _comentario.trim(),
+      if (_fechaDeposito != null) 'fecha_deposito': _fechaDeposito,
     };
   }
 
@@ -93,6 +101,7 @@ class ChequeFormProvider extends ChangeNotifier {
     _monto = '';
     _estado = 'pendiente';
     _comentario = '';
+    _fechaDeposito = null;
     _archivos = [];
     notifyListeners();
   }

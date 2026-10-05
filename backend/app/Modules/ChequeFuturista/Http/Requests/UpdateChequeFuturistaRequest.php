@@ -17,6 +17,15 @@ class UpdateChequeFuturistaRequest extends FormRequest
             'num_pedido'  => 'nullable|string|max:100',
             'estado'      => 'nullable|in:pendiente,depositado,cancelado,vencido',
             'comentario'  => 'nullable|string',
+            'fecha_deposito' => 'nullable|date',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'estado.in'            => 'El estado debe ser pendiente, depositado, cancelado o vencido.',
+            'fecha_deposito.date'  => 'La fecha de depósito debe ser una fecha válida.',
         ];
     }
 }

@@ -49,10 +49,13 @@ class ChequeFuturistaService
         // 3. Rango de Fechas, Atrasados o Regla por Defecto
         $atrasados = filter_var($filtros['atrasados'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
+        $tipoFecha = $filtros['tipo_fecha'] ?? 'creacion';
+        $columnaFecha = $tipoFecha === 'deposito' ? 'fecha_deposito' : 'created_at';
+
         if ($atrasados) {
             $query->where('created_at', '<', now()->subDays(20));
         } elseif (!empty($filtros['fecha_inicio']) && !empty($filtros['fecha_fin'])) {
-            $query->whereBetween('created_at', [
+            $query->whereBetween($columnaFecha, [
                 $filtros['fecha_inicio'] . ' 00:00:00', 
                 $filtros['fecha_fin'] . ' 23:59:59'
             ]);
@@ -69,7 +72,7 @@ class ChequeFuturistaService
 
         $perPage = $filtros['per_page'] ?? 20;
         $montoTotal = (float) $query->sum('monto');
-        $paginator = $query->orderByDesc('id')->paginate($perPage);
+        $paginator = $query->orderByRaw('fecha_deposito IS NULL')->orderBy('fecha_deposito', 'asc')->paginate($perPage);
 
         $resultado = $paginator->toArray();
         $resultado['resumen_filtro'] = [
@@ -118,10 +121,13 @@ class ChequeFuturistaService
         // 2. Rango de Fechas, Atrasados o Regla por Defecto
         $atrasados = filter_var($filtros['atrasados'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
+        $tipoFecha = $filtros['tipo_fecha'] ?? 'creacion';
+        $columnaFecha = $tipoFecha === 'deposito' ? 'fecha_deposito' : 'created_at';
+
         if ($atrasados) {
             $query->where('created_at', '<', now()->subDays(20));
         } elseif (!empty($filtros['fecha_inicio']) && !empty($filtros['fecha_fin'])) {
-            $query->whereBetween('created_at', [
+            $query->whereBetween($columnaFecha, [
                 $filtros['fecha_inicio'] . ' 00:00:00',
                 $filtros['fecha_fin'] . ' 23:59:59',
             ]);
@@ -137,7 +143,7 @@ class ChequeFuturistaService
 
         $perPage    = $filtros['per_page'] ?? 20;
         $montoTotal = (float) $query->sum('monto');
-        $paginator  = $query->orderByDesc('id')->paginate($perPage);
+        $paginator  = $query->orderByRaw('fecha_deposito IS NULL')->orderBy('fecha_deposito', 'asc')->paginate($perPage);
 
         $resultado = $paginator->toArray();
         $resultado['resumen_filtro'] = [

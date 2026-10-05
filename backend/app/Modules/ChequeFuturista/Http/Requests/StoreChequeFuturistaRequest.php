@@ -18,6 +18,7 @@ class StoreChequeFuturistaRequest extends FormRequest
             'monto'       => 'required|numeric|min:0',
             'estado'      => 'nullable|in:pendiente,depositado,cancelado,vencido',
             'comentario'  => 'nullable|string',
+            'fecha_deposito' => 'required|date',
         ];
     }
 
@@ -32,6 +33,7 @@ class StoreChequeFuturistaRequest extends FormRequest
             'monto.required'       => 'El monto es obligatorio.',
             'monto.numeric'        => 'El monto debe ser numérico.',
             'monto.min'            => 'El monto no puede ser negativo.',
+            'fecha_deposito.date'  => 'La fecha de depósito debe ser una fecha válida.',
         ];
     }
 }
