@@ -36,8 +36,18 @@ class CxcProvider with ChangeNotifier {
 
     try {
       final results = await Future.wait([
-        _service.getCxc(vendedorId: vendedorId, vencidos: vencidos, startDate: startDate, endDate: endDate),
-        _service.getGroupedByCliente(vendedorId: vendedorId, vencidos: vencidos, startDate: startDate, endDate: endDate),
+        _service.getCxc(
+          vendedorId: vendedorId,
+          vencidos: vencidos,
+          startDate: startDate,
+          endDate: endDate,
+        ),
+        _service.getGroupedByCliente(
+          vendedorId: vendedorId,
+          vencidos: vencidos,
+          startDate: startDate,
+          endDate: endDate,
+        ),
       ]);
       _cxcs = results[0] as List<CxcModel>;
       _clientesAgrupados = results[1] as List<Map<String, dynamic>>;

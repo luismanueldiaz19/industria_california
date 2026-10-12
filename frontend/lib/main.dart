@@ -26,7 +26,7 @@ import 'modules/led_house/cxp/services/cxp_service.dart';
 import 'modules/led_house/providers/cuenta_catalogo_provider.dart';
 import 'modules/led_house/screens/cuenta_catalogo_screen.dart';
 import 'modules/led_house/screens/clientes/ledhouse_clientes_screen.dart';
-import 'modules/led_house/screens/ledhouse_alertas_screen.dart';
+import 'modules/alertas/screens/alertas_screen.dart';
 import 'modules/led_house/providers/ledhouse_proveedor_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 // Módulo Inventario
@@ -193,7 +193,7 @@ class _MainLayoutState extends State<MainLayout> {
     const CxpScreen(), // 2
     const CuentaCatalogoScreen(), // 3
     const LedhouseClientesScreen(), // 4
-    const LedhouseAlertasScreen(), // 5 — Alertas de Vendedores
+    const AlertasScreen(), // 5 — Alertas de Vendedores
     // Configuración (6-7)
     const RolesScreen(), // 6
     const UsersScreen(), // 7

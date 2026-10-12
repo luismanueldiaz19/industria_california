@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/themes/app_theme.dart';
+import '../../../../core/widgets/input_field.dart';
 import '../../../led_house/models/ledhouse_cliente.dart';
+import '../../../led_house/screens/clientes/ledhouse_cliente_form_screen.dart';
 import '../../../led_house/services/ledhouse_cliente_service.dart';
-import 'vendedor_cliente_form_screen.dart';
 
 class VendedorClientesScreen extends StatefulWidget {
   const VendedorClientesScreen({super.key});
@@ -16,16 +17,12 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
     with TickerProviderStateMixin {
   final LedhouseClienteService _service = LedhouseClienteService();
   final TextEditingController _searchController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
   Timer? _debounce;
 
   List<LedhouseCliente> _clientes = [];
   bool _isLoading = true;
   String? _error;
 
-  int _currentPage = 1;
-  int _lastPage = 1;
-  int _totalClientes = 0;
   bool _isFetchingMore = false;
   String _currentSort = 'recent';
 
@@ -49,24 +46,13 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _scrollController.addListener(_onScroll);
     _fetchClientes();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
-        !_isFetchingMore &&
-        _currentPage < _lastPage) {
-      _fetchMoreClientes();
-    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _debounce?.cancel();
-    _scrollController.dispose();
     _fabAnimController.dispose();
     super.dispose();
   }
@@ -80,23 +66,20 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
     setState(() {
       _isLoading = true;
       _error = null;
-      _currentPage = 1;
       _clientes.clear();
     });
     try {
-      final result = await _service.getPaginatedClientes(
+      final result = await _service.getClientes(
         search: _searchController.text.isNotEmpty
             ? _searchController.text
             : null,
-        page: 1,
-        sort: _currentSort,
       );
       if (mounted) {
         setState(() {
-          _clientes = result['data'] as List<LedhouseCliente>;
-          _currentPage = result['current_page'];
-          _lastPage = result['last_page'];
-          _totalClientes = result['total'];
+          _clientes = result;
+          // _currentPage = result['current_page'];
+          // _lastPage = result['last_page'];
+          // _totalClientes = result['total'];
           _isLoading = false;
         });
         _fabAnimController.forward(from: 0);
@@ -115,20 +98,19 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
     if (_isFetchingMore) return;
     setState(() => _isFetchingMore = true);
     try {
-      final nextPage = _currentPage + 1;
-      final result = await _service.getPaginatedClientes(
+      final result = await _service.getClientes(
         search: _searchController.text.isNotEmpty
             ? _searchController.text
             : null,
-        page: nextPage,
-        sort: _currentSort,
+        // page: nextPage,
+        // sort: _currentSort,
       );
       if (mounted) {
         setState(() {
-          final newClientes = result['data'] as List<LedhouseCliente>;
+          final newClientes = result;
           _clientes.addAll(newClientes);
-          _currentPage = result['current_page'];
-          _lastPage = result['last_page'];
+          // _currentPage = result['current_page'];
+          // _lastPage = result['last_page'];
           _isFetchingMore = false;
         });
       }
@@ -142,8 +124,8 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
   void _showForm([LedhouseCliente? cliente]) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.4),
-      builder: (context) => VendedorClienteFormScreen(cliente: cliente),
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (context) => LedhouseClienteFormScreen(cliente: cliente),
     ).then((updated) {
       if (updated == true) _fetchClientes();
     });
@@ -216,10 +198,7 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
                 body: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                      child: _buildSearchBar(),
-                    ),
+                    _buildSearchBar(),
                     if (!_isLoading && _clientes.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(
@@ -227,7 +206,7 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
                           vertical: 8,
                         ),
                         child: Text(
-                          'Mostrando ${_clientes.length} de $_totalClientes clientes (Página $_currentPage de $_lastPage)',
+                          'Total Clientes: ${_clientes.length}',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
@@ -262,49 +241,32 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
   }
 
   Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextField(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+      child: InputField(
+        focusedBorderColor: AppTheme.primaryBlue,
         controller: _searchController,
+        icon: Icons.search_rounded,
+        iconColor: Colors.grey.shade400,
         onChanged: _onSearchChanged,
-        style: const TextStyle(fontSize: 14),
-        decoration: InputDecoration(
-          hintText: 'Buscar por nombre o WhatsApp...',
-          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: Colors.grey.shade400,
-            size: 22,
-          ),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: Colors.grey.shade400,
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    _searchController.clear();
-                    _fetchClientes();
-                  },
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
-        ),
+        hint: 'Buscar por nombre o WhatsApp...',
+
+        keyboardType: TextInputType.text,
+
+        suffixIcon: _searchController.text.isNotEmpty
+            ? IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: Colors.grey.shade400,
+                  size: 20,
+                ),
+                onPressed: () {
+                  _searchController.clear();
+                  _fetchClientes();
+                },
+              )
+            : null,
+        label: '',
       ),
     );
   }
@@ -358,7 +320,7 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: AppTheme.primaryBlue.withOpacity(0.08),
+                color: AppTheme.primaryBlue.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -391,9 +353,8 @@ class _VendedorClientesScreenState extends State<VendedorClientesScreen>
     }
 
     return ListView.builder(
-      controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
-      itemCount: _clientes.length + (_isFetchingMore ? 1 : 0),
+      itemCount: _clientes.length,
       itemBuilder: (context, index) {
         if (index == _clientes.length) {
           return const Padding(

@@ -7,7 +7,6 @@ import '../../../core/themes/app_theme.dart';
 import '../../../core/widgets/general_header.dart';
 import '../../../core/utils/formatters.dart';
 import '../services/vendedor_cxc_service.dart';
-import 'package:intl/intl.dart';
 import 'vendedor_cxc_detalle_screen.dart';
 
 class VendedorCxcScreen extends StatefulWidget {

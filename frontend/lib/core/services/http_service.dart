@@ -16,8 +16,6 @@ class HttpService {
     };
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
-
-      print('TOKEN: $token');
     }
     return headers;
   }
@@ -34,26 +32,64 @@ class HttpService {
     }
   }
 
+  Future<dynamic> getV2(String endpoint, {Map<String, String>? params}) async {
+    try {
+      final uri = Uri.parse(
+        '$hostDev/$endpoint',
+      ).replace(queryParameters: params);
+
+      print('url get V2 ----> $uri');
+      final response = await http.get(uri, headers: _headers).timeout(timeout);
+      return _handleResponse(response);
+    } catch (e) {
+      _handleError(e);
+    }
+  }
+
   Future<dynamic> post(String endpoint, dynamic body) async {
     try {
       final uri = Uri.parse('$baseUrl/$endpoint');
       final bodyStr = json.encode(body);
 
-      // print('========== HTTP POST DEBUG ==========');
-      // print('URL: $uri');
-      // print('PAYLOAD: $bodyStr');
+      final response = await http
+          .post(uri, headers: _headers, body: bodyStr)
+          .timeout(timeout);
+
+      return _handleResponse(response);
+    } catch (e) {
+      _handleError(e);
+    }
+  }
+
+  Future<dynamic> postV2(String endpoint, dynamic body) async {
+    print("post V2 ..... posting");
+    try {
+      final uri = Uri.parse('$hostDev/$endpoint');
+
+      print('url post ----> $uri');
+      final bodyStr = json.encode(body);
 
       final response = await http
           .post(uri, headers: _headers, body: bodyStr)
           .timeout(timeout);
 
-      // print('STATUS CODE: ${response.statusCode}');
-      // print('RESPONSE BODY: ${response.body}');
-      // print('=====================================');
+      return _handleResponse(response);
+    } catch (e) {
+      _handleError(e);
+    }
+  }
+
+  Future<dynamic> putV2(String endpoint, dynamic body) async {
+    print("putV2 ..... puting");
+    try {
+      final uri = Uri.parse('$hostDev/$endpoint');
+      print('url put ----> $uri');
+      final response = await http
+          .put(uri, headers: _headers, body: json.encode(body))
+          .timeout(timeout);
 
       return _handleResponse(response);
     } catch (e) {
-      print('HTTP POST EXCEPTION: $e');
       _handleError(e);
     }
   }
@@ -82,6 +118,36 @@ class HttpService {
             body: json.encode(body),
           )
           .timeout(timeout);
+      return _handleResponse(response);
+    } catch (e) {
+      _handleError(e);
+    }
+  }
+
+  Future<dynamic> patchV2(String endpoint, dynamic body) async {
+    try {
+      final uri = Uri.parse('$hostDev/$endpoint');
+      final response = await http
+          .patch(
+            uri,
+            headers: _headers,
+            body: json.encode(body),
+          )
+          .timeout(timeout);
+      return _handleResponse(response);
+    } catch (e) {
+      _handleError(e);
+    }
+  }
+
+  Future<dynamic> deleteV2(String endpoint) async {
+    try {
+      final uri = Uri.parse('$hostDev/$endpoint');
+      print('url delete V2 ----> $uri');
+      final response = await http
+          .delete(uri, headers: _headers)
+          .timeout(timeout);
+
       return _handleResponse(response);
     } catch (e) {
       _handleError(e);
@@ -126,6 +192,33 @@ class HttpService {
     }
   }
 
+  Future<dynamic> multipartV2(
+    String endpoint, {
+    Map<String, String>? fields,
+    List<http.MultipartFile>? files,
+    String method = 'POST',
+  }) async {
+    try {
+      final uri = Uri.parse('$hostDev/$endpoint');
+      print('url multipart V2 ----> $uri');
+
+      final request = http.MultipartRequest(method, uri);
+      request.headers.addAll({'Accept': 'application/json'});
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      if (fields != null) request.fields.addAll(fields);
+      if (files != null) request.files.addAll(files);
+
+      final streamedResponse = await request.send().timeout(timeout);
+      final response = await http.Response.fromStream(streamedResponse);
+      return _handleResponse(response);
+    } catch (e) {
+      _handleError(e);
+    }
+  }
+
   Future<dynamic> uploadFile(
     String endpoint,
     List<int> bytes,
@@ -137,7 +230,7 @@ class HttpService {
       bytes,
       filename: filename,
     );
-    return multipart(endpoint, files: [file]);
+    return multipartV2(endpoint, files: [file]);
   }
 
   dynamic _handleResponse(http.Response response) {

@@ -6,13 +6,20 @@ import '../../../core/services/text_normalizer.dart';
 class LedhouseClienteService {
   final HttpService _http = HttpService();
 
+  //   /api/v2/clientes
+  // Listar clientes	GET	/api/v2/clientes
+  // Ver cliente	GET	/api/v2/clientes/{id}
+  // Actualizar cliente	PUT / PATCH	/api/v2/clientes/{id}
+  // Eliminar cliente	DELETE	/api/v2/clientes/{id}
+  // Importar Excel	POST	/api/v2/clientes/import
+
   Future<List<LedhouseCliente>> getClientes({String? search}) async {
     final queryParams = <String, String>{};
     if (search != null && search.isNotEmpty) {
       queryParams['search'] = TextNormalizer.normalizar(search);
     }
 
-    final response = await _http.get('ledhouse/clientes', params: queryParams);
+    final response = await _http.getV2('clientes', params: queryParams);
 
     if (response != null) {
       return (response as List)
@@ -22,56 +29,21 @@ class LedhouseClienteService {
     return [];
   }
 
-  Future<Map<String, dynamic>> getPaginatedClientes({
-    String? search,
-    int page = 1,
-    String sort = 'recent',
-  }) async {
-    final queryParams = <String, String>{
-      'paginate': 'true',
-      'page': page.toString(),
-      'sort': sort,
-    };
-
-    if (search != null && search.isNotEmpty) {
-      queryParams['search'] = TextNormalizer.normalizar(search);
-    }
-
-    final response = await _http.get('ledhouse/clientes', params: queryParams);
-
-    if (response != null && response is Map<String, dynamic>) {
-      final List<dynamic> dataList = response['data'] ?? [];
-      return {
-        'data': dataList.map((item) => LedhouseCliente.fromJson(item)).toList(),
-        'current_page': response['current_page'] ?? 1,
-        'last_page': response['last_page'] ?? 1,
-        'total': response['total'] ?? 0,
-      };
-    }
-
-    return {
-      'data': <LedhouseCliente>[],
-      'current_page': 1,
-      'last_page': 1,
-      'total': 0,
-    };
-  }
-
   Future<LedhouseCliente> createCliente(LedhouseCliente cliente) async {
-    final response = await _http.post('ledhouse/clientes', cliente.toJson());
+    final response = await _http.postV2('clientes', cliente.toJson());
     return LedhouseCliente.fromJson(response);
   }
 
   Future<LedhouseCliente> updateCliente(LedhouseCliente cliente) async {
-    final response = await _http.put(
-      'ledhouse/clientes/${cliente.id}',
+    final response = await _http.putV2(
+      'clientes/${cliente.id}',
       cliente.toJson(),
     );
     return LedhouseCliente.fromJson(response);
   }
 
   Future<void> deleteCliente(int id) async {
-    await _http.delete('ledhouse/clientes/$id');
+    await _http.deleteV2('clientes/$id');
   }
 
   Future<Map<String, dynamic>> importExcel(
@@ -84,10 +56,7 @@ class LedhouseClienteService {
       filename: filename,
     );
 
-    final response = await _http.multipart(
-      'ledhouse/clientes/import',
-      files: [file],
-    );
+    final response = await _http.multipartV2('clientes/import', files: [file]);
 
     return response as Map<String, dynamic>;
   }

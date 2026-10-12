@@ -55,6 +55,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
           const SnackBar(
             content: Text('El monto es obligatorio para este tipo de alerta'),
             backgroundColor: Colors.red,
+            duration: Duration(milliseconds: 200),
           ),
         );
         return;
@@ -66,6 +67,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
         const SnackBar(
           content: Text('La nota o descripción es obligatoria'),
           backgroundColor: Colors.red,
+          duration: Duration(milliseconds: 200),
         ),
       );
       return;
@@ -103,12 +105,17 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
+          duration: Duration(milliseconds: 200),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(milliseconds: 200),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

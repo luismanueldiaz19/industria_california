@@ -18,10 +18,11 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolesAndPermissionsSeeder::class,
+            ClienteMasivoSeeder::class
         ]);
 
         // Crear usuario admin por defecto si no existe
-        $adminUser = \App\Models\User::firstOrCreate(
+        $adminUser = User::firstOrCreate(
             ['username' => 'ludeveloper'],
             [
                 'name' => 'Lwader Soft S.R.L',
@@ -55,6 +56,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             // TestDataSeeder::class,
+             //ClienteMasivoSeeder::class, // <-- Descomentar para generar 10,000 clientes
         ]);
     }
 }

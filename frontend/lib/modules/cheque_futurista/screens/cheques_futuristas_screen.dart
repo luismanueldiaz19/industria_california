@@ -195,24 +195,38 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
                       padding: const EdgeInsets.all(4),
                       children: {
                         'creacion': Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           child: Text(
                             'Por Creación',
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: provider.tipoFecha == 'creacion' ? FontWeight.bold : FontWeight.normal,
-                              color: provider.tipoFecha == 'creacion' ? _redMain : Colors.grey.shade600,
+                              fontWeight: provider.tipoFecha == 'creacion'
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: provider.tipoFecha == 'creacion'
+                                  ? _redMain
+                                  : Colors.grey.shade600,
                             ),
                           ),
                         ),
                         'deposito': Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           child: Text(
                             'Por Depósito',
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: provider.tipoFecha == 'deposito' ? FontWeight.bold : FontWeight.normal,
-                              color: provider.tipoFecha == 'deposito' ? _redMain : Colors.grey.shade600,
+                              fontWeight: provider.tipoFecha == 'deposito'
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: provider.tipoFecha == 'deposito'
+                                  ? _redMain
+                                  : Colors.grey.shade600,
                             ),
                           ),
                         ),
@@ -412,20 +426,27 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
                 String? fechaDepositoStr;
                 int diasDesdeCreacion = 0;
                 int? diasDesdeDeposito;
-                
+
                 try {
                   final dtCreacion = DateTime.parse(cheque.createdAt);
-                  diasDesdeCreacion = DateTime.now().difference(dtCreacion).inDays;
+                  diasDesdeCreacion = DateTime.now()
+                      .difference(dtCreacion)
+                      .inDays;
                   fechaRegistro = DateFormat('dd MMM yyyy').format(dtCreacion);
-                  
+
                   if (cheque.fechaDeposito != null) {
                     final dtDeposito = DateTime.parse(cheque.fechaDeposito!);
-                    diasDesdeDeposito = DateTime.now().difference(dtDeposito).inDays;
-                    fechaDepositoStr = DateFormat('dd MMM yyyy').format(dtDeposito);
+                    diasDesdeDeposito = DateTime.now()
+                        .difference(dtDeposito)
+                        .inDays;
+                    fechaDepositoStr = DateFormat(
+                      'dd MMM yyyy',
+                    ).format(dtDeposito);
                   }
                 } catch (_) {}
 
-                final bool alertaMayor = diasDesdeDeposito != null && diasDesdeDeposito > 15;
+                final bool alertaMayor =
+                    diasDesdeDeposito != null && diasDesdeDeposito > 15;
                 final bool alertaMenor = diasDesdeCreacion > 20;
                 final bool atrasado = alertaMayor || alertaMenor;
 
@@ -433,16 +454,16 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
                   decoration: BoxDecoration(
                     color: alertaMayor
                         ? Colors.red.withValues(alpha: 0.08)
-                        : alertaMenor 
-                            ? Colors.orange.withValues(alpha: 0.05)
-                            : Colors.white,
+                        : alertaMenor
+                        ? Colors.orange.withValues(alpha: 0.05)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: alertaMayor
                           ? Colors.red.withValues(alpha: 0.4)
                           : alertaMenor
-                              ? Colors.orange.withValues(alpha: 0.4)
-                              : Colors.grey.shade200,
+                          ? Colors.orange.withValues(alpha: 0.4)
+                          : Colors.grey.shade200,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -574,7 +595,9 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
                             if (atrasado) ...[
                               if (alertaMayor)
                                 Container(
-                                  margin: EdgeInsets.only(bottom: alertaMenor ? 6 : 0),
+                                  margin: EdgeInsets.only(
+                                    bottom: alertaMenor ? 6 : 0,
+                                  ),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
                                     vertical: 6,

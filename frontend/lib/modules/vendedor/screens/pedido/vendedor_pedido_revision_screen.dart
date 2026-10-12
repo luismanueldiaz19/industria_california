@@ -33,6 +33,11 @@ class _VendedorPedidoRevisionScreenState
       'color': const Color(0xFFFF9800),
       'icon': Icons.save_outlined,
     },
+    'cotizacion': {
+      'label': 'Cotización',
+      'color': const Color(0xFF8E24AA),
+      'icon': Icons.request_quote_rounded,
+    },
     'enviado': {
       'label': 'Enviar a Logística',
       'color': const Color(0xFF2196F3),
@@ -681,7 +686,9 @@ class _VendedorPedidoRevisionScreenState
             content: Text(
               _estadoSeleccionado == 'enviado'
                   ? 'Pedido enviado a logística'
-                  : 'Borrador guardado exitosamente',
+                  : (_estadoSeleccionado == 'cotizacion'
+                      ? 'Cotización guardada exitosamente'
+                      : 'Borrador guardado exitosamente'),
             ),
             backgroundColor: Colors.green,
           ),

@@ -372,7 +372,7 @@ class _LedhouseClientesScreenState extends State<LedhouseClientesScreen>
   void _showForm([LedhouseCliente? cliente]) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.4),
+      barrierColor: Colors.black.withValues(alpha: 0.4),
       builder: (context) => LedhouseClienteFormScreen(cliente: cliente),
     ).then((updated) {
       if (updated == true) _fetchClientes();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/utils/app_date_picker.dart';
 import '../../pedido/models/pedido.dart';
 import '../../pedido/providers/pedido_provider.dart';
 import '../../../core/utils/formatters.dart';
@@ -27,6 +28,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
   static const _estados = [
     'todos',
     'pendientes',
+    'cotizacion',
     'borrador',
     'enviado',
     'facturado',
@@ -38,6 +40,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
   DateTime? _endDate;
 
   static final Map<String, Color> _estadoColor = {
+    'cotizacion': const Color(0xFF8E24AA),
     'borrador': const Color(0xFFFF9800),
     'enviado': const Color(0xFF2196F3),
     'facturado': const Color(0xFF4CAF50),
@@ -48,6 +51,10 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _startDate = DateTime(now.year, now.month, 1);
+    _endDate = DateTime(now.year, now.month + 1, 0);
+
     _tabController = TabController(length: _estados.length, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
@@ -62,6 +69,30 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+  }
+
+  bool get _isCurrentMonth {
+    if (_startDate == null || _endDate == null) return false;
+    final now = DateTime.now();
+    final firstDay = DateTime(now.year, now.month, 1);
+    final lastDay = DateTime(now.year, now.month + 1, 0);
+    return _startDate!.year == firstDay.year &&
+        _startDate!.month == firstDay.month &&
+        _startDate!.day == firstDay.day &&
+        _endDate!.year == lastDay.year &&
+        _endDate!.month == lastDay.month &&
+        _endDate!.day == lastDay.day;
+  }
+
+  bool get _isCustomDateFilter => !_isCurrentMonth;
+
+  void _resetToCurrentMonth() {
+    final now = DateTime.now();
+    setState(() {
+      _startDate = DateTime(now.year, now.month, 1);
+      _endDate = DateTime(now.year, now.month + 1, 0);
+    });
+    _loadData();
   }
 
   void _loadData() {
@@ -89,25 +120,21 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
   }
 
   Future<void> _selectDateRange() async {
-    final picked = await AppDatePickerDark.showRangePicker(
+    //  final picked = await AppDatePicker.showRangePicker(
+    //       context: context,
+    //       firstDate: DateTime(2020),
+    //       lastDate: DateTime.now().add(const Duration(days: 365)),
+    //       initialDateRange: DateTimeRange(start: initialStart, end: initialEnd),
+    //     );
+
+    final picked = await AppDatePicker.showRangePicker(
       context: context,
       firstDate: DateTime(2020),
+
       lastDate: DateTime.now().add(const Duration(days: 365)),
       initialDateRange: _startDate != null && _endDate != null
           ? DateTimeRange(start: _startDate!, end: _endDate!)
           : null,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: _bgPrimary,
-              onPrimary: Colors.white,
-              onSurface: _bgPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (picked != null) {
@@ -245,50 +272,114 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    if (Navigator.canPop(context)) ...[
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
+                Expanded(
+                  child: Row(
+                    children: [
+                      if (Navigator.canPop(context)) ...[
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Mis Pedidos',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            if (_startDate != null && _endDate != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                _isCurrentMonth
+                                    ? 'Mes actual (${Formatters.dateShort(_startDate!)} - ${Formatters.dateShort(_endDate!)})'
+                                    : '${Formatters.dateShort(_startDate!)} - ${Formatters.dateShort(_endDate!)}',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ] else if (_startDate == null &&
+                                _endDate == null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Todas las fechas',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 12),
                     ],
-                    const Text(
-                      'Mis Pedidos',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (_startDate != null)
+                    if (_isCustomDateFilter)
                       IconButton(
-                        icon: const Icon(Icons.close, color: Colors.redAccent),
-                        tooltip: 'Limpiar Fechas',
-                        onPressed: _clearDateFilter,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.redAccent,
+                          size: 20,
+                        ),
+                        tooltip: 'Restablecer al mes actual',
+                        onPressed: _resetToCurrentMonth,
                       ),
                     IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
                       icon: Icon(
                         Icons.date_range,
-                        color: _startDate != null ? Colors.amber : Colors.white,
+                        color: _isCustomDateFilter
+                            ? Colors.amber
+                            : Colors.white,
+                        size: 20,
                       ),
                       tooltip: 'Rango de Fechas',
                       onPressed: _selectDateRange,
                     ),
                     IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
                       icon: const Icon(
                         Icons.picture_as_pdf_rounded,
                         color: Colors.white,
+                        size: 20,
                       ),
                       tooltip: 'Reporte General',
                       onPressed: _generarReporteGeneralPdf,
@@ -561,8 +652,9 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                 ],
               ),
             ),
-            // Acciones — solo para borradores
-            if (pedido.estado == 'borrador') ...[
+            // Acciones — para borradores y cotizaciones
+            if (pedido.estado == 'borrador' ||
+                pedido.estado == 'cotizacion') ...[
               const Divider(height: 1),
               Row(
                 children: [

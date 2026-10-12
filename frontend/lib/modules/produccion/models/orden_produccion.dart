@@ -1,4 +1,4 @@
-import 'package:industria_california/modules/led_house/models/cxc_alerta_model.dart';
+import 'package:industria_california/modules/alertas/models/cxc_alerta_model.dart';
 
 import '../../led_house/models/ledhouse_cliente.dart';
 import '../../pedido/models/pedido.dart';

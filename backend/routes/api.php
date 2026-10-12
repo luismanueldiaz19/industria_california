@@ -37,12 +37,6 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 
-// Route::prefix('api')->middleware('auth:sanctum')->group(function () {
-//     Route::post('pedidos-v2', [PedidoController::class, 'store'])
-//         ->name('pedidos.v2.store');
-// });
-
-
 
 Route::prefix('v1')->group(function () {
 
@@ -162,9 +156,9 @@ Route::prefix('v1')->group(function () {
                 Route::post('cuentas-catalogo/import', [LedhouseCuentaCatalogoController::class, 'import']);
                 Route::apiResource('cuentas-catalogo', LedhouseCuentaCatalogoController::class);
 
-                // Clientes
-                Route::post('clientes/import', [LedhouseClienteController::class, 'import']);
-                Route::apiResource('clientes', LedhouseClienteController::class);
+                // Clientes (v1 retrocompatibilidad con apps existentes)
+                Route::post('clientes/import', [\App\Modules\Cliente\Http\Controllers\ClienteController::class, 'import']);
+                Route::apiResource('clientes', \App\Modules\Cliente\Http\Controllers\ClienteController::class);
 
                 // Proveedores
                 Route::apiResource('proveedores', LedhouseProveedorController::class);
@@ -268,6 +262,14 @@ Route::prefix('v1')->group(function () {
             });
         }
     });
+});
+
+// ═════════════════════════════════════════════════════════════
+// API V2 (Módulos Limpios - Sin nombres de compañía)
+// ═════════════════════════════════════════════════════════════
+Route::prefix('v2')->middleware('auth:sanctum')->group(function () {
+    require base_path('app/Modules/Cliente/routes/api.php');
+    require base_path('app/Modules/CuentasPorCobrar/routes/api.php');
 });
 
 

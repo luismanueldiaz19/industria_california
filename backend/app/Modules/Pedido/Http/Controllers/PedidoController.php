@@ -109,8 +109,8 @@ class PedidoController extends Controller
 
     public function update(StorePedidoRequest $request, Pedido $pedido)
     {
-        if ($pedido->estado->value !== 'borrador' && !Auth::user()->hasRole('admin')) {
-            return response()->json(['message' => 'No puedes editar un pedido que ya no es borrador.'], 403);
+        if (!in_array($pedido->estado->value, ['borrador', 'cotizacion']) && !Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'No puedes editar un pedido que ya no es borrador o cotización.'], 403);
         }
 
         $datos = $request->validated();
@@ -132,7 +132,7 @@ class PedidoController extends Controller
     public function changeStatus(Request $request, Pedido $pedido)
     {
         $request->validate([
-            'estado' => 'required|in:borrador,enviado,facturado,cancelado'
+            'estado' => 'required|in:borrador,enviado,facturado,cancelado,cotizacion'
         ]);
 
         $nuevoEstado = $request->estado;

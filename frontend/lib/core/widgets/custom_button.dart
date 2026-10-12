@@ -10,6 +10,8 @@ class CustomButton extends StatelessWidget {
   final bool isLoading;
   final double borderRadius;
   final EdgeInsetsGeometry padding;
+  final double? height;
+  final double fontSize;
 
   const CustomButton({
     super.key,
@@ -22,6 +24,8 @@ class CustomButton extends StatelessWidget {
     this.isLoading = false,
     this.borderRadius = 8.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    this.height = 46.0,
+    this.fontSize = 14.0,
   });
 
   @override
@@ -33,6 +37,8 @@ class CustomButton extends StatelessWidget {
     final bgColor = color ?? defaultBgColor;
     final txtColor = textColor ?? (isOutlined ? bgColor : defaultTextColor);
 
+    final minSize = height != null ? Size(64, height!) : null;
+
     if (isOutlined) {
       return OutlinedButton(
         onPressed: isLoading ? null : onPressed,
@@ -40,6 +46,7 @@ class CustomButton extends StatelessWidget {
           foregroundColor: txtColor,
           side: BorderSide(color: bgColor, width: 1.5),
           padding: padding,
+          minimumSize: minSize,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
@@ -54,6 +61,7 @@ class CustomButton extends StatelessWidget {
         backgroundColor: bgColor,
         foregroundColor: txtColor,
         padding: padding,
+        minimumSize: minSize,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
@@ -85,7 +93,7 @@ class CustomButton extends StatelessWidget {
             text,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: fontSize,
               color: contentColor,
             ),
           ),
@@ -97,7 +105,7 @@ class CustomButton extends StatelessWidget {
       text,
       style: TextStyle(
         fontWeight: FontWeight.bold,
-        fontSize: 14,
+        fontSize: fontSize,
         color: contentColor,
       ),
     );

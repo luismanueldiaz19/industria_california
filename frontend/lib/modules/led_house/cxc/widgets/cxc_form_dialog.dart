@@ -6,8 +6,12 @@ import '../../../../core/themes/app_theme.dart';
 import '../models/cxc_model.dart';
 import '../providers/cxc_provider.dart';
 import '../../providers/ledhouse_cliente_provider.dart';
+import '../../models/ledhouse_cliente.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../vendedor/services/vendedor_cxc_service.dart';
+import '../../../../core/widgets/dialog_header.dart';
+import '../../../../core/widgets/input_field.dart';
+import '../../../../core/widgets/drop_down_widget.dart';
 
 class CxcFormDialog extends StatefulWidget {
   final CxcModel? cxc;
@@ -88,6 +92,16 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
     _montoFacturaController.dispose();
     _montoPagadoController.dispose();
     super.dispose();
+  }
+
+  String _selectedClienteName(List<LedhouseCliente> clientes) {
+    if (_selectedClienteId == null) return '';
+    final match = clientes.where((c) => c.id == _selectedClienteId);
+    if (match.isNotEmpty) return match.first.nombre;
+    if (widget.cxc != null && widget.cxc!.clienteId == _selectedClienteId) {
+      return widget.cxc!.cliente;
+    }
+    return '';
   }
 
   void _calculateFechaVencimiento() {
@@ -198,7 +212,7 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 40,
               offset: const Offset(0, 16),
             ),
@@ -209,7 +223,14 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // ── Header ───────────────────────────────────────────
-              _buildDialogHeader(),
+              DialogHeader(
+                title: _isEditing ? 'Editar Cuenta' : 'Nueva Cuenta',
+                subtitle: _isEditing
+                    ? 'Actualiza los datos de cobro'
+                    : 'Completa los datos de cobro',
+                icon: Icons.receipt_long_rounded,
+                onClose: () => Navigator.pop(context, false),
+              ),
 
               // ── Form ─────────────────────────────────────────────
               Padding(
@@ -256,9 +277,22 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                           if (provider.isLoading && provider.clientes.isEmpty) {
                             return const SizedBox(
                               height: 56,
-                              child: Center(child: CircularProgressIndicator()),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
                             );
                           }
+
+                          final bool isFieldEnabled =
+                              widget.preselectedClienteId == null &&
+                              !_isEditing;
+
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -271,66 +305,322 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              DropdownMenu<int>(
-                                enabled:
-                                    widget.preselectedClienteId == null &&
-                                    !_isEditing,
-                                initialSelection: _selectedClienteId,
-                                expandedInsets: EdgeInsets.zero,
-                                inputDecorationTheme: InputDecorationTheme(
-                                  filled: true,
-                                  fillColor: const Color(0xFFF9FAFB),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
-                                      color: Colors.grey.shade200,
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return Autocomplete<LedhouseCliente>(
+                                    displayStringForOption: (c) => c.nombre,
+                                    initialValue: TextEditingValue(
+                                      text: _selectedClienteName(
+                                        provider.clientes,
+                                      ),
                                     ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: const BorderSide(
-                                      color: AppTheme.successColor,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 14,
-                                  ),
-                                ),
-                                leadingIcon: Container(
-                                  margin: const EdgeInsets.all(10),
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.successColor.withOpacity(
-                                      0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.person_rounded,
-                                    color: AppTheme.successColor,
-                                    size: 18,
-                                  ),
-                                ),
-                                enableFilter: true,
-                                enableSearch: true,
-                                menuHeight: 300,
-                                hintText: 'Seleccione un cliente',
-                                textStyle: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF1F2937),
-                                ),
-                                dropdownMenuEntries: provider.clientes.map((c) {
-                                  return DropdownMenuEntry<int>(
-                                    value: c.id ?? 0,
-                                    label: c.nombre,
+                                    optionsBuilder:
+                                        (TextEditingValue textEditingValue) {
+                                          if (!isFieldEnabled) {
+                                            return const Iterable<
+                                              LedhouseCliente
+                                            >.empty();
+                                          }
+                                          final query = textEditingValue.text
+                                              .trim()
+                                              .toLowerCase();
+                                          if (query.isEmpty) {
+                                            return provider.clientes.take(25);
+                                          }
+                                          return provider.clientes
+                                              .where((c) {
+                                                final nameMatch = c.nombre
+                                                    .toLowerCase()
+                                                    .contains(query);
+                                                final docMatch =
+                                                    c.documento != null &&
+                                                    c.documento!
+                                                        .toLowerCase()
+                                                        .contains(query);
+                                                final codeMatch =
+                                                    c.idClienteExterno !=
+                                                        null &&
+                                                    c.idClienteExterno!
+                                                        .toLowerCase()
+                                                        .contains(query);
+                                                return nameMatch ||
+                                                    docMatch ||
+                                                    codeMatch;
+                                              })
+                                              .take(25);
+                                        },
+                                    onSelected: (LedhouseCliente selection) {
+                                      setState(() {
+                                        _selectedClienteId = selection.id;
+                                      });
+                                      _calculateFechaVencimiento();
+                                    },
+                                    fieldViewBuilder:
+                                        (
+                                          context,
+                                          textEditingController,
+                                          focusNode,
+                                          onFieldSubmitted,
+                                        ) {
+                                          final selectedName =
+                                              _selectedClienteName(
+                                                provider.clientes,
+                                              );
+                                          if (textEditingController
+                                                  .text
+                                                  .isEmpty &&
+                                              selectedName.isNotEmpty) {
+                                            textEditingController.text =
+                                                selectedName;
+                                          }
+
+                                          return TextFormField(
+                                            controller: textEditingController,
+                                            focusNode: focusNode,
+                                            enabled: isFieldEnabled,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Color(0xFF1F2937),
+                                            ),
+                                            onChanged: (val) {
+                                              if (val.trim().isEmpty &&
+                                                  _selectedClienteId != null) {
+                                                setState(
+                                                  () =>
+                                                      _selectedClienteId = null,
+                                                );
+                                              }
+                                            },
+                                            decoration: InputDecoration(
+                                              hintText:
+                                                  'Buscar cliente por nombre o documento...',
+                                              hintStyle: TextStyle(
+                                                color: Colors.grey.shade400,
+                                                fontSize: 13,
+                                              ),
+                                              prefixIcon: Container(
+                                                margin: const EdgeInsets.all(
+                                                  10,
+                                                ),
+                                                width: 36,
+                                                height: 36,
+                                                decoration: BoxDecoration(
+                                                  color: AppTheme.successColor
+                                                      .withValues(alpha: 0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.person_rounded,
+                                                  color: AppTheme.successColor,
+                                                  size: 18,
+                                                ),
+                                              ),
+                                              suffixIcon:
+                                                  isFieldEnabled &&
+                                                      textEditingController
+                                                          .text
+                                                          .isNotEmpty
+                                                  ? IconButton(
+                                                      icon: const Icon(
+                                                        Icons.clear_rounded,
+                                                        size: 18,
+                                                        color: Colors.grey,
+                                                      ),
+                                                      tooltip:
+                                                          'Limpiar selección',
+                                                      onPressed: () {
+                                                        textEditingController
+                                                            .clear();
+                                                        setState(
+                                                          () =>
+                                                              _selectedClienteId =
+                                                                  null,
+                                                        );
+                                                      },
+                                                    )
+                                                  : const Icon(
+                                                      Icons.search_rounded,
+                                                      color: Colors.grey,
+                                                      size: 20,
+                                                    ),
+                                              filled: true,
+                                              fillColor: const Color(
+                                                0xFFF9FAFB,
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                                borderSide: BorderSide(
+                                                  color: Colors.grey.shade200,
+                                                ),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                                borderSide: const BorderSide(
+                                                  color: AppTheme.successColor,
+                                                  width: 1.5,
+                                                ),
+                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 14,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                    optionsViewBuilder: (context, onSelected, options) {
+                                      return Align(
+                                        alignment: Alignment.topLeft,
+                                        child: Material(
+                                          elevation: 8,
+                                          shadowColor: Colors.black.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                          color: Colors.white,
+                                          child: Container(
+                                            width: constraints.maxWidth,
+                                            constraints: const BoxConstraints(
+                                              maxHeight: 280,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              border: Border.all(
+                                                color: Colors.grey.shade200,
+                                              ),
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              child: ListView.separated(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 4,
+                                                    ),
+                                                shrinkWrap: true,
+                                                itemCount: options.length,
+                                                separatorBuilder: (_, __) =>
+                                                    Divider(
+                                                      height: 1,
+                                                      color:
+                                                          Colors.grey.shade100,
+                                                    ),
+                                                itemBuilder: (context, index) {
+                                                  final cliente = options
+                                                      .elementAt(index);
+                                                  final isSelected =
+                                                      cliente.id ==
+                                                      _selectedClienteId;
+                                                  return InkWell(
+                                                    onTap: () =>
+                                                        onSelected(cliente),
+                                                    child: Container(
+                                                      color: isSelected
+                                                          ? AppTheme
+                                                                .successColor
+                                                                .withValues(
+                                                                  alpha: 0.08,
+                                                                )
+                                                          : null,
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 14,
+                                                            vertical: 10,
+                                                          ),
+                                                      child: Row(
+                                                        children: [
+                                                          CircleAvatar(
+                                                            radius: 16,
+                                                            backgroundColor:
+                                                                AppTheme
+                                                                    .successColor
+                                                                    .withValues(
+                                                                      alpha:
+                                                                          0.12,
+                                                                    ),
+                                                            child: const Icon(
+                                                              Icons
+                                                                  .person_rounded,
+                                                              color: AppTheme
+                                                                  .successColor,
+                                                              size: 16,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 12,
+                                                          ),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment
+                                                                      .start,
+                                                              children: [
+                                                                Text(
+                                                                  cliente
+                                                                      .nombre,
+                                                                  style: TextStyle(
+                                                                    fontSize:
+                                                                        13,
+                                                                    fontWeight:
+                                                                        isSelected
+                                                                        ? FontWeight
+                                                                              .bold
+                                                                        : FontWeight
+                                                                              .w600,
+                                                                    color: const Color(
+                                                                      0xFF1F2937,
+                                                                    ),
+                                                                  ),
+                                                                  maxLines: 1,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                ),
+                                                                if (cliente.documento !=
+                                                                        null &&
+                                                                    cliente
+                                                                        .documento!
+                                                                        .isNotEmpty)
+                                                                  Text(
+                                                                    'Doc: ${cliente.documento}',
+                                                                    style: TextStyle(
+                                                                      fontSize:
+                                                                          11,
+                                                                      color: Colors
+                                                                          .grey
+                                                                          .shade500,
+                                                                    ),
+                                                                  ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          if (isSelected)
+                                                            const Icon(
+                                                              Icons
+                                                                  .check_circle_rounded,
+                                                              color: AppTheme
+                                                                  .successColor,
+                                                              size: 18,
+                                                            ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   );
-                                }).toList(),
-                                onSelected: (val) {
-                                  setState(() => _selectedClienteId = val);
-                                  _calculateFechaVencimiento();
                                 },
                               ),
                             ],
@@ -445,8 +735,8 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                                     width: 36,
                                     height: 36,
                                     decoration: BoxDecoration(
-                                      color: AppTheme.successColor.withOpacity(
-                                        0.1,
+                                      color: AppTheme.successColor.withValues(
+                                        alpha: 0.1,
                                       ),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -497,15 +787,15 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
                             ),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<int>(
-                              value: _selectedVendedorId,
+                              initialValue: _selectedVendedorId,
                               decoration: InputDecoration(
                                 prefixIcon: Container(
                                   margin: const EdgeInsets.all(10),
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: AppTheme.successColor.withOpacity(
-                                      0.1,
+                                    color: AppTheme.successColor.withValues(
+                                      alpha: 0.1,
                                     ),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
@@ -681,70 +971,6 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
     );
   }
 
-  Widget _buildDialogHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(28, 28, 20, 24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppTheme.successColor, Colors.teal.shade700],
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.receipt_long_rounded,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _isEditing ? 'Editar Cuenta' : 'Nueva Cuenta',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  _isEditing
-                      ? 'Actualiza los datos de cobro'
-                      : 'Completa los datos de cobro',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.75),
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => Navigator.pop(context, false),
-            icon: Icon(
-              Icons.close_rounded,
-              color: Colors.white.withOpacity(0.7),
-              size: 22,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildField({
     required TextEditingController controller,
     required String label,
@@ -756,89 +982,16 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
     String? Function(String?)? validator,
     bool optional = false,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF374151),
-              ),
-            ),
-            if (optional) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'Opcional',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          inputFormatters: inputFormatters,
-          validator: validator,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-            prefixIcon: Container(
-              margin: const EdgeInsets.all(10),
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 18),
-            ),
-            filled: true,
-            fillColor: const Color(0xFFF9FAFB),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppTheme.successColor,
-                width: 1.5,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: Color(0xFFEA4335),
-                width: 1.5,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: Color(0xFFEA4335),
-                width: 1.5,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-          ),
-        ),
-      ],
+    return InputField(
+      controller: controller,
+      label: label,
+      hint: hint,
+      icon: icon,
+      iconColor: iconColor,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      validator: validator,
+      optional: optional,
     );
   }
 
@@ -850,65 +1003,13 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
     required List<String> items,
     required void Function(String?) onChanged,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF374151),
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: value,
-          icon: const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: Colors.grey,
-          ),
-          decoration: InputDecoration(
-            prefixIcon: Container(
-              margin: const EdgeInsets.all(10),
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 18),
-            ),
-            filled: true,
-            fillColor: const Color(0xFFF9FAFB),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppTheme.successColor,
-                width: 1.5,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-          ),
-          items: items.map((e) {
-            return DropdownMenuItem(
-              value: e,
-              child: Text(
-                e.toUpperCase(),
-                style: const TextStyle(fontSize: 14),
-              ),
-            );
-          }).toList(),
-          onChanged: onChanged,
-        ),
-      ],
+    return DropDownWidget<String>(
+      label: label,
+      value: value,
+      icon: icon,
+      iconColor: iconColor,
+      items: items,
+      onChanged: onChanged,
     );
   }
 }

@@ -33,6 +33,7 @@ class _VendedorPedidoDetalleScreenState
   static final _dateFmt = DateFormat('dd MMM yyyy, HH:mm', 'es');
 
   static final Map<String, Color> _estadoColor = {
+    'cotizacion': const Color(0xFF8E24AA),
     'borrador': const Color(0xFFFF9800),
     'enviado': AppTheme.primaryBlue,
     'facturado': const Color(0xFF4CAF50),

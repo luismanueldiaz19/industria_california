@@ -10,4 +10,6 @@ return [
     App\Modules\CamionVictual\Providers\CamionVictualServiceProvider::class,
     App\Modules\Vehiculo\Providers\VehiculoServiceProvider::class,
     App\Modules\ChequeFuturista\Providers\ChequeFuturistaServiceProvider::class,
+    App\Modules\Cliente\Providers\ClienteServiceProvider::class,
+    App\Modules\CuentasPorCobrar\Providers\CuentasPorCobrarServiceProvider::class,
 ];

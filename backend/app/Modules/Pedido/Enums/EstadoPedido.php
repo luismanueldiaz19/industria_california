@@ -8,4 +8,5 @@ enum EstadoPedido: string
     case Facturado = 'facturado';
     case Entregado = 'entregado';
     case Cancelado = 'cancelado';
+    case Cotizacion = 'cotizacion';
 }

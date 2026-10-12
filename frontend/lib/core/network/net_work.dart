@@ -1,7 +1,9 @@
-// final String host = "http://127.0.0.1:8000";
-final String host = "https://lwadersoft.site";
+final String host = "http://127.0.0.1:8000";
+// final String host = "https://lwadersoft.site";
 
 final logoPath = "assets/logos/logo_california.png";
+
+final String hostDev = "http://localhost:8000/api/v2";
 
 const bool isDemoMode = true;
 

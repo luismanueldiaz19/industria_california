@@ -7,7 +7,6 @@ class AlertaUtils {
     'retencion',
     'diferencia',
     'mer_no_entregada',
-    'cheque_futurista',
     'anular',
     'consulta',
     'informacion',
@@ -55,8 +54,7 @@ class AlertaUtils {
         return '⚖️ Diferencia de Precio';
       case 'mer_no_entregada':
         return '📦 Mercancía No Entregada';
-      case 'cheque_futurista':
-        return '🕰️ Cheque Futurista';
+
       case 'anular':
         return '❌ Anular Factura';
       case 'consulta':
