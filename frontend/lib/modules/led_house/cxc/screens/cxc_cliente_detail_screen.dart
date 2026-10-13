@@ -9,6 +9,8 @@ import '../../../../core/services/http_service.dart';
 import '../providers/cxc_provider.dart';
 import '../services/cxc_service.dart';
 import '../widgets/cxc_form_dialog.dart';
+import '../../../auth/providers/auth_provider.dart';
+import '../../../vendedor/services/vendedor_cxc_service.dart';
 
 // Import newly extracted widgets
 import '../widgets/cliente_detail/cxc_cliente_header_card.dart';
@@ -60,140 +62,288 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
   }
 
   Future<void> _importExcel() async {
-    final bool? confirm = await showDialog<bool>(
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final provider = Provider.of<CxcProvider>(context, listen: false);
+
+    // 1. Detectar si el cliente ya tiene un vendedor asignado en sus facturas de CXC
+    final existingWithVendor = provider.cxcs.where(
+      (c) => c.clienteId == _clienteId && c.vendedorId != null,
+    );
+    int? defaultVendedorId;
+    String? defaultVendedorNombre;
+    if (existingWithVendor.isNotEmpty) {
+      defaultVendedorId = existingWithVendor.first.vendedorId;
+      defaultVendedorNombre = existingWithVendor.first.vendedorNombre;
+    } else if (!auth.isAdmin && auth.id != null) {
+      defaultVendedorId = auth.id;
+      defaultVendedorNombre = auth.name;
+    }
+
+    // 2. Si es admin, cargar la lista completa de vendedores disponibles
+    List<dynamic> vendedores = [];
+    if (auth.isAdmin) {
+      try {
+        vendedores = await VendedorCxcService().getVendedores(auth.token ?? '');
+      } catch (e) {
+        debugPrint('Error cargando vendedores: $e');
+      }
+      if (!mounted) return;
+    }
+
+    int? selectedVendedorId = defaultVendedorId;
+
+    final int? confirmVendedorId = await showDialog<int?>(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: AppTheme.darkCardColor,
-        surfaceTintColor: AppTheme.darkCardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: AppTheme.darkBorderColor, width: 1),
-        ),
-        elevation: 24,
-        shadowColor: Colors.black26,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.table_chart_outlined,
-                      color: Colors.grey.shade400,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Text(
-                        'Importar CXC',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Divider(color: AppTheme.darkBorderColor, height: 1),
-                const SizedBox(height: 20),
-                Text(
-                  'El archivo Excel/CSV debe seguir estrictamente este orden de columnas. La primera fila se ignorará (encabezados).',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade400,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.darkBorderColor),
-                    borderRadius: BorderRadius.circular(6),
-                    color: AppTheme.darkInputColor,
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          backgroundColor: AppTheme.darkCardColor,
+          surfaceTintColor: AppTheme.darkCardColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: AppTheme.darkBorderColor, width: 1),
+          ),
+          elevation: 24,
+          shadowColor: Colors.black26,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      _buildFormatRow(
-                        'Columna A',
-                        'Documento (Factura)',
-                        isRequired: true,
+                      Icon(
+                        Icons.table_chart_outlined,
+                        color: Colors.grey.shade400,
+                        size: 28,
                       ),
-                      _buildFormatRow(
-                        'Columna B',
-                        'Monto Deuda Actual',
-                        isRequired: true,
-                      ),
-                      _buildFormatRow(
-                        'Columna C',
-                        'Fecha Factura (YYYY-MM-DD)',
-                        isRequired: true,
-                      ),
-                      _buildFormatRow(
-                        'Columna D',
-                        'Monto Factura Original',
-                        isRequired: false,
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Text(
+                          'Importar CXC',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        foregroundColor: Colors.grey.shade400,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
+                  const SizedBox(height: 16),
+                  Divider(color: AppTheme.darkBorderColor, height: 1),
+                  const SizedBox(height: 16),
+
+                  // Bloque de Selección / Confirmación de Vendedor
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.darkInputColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.darkBorderColor),
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.ledhouseBlue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.badge_outlined,
+                              color: AppTheme.accent,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Vendedor Responsable',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (defaultVendedorId != null &&
+                                selectedVendedorId == defaultVendedorId)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Detectado de CXC',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: AppTheme.accent,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Importar',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
+                        const SizedBox(height: 8),
+                        if (auth.isAdmin && vendedores.isNotEmpty)
+                          DropdownButtonFormField<int>(
+                            initialValue: selectedVendedorId,
+                            isExpanded: true,
+                            dropdownColor: AppTheme.darkCardColor,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(6),
+                                borderSide: BorderSide(
+                                  color: AppTheme.darkBorderColor,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(6),
+                                borderSide: BorderSide(
+                                  color: AppTheme.darkBorderColor,
+                                ),
+                              ),
+                              hintText: 'Seleccione un vendedor',
+                              hintStyle: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 12,
+                              ),
+                            ),
+                            items: vendedores.map<DropdownMenuItem<int>>((v) {
+                              return DropdownMenuItem<int>(
+                                value: v['id'] as int,
+                                child: Text(
+                                  v['name'] ?? 'Vendedor #${v['id']}',
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              setDialogState(() => selectedVendedorId = val);
+                            },
+                          )
+                        else
+                          Text(
+                            defaultVendedorNombre ??
+                                (auth.name ?? 'Sin vendedor asignado'),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
-              ],
+                  ),
+
+                  const SizedBox(height: 16),
+                  Text(
+                    'El archivo Excel/CSV debe seguir estrictamente este orden de columnas. La primera fila se ignorará (encabezados).',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade400,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppTheme.darkBorderColor),
+                      borderRadius: BorderRadius.circular(6),
+                      color: AppTheme.darkInputColor,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        _buildFormatRow(
+                          'Columna A',
+                          'Documento (Factura)',
+                          isRequired: true,
+                        ),
+                        _buildFormatRow(
+                          'Columna B',
+                          'Monto Deuda Actual',
+                          isRequired: true,
+                        ),
+                        _buildFormatRow(
+                          'Columna C',
+                          'Fecha Factura (YYYY-MM-DD)',
+                          isRequired: true,
+                        ),
+                        _buildFormatRow(
+                          'Columna D',
+                          'Monto Factura Original',
+                          isRequired: false,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, null),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          foregroundColor: Colors.grey.shade400,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancelar',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () =>
+                            Navigator.pop(context, selectedVendedorId ?? -1),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.ledhouseBlue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Importar',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
 
-    if (confirm != true) return;
+    if (confirmVendedorId == null) return;
+    final int? finalVendedorId = confirmVendedorId > 0
+        ? confirmVendedorId
+        : null;
 
     try {
       final PlatformFile? file = await FilePicker.pickFile(
@@ -212,15 +362,23 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
           _clienteId,
           bytes,
           file.name,
+          vendedorId: finalVendedorId,
         );
 
         if (!mounted) return;
         setState(() => _isImporting = false);
 
+        final int creados = response['creados'] ?? 0;
+        final int repetidos = response['repetidos'] ?? 0;
+        final Color snackColor = (creados > 0)
+            ? AppTheme.successColor
+            : (repetidos > 0 ? Colors.orange.shade800 : AppTheme.successColor);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response['message'] ?? 'Importación exitosa'),
-            backgroundColor: AppTheme.successColor,
+            backgroundColor: snackColor,
+            duration: const Duration(seconds: 5),
           ),
         );
 

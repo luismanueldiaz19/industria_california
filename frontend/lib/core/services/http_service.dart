@@ -224,13 +224,14 @@ class HttpService {
     List<int> bytes,
     String filename, {
     String fieldName = 'file',
+    Map<String, String>? fields,
   }) async {
     final file = http.MultipartFile.fromBytes(
       fieldName,
       bytes,
       filename: filename,
     );
-    return multipartV2(endpoint, files: [file]);
+    return multipartV2(endpoint, files: [file], fields: fields);
   }
 
   dynamic _handleResponse(http.Response response) {

@@ -10,11 +10,14 @@ class ClienteMasivoSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * Inserta 10,000 clientes de prueba optimizado por lotes (chunks).
+     * Inserta clientes de prueba optimizado por lotes (chunks).
      */
     public function run(): void
     {
-        $this->command->info('Iniciando generación de 10,000 clientes...');
+        $total = 10;
+        $chunkSize = 1000;
+
+        $this->command->info("Iniciando generación de {$total} clientes...");
 
         $nombres = [
             'Juan', 'Pedro', 'María', 'José', 'Carlos', 'Ana', 'Luis', 'Rosa', 'Manuel', 'Carmen',
@@ -39,8 +42,6 @@ class ClienteMasivoSeeder extends Seeder
             'San Pedro de Macorís', 'La Romana', 'Higüey', 'Moca', 'Bonao'
         ];
 
-        $total = 10000;
-        $chunkSize = 1000;
         $now = Carbon::now()->toDateTimeString();
 
         // Obtener el último ID externo numérico para evitar colisiones
@@ -107,6 +108,6 @@ class ClienteMasivoSeeder extends Seeder
             DB::table('ledhouse_clientes')->insertOrIgnore($batch);
         }
 
-        $this->command->info('¡10,000 clientes creados exitosamente!');
+        $this->command->info("¡{$total} clientes creados exitosamente!");
     }
 }

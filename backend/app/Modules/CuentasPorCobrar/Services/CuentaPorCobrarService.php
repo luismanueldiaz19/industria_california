@@ -537,54 +537,141 @@ class CuentaPorCobrarService
         ];
     }
 
-    public function importByCliente(int $clienteId, UploadedFile $file): array
+    public function importByCliente(int $clienteId, UploadedFile $file, ?int $vendedorId = null, ?User $usuario = null): array
     {
         $spreadsheet = IOFactory::load($file->getPathname());
         $rows        = $spreadsheet->getActiveSheet()->toArray();
-        array_shift($rows);
+        array_shift($rows); // Ignorar fila de encabezados
 
-        $importedCount = 0;
-        $cliente       = Cliente::findOrFail($clienteId);
-        $diasCredito   = $cliente->dias_credito ?? 0;
+        $cliente     = Cliente::findOrFail($clienteId);
+        $diasCredito = $cliente->dias_credito ?? 0;
 
-        foreach ($rows as $row) {
-            $documento    = isset($row[0]) ? trim((string)$row[0]) : null;
-            $monto        = isset($row[1]) ? trim((string)$row[1]) : null;
-            $fechaFactura = isset($row[2]) ? trim((string)$row[2]) : null;
-            $montoFactura = isset($row[3]) ? trim((string)$row[3]) : null;
+        $creados            = 0;
+        $actualizados       = 0;
+        $repetidosEnArchivo = 0;
+        $omitidos           = 0;
+        $vistosEnArchivo    = [];
 
-            if ($documento && $monto !== null && $fechaFactura) {
+        // 1. Si se especificó vendedorId explícito, usarlo.
+        // 2. Si no, buscar el vendedor_id que ya tengan las CXC existentes del cliente.
+        // 3. Si aún no tiene, y el usuario que importa es vendedor, usar el usuario actual.
+        $vendedorIdDefault = $vendedorId;
+        if (!$vendedorIdDefault) {
+            $vendedorIdDefault = CuentaPorCobrar::where('cliente_id', $clienteId)
+                ->whereNotNull('vendedor_id')
+                ->latest()
+                ->value('vendedor_id');
+        }
+        if (!$vendedorIdDefault && $usuario && $usuario->hasRole('vendedor')) {
+            $vendedorIdDefault = $usuario->id;
+        }
+
+        DB::transaction(function () use (
+            $rows,
+            $clienteId,
+            $diasCredito,
+            $vendedorIdDefault,
+            &$creados,
+            &$actualizados,
+            &$repetidosEnArchivo,
+            &$omitidos,
+            &$vistosEnArchivo
+        ) {
+            foreach ($rows as $row) {
+                $documento    = isset($row[0]) ? trim((string)$row[0]) : null;
+                $monto        = isset($row[1]) ? trim((string)$row[1]) : null;
+                $fechaFactura = isset($row[2]) ? trim((string)$row[2]) : null;
+                $montoFactura = isset($row[3]) ? trim((string)$row[3]) : null;
+
+                if (empty($documento) || $monto === null || $monto === '' || empty($fechaFactura)) {
+                    $omitidos++;
+                    continue;
+                }
+
+                if (in_array($documento, $vistosEnArchivo, true)) {
+                    $repetidosEnArchivo++;
+                } else {
+                    $vistosEnArchivo[] = $documento;
+                }
+
                 $montoFloat        = (float)$monto;
-                $montoFacturaFloat = ($montoFactura !== '' && is_numeric($montoFactura)) ? (float)$montoFactura : $montoFloat;
+                $montoFacturaFloat = ($montoFactura !== '' && $montoFactura !== null && is_numeric($montoFactura))
+                    ? (float)$montoFactura
+                    : $montoFloat;
                 $estado            = $montoFloat <= 0 ? EstadoCxc::Pagado->value : EstadoCxc::Pendiente->value;
+                $montoPagado       = max(0.0, $montoFacturaFloat - $montoFloat);
 
+                // Parsear fecha tolerando formato estándar y serial numérico de Excel
                 try {
-                    $fechaObj         = Carbon::parse($fechaFactura);
+                    if (is_numeric($fechaFactura) && (float)$fechaFactura > 30000) {
+                        $fechaObj = Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($fechaFactura));
+                    } else {
+                        $fechaObj = Carbon::parse($fechaFactura);
+                    }
                     $fechaFacturaDb   = $fechaObj->format('Y-m-d');
                     $fechaVencimiento = $fechaObj->copy()->addDays($diasCredito)->format('Y-m-d');
                 } catch (Exception $e) {
-                    $fechaFacturaDb   = $fechaFactura;
-                    $fechaVencimiento = $fechaFactura;
+                    $fechaFacturaDb   = now()->format('Y-m-d');
+                    $fechaVencimiento = now()->addDays($diasCredito)->format('Y-m-d');
                 }
 
-                CuentaPorCobrar::updateOrCreate(
-                    ['documento' => $documento, 'cliente_id' => $clienteId],
-                    [
+                $existing = CuentaPorCobrar::where('documento', $documento)
+                    ->where('cliente_id', $clienteId)
+                    ->first();
+
+                if ($existing) {
+                    $existing->update([
                         'monto_pendiente'   => $montoFloat,
                         'monto_factura'     => $montoFacturaFloat,
+                        'monto_pagado'      => $montoPagado,
                         'fecha_factura'     => $fechaFacturaDb,
                         'fecha_vencimiento' => $fechaVencimiento,
                         'estado'            => $estado,
-                        'monto_pagado'      => $estado === EstadoCxc::Pagado->value ? $montoFacturaFloat : 0,
-                    ]
-                );
-                $importedCount++;
+                        'vendedor_id'       => $existing->vendedor_id ?? $vendedorIdDefault,
+                    ]);
+                    $actualizados++;
+                } else {
+                    CuentaPorCobrar::create([
+                        'documento'         => $documento,
+                        'cliente_id'        => $clienteId,
+                        'vendedor_id'       => $vendedorIdDefault,
+                        'monto_factura'     => $montoFacturaFloat,
+                        'monto_pagado'      => $montoPagado,
+                        'monto_pendiente'   => $montoFloat,
+                        'fecha_factura'     => $fechaFacturaDb,
+                        'fecha_vencimiento' => $fechaVencimiento,
+                        'estado'            => $estado,
+                    ]);
+                    $creados++;
+                }
             }
+        });
+
+        $partes = [];
+        if ($creados > 0) {
+            $partes[] = "{$creados} factura(s) nueva(s) creada(s)";
+        }
+        if ($actualizados > 0) {
+            $partes[] = "{$actualizados} factura(s) actualizada(s)";
+        }
+        if (empty($partes)) {
+            $partes[] = "No se procesaron registros válidos";
+        }
+        $msg = implode(', ', $partes) . '.';
+        if ($repetidosEnArchivo > 0) {
+            $msg .= " Atención: {$repetidosEnArchivo} fila(s) tenían el mismo documento repetido en el archivo.";
+        }
+        if ($omitidos > 0) {
+            $msg .= " ({$omitidos} fila(s) omitida(s) por datos incompletos).";
         }
 
         return [
-            'message'         => "Importado exitosamente. {$importedCount} registros procesados.",
-            'registros_count' => $importedCount,
+            'message'         => $msg,
+            'registros_count' => $creados + $actualizados,
+            'creados'         => $creados,
+            'actualizados'    => $actualizados,
+            'repetidos'       => $repetidosEnArchivo,
+            'omitidos'        => $omitidos,
         ];
     }
 

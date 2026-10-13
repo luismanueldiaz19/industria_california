@@ -306,11 +306,18 @@ class CuentaPorCobrarController extends Controller
     public function importByCliente(Request $request, int $clienteId): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv',
+            'file'        => 'required|file|mimes:xlsx,xls,csv',
+            'vendedor_id' => 'nullable|exists:users,id',
         ]);
 
         try {
-            $resultado = $this->service->importByCliente($clienteId, $request->file('file'));
+            $vendedorId = $request->input('vendedor_id') ? (int) $request->input('vendedor_id') : null;
+            $resultado  = $this->service->importByCliente(
+                $clienteId,
+                $request->file('file'),
+                $vendedorId,
+                $request->user()
+            );
             return response()->json($resultado);
         } catch (Exception $e) {
             return response()->json(['message' => 'Error al importar: ' . $e->getMessage()], 500);

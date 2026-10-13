@@ -55,8 +55,8 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->call([
-            // TestDataSeeder::class,
-             //ClienteMasivoSeeder::class, // <-- Descomentar para generar 10,000 clientes
+            TestDataSeeder::class,
+            // ClienteMasivoSeeder::class, // <-- Genera 10 clientes de prueba (ya se llama arriba)
         ]);
     }
 }

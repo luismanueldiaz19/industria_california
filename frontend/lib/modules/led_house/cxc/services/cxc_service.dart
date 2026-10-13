@@ -122,12 +122,14 @@ class CxcService {
   Future<Map<String, dynamic>> importarExcel(
     int clienteId,
     List<int> bytes,
-    String filename,
-  ) async {
+    String filename, {
+    int? vendedorId,
+  }) async {
     final response = await _http.uploadFile(
       'cxc/import-by-cliente/$clienteId',
       bytes,
       filename,
+      fields: vendedorId != null ? {'vendedor_id': vendedorId.toString()} : null,
     );
     return response as Map<String, dynamic>;
   }

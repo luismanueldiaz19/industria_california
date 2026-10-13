@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../../core/utils/constants.dart';
 
 class CxcAlertaModel {
   final int id;
@@ -191,8 +192,41 @@ class EvidenciaModel {
     );
   }
 
-  bool get isImage =>
-      ['jpg', 'jpeg', 'png'].contains(tipoArchivo.toLowerCase());
+  bool get isImage {
+    final t = tipoArchivo.toLowerCase();
+    final n = nombreArchivo.toLowerCase();
+    final r = rutaArchivo.toLowerCase();
+    if (t.contains('image') ||
+        t == 'jpg' ||
+        t == 'jpeg' ||
+        t == 'png' ||
+        t == 'webp' ||
+        t == 'gif' ||
+        t == 'bmp') {
+      return true;
+    }
+    const exts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'];
+    return exts.any((ext) => n.endsWith(ext) || r.endsWith(ext));
+  }
+
+  bool get isPdf {
+    final t = tipoArchivo.toLowerCase();
+    final n = nombreArchivo.toLowerCase();
+    final r = rutaArchivo.toLowerCase();
+    return t.contains('pdf') || n.endsWith('.pdf') || r.endsWith('.pdf');
+  }
+
+  String get fullUrl {
+    if (rutaArchivo.isEmpty) return '';
+    if (rutaArchivo.startsWith('http://') ||
+        rutaArchivo.startsWith('https://')) {
+      return rutaArchivo;
+    }
+    final cleanPath = rutaArchivo.startsWith('/')
+        ? rutaArchivo.substring(1)
+        : rutaArchivo;
+    return '$host/storage/$cleanPath';
+  }
 
   String toRawJson() => json.encode(toJson());
 

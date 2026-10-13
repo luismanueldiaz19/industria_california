@@ -6,6 +6,7 @@ import '../../../core/utils/alerta_utils.dart';
 import '../../../core/utils/constants.dart';
 import '../models/cxc_alerta_model.dart';
 import '../services/cxc_alerta_service.dart';
+import 'alerta_evidencia_visor_dialog.dart';
 
 class AlertaGestionDialog extends StatefulWidget {
   final CxcAlertaModel alerta;
@@ -123,7 +124,10 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
   Future<void> _abrirEvidencia(String ruta) async {
     if (ruta.isEmpty) return;
     try {
-      final url = Uri.parse('$host/storage/$ruta');
+      final urlStr = ruta.startsWith('http://') || ruta.startsWith('https://')
+          ? ruta
+          : '$host/storage/${ruta.startsWith('/') ? ruta.substring(1) : ruta}';
+      final url = Uri.parse(urlStr);
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       }
@@ -625,49 +629,58 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        if (evidencias.any((e) => e.isImage)) ...[
+                          const Spacer(),
+                          Text(
+                            'Toca la foto para ampliarla e interactuar',
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 10,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     if (evidencias.isEmpty)
-                      Text(
-                        'No hay fotos ni documentos adjuntos en esta alerta.',
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 11,
-                          fontStyle: FontStyle.italic,
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.darkInputColor.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppTheme.darkBorderColor),
+                        ),
+                        child: Text(
+                          'No hay fotos ni documentos adjuntos en esta alerta.',
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 11,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       )
                     else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: evidencias.map((ev) {
-                          return ActionChip(
-                            backgroundColor: AppTheme.darkInputColor,
-                            side: BorderSide(color: AppTheme.darkBorderColor),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            avatar: Icon(
-                              ev.isImage
-                                  ? Icons.image_rounded
-                                  : Icons.picture_as_pdf_rounded,
-                              size: 14,
-                              color: ev.isImage
-                                  ? Colors.blueAccent
-                                  : Colors.redAccent,
-                            ),
-                            label: Text(
-                              ev.nombreArchivo,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                              ),
-                            ),
-                            onPressed: () => _abrirEvidencia(ev.rutaArchivo),
-                          );
-                        }).toList(),
+                      SizedBox(
+                        height: 104,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: evidencias.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            return _buildEvidenciaCard(
+                              evidencias[index],
+                              index,
+                              evidencias,
+                            );
+                          },
+                        ),
                       ),
                     const SizedBox(height: 16),
 
@@ -1087,5 +1100,228 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
         ),
       ],
     );
+  }
+
+  Widget _buildEvidenciaCard(
+    EvidenciaModel ev,
+    int index,
+    List<EvidenciaModel> todasEvidencias,
+  ) {
+    if (ev.isImage) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            AlertaEvidenciaVisorDialog.show(
+              context: context,
+              evidencias: todasEvidencias,
+              initialIndex: index,
+              titulo:
+                  'Factura: ${widget.alerta.cxc?.noFactura ?? widget.alerta.id.toString()}',
+            );
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: 118,
+            height: 104,
+            decoration: BoxDecoration(
+              color: AppTheme.darkInputColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.darkBorderColor),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(7),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Miniatura con decodificación optimizada en memoria
+                  Image.network(
+                    ev.fullUrl,
+                    fit: BoxFit.cover,
+                    cacheWidth: 260,
+                    cacheHeight: 260,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Container(
+                        color: AppTheme.darkInputColor,
+                        child: const Center(
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppTheme.ledhouseBlue,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: AppTheme.darkInputColor,
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image_rounded,
+                          color: Colors.white38,
+                          size: 26,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Gradiente inferior con nombre del archivo
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3.5,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.9),
+                            Colors.black.withValues(alpha: 0.5),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                      child: Text(
+                        ev.nombreArchivo,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+
+                  // Badge de foto (arriba a la izquierda)
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.ledhouseBlue.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: const Text(
+                        'FOTO',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 7.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Icono de zoom para indicar interactividad (arriba a la derecha)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.all(2.5),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.white24, width: 0.5),
+                      ),
+                      child: const Icon(
+                        Icons.zoom_in_rounded,
+                        color: Colors.white,
+                        size: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    } else {
+      // Documento no imagen (PDF, etc.)
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _abrirEvidencia(ev.rutaArchivo),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: 118,
+            height: 104,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.darkInputColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.darkBorderColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(
+                        ev.isPdf ? 'PDF' : 'DOC',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 7.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.open_in_new_rounded,
+                      color: Colors.white54,
+                      size: 12,
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Icon(
+                  ev.isPdf
+                      ? Icons.picture_as_pdf_rounded
+                      : Icons.insert_drive_file_rounded,
+                  color: ev.isPdf ? Colors.redAccent : Colors.amberAccent,
+                  size: 28,
+                ),
+                const Spacer(),
+                Text(
+                  ev.nombreArchivo,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 }
