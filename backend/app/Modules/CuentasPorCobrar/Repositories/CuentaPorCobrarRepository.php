@@ -139,7 +139,7 @@ class CuentaPorCobrarRepository implements CuentaPorCobrarRepositoryInterface
 
     public function getMisCxc(int $vendedorId, array $filters = [], ?int $perPage = 20): array
     {
-        $query = CuentaPorCobrar::with(['cliente'])
+        $query = CuentaPorCobrar::with(['cliente', 'evidencias'])
             ->withCount(['alertas as alertas_pendientes' => function ($q) {
                 $q->where('estado_alerta', 'pendiente');
             }])

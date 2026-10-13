@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/themes/app_theme.dart';
+import '../../../core/utils/constants.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/alerta_utils.dart';
 import '../services/vendedor_cxc_service.dart';
@@ -23,6 +25,8 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
   final _service = VendedorCxcService();
 
   bool _isSubmitting = false;
+  bool _isLoadingEvidencias = false;
+  List<dynamic> _evidencias = [];
   static const _blue = Color(0xFF1565C0);
 
   String _tipoAlerta = 'pago_recibido'; // Default to pago_recibido
@@ -37,6 +41,34 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
     super.initState();
     _montoController.text =
         widget.cxcData['monto_pendiente']?.toString() ?? '0';
+
+    final initialEv = widget.cxcData['evidencias'];
+    if (initialEv is List) {
+      _evidencias = List.from(initialEv);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarEvidencias();
+    });
+  }
+
+  Future<void> _cargarEvidencias() async {
+    final int cxcId =
+        int.tryParse(widget.cxcData['id']?.toString() ?? '0') ?? 0;
+    if (cxcId <= 0) return;
+    final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
+    setState(() => _isLoadingEvidencias = true);
+    try {
+      final list = await _service.getEvidencias(cxcId: cxcId, token: token);
+      if (mounted) {
+        setState(() {
+          _evidencias = list;
+        });
+      }
+    } catch (_) {
+      // Ignorar fallo de carga de evidencias
+    } finally {
+      if (mounted) setState(() => _isLoadingEvidencias = false);
+    }
   }
 
   @override
@@ -55,7 +87,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
           const SnackBar(
             content: Text('El monto es obligatorio para este tipo de alerta'),
             backgroundColor: Colors.red,
-            duration: Duration(milliseconds: 200),
+            duration: Duration(seconds: 2),
           ),
         );
         return;
@@ -67,10 +99,29 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
         const SnackBar(
           content: Text('La nota o descripción es obligatoria'),
           backgroundColor: Colors.red,
-          duration: Duration(milliseconds: 200),
+          duration: Duration(seconds: 2),
         ),
       );
       return;
+    }
+
+    final int cxcId =
+        int.tryParse(widget.cxcData['id']?.toString() ?? '0') ?? 0;
+    if (cxcId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: ID del documento no válido'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    double? montoInformado;
+    if (_montoController.text.trim().isNotEmpty) {
+      final cleanText = _montoController.text.trim().replaceAll(',', '');
+      montoInformado = double.tryParse(cleanText);
     }
 
     String notaFinal = _notaController.text.trim();
@@ -80,12 +131,10 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
 
     try {
       await _service.addAlerta(
-        cxcId: widget.cxcData['id'],
+        cxcId: cxcId,
         tipo: _tipoAlerta,
         nota: notaFinal,
-        montoInformado: _montoController.text.trim().isNotEmpty
-            ? double.tryParse(_montoController.text.trim())
-            : null,
+        montoInformado: montoInformado,
         token: token,
       );
       if (!mounted) return;
@@ -105,7 +154,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
-          duration: Duration(milliseconds: 200),
+          duration: Duration(seconds: 2),
         ),
       );
     } catch (e) {
@@ -114,7 +163,7 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
         SnackBar(
           content: Text('Error: $e'),
           backgroundColor: Colors.red,
-          duration: Duration(milliseconds: 200),
+          duration: const Duration(seconds: 3),
         ),
       );
     } finally {
@@ -167,6 +216,20 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
         const SnackBar(
           content: Text('El archivo está vacío'),
           backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final int cxcId =
+        int.tryParse(widget.cxcData['id']?.toString() ?? '0') ?? 0;
+    if (cxcId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: ID del documento no válido'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
         ),
       );
       return;
@@ -177,13 +240,15 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
     setState(() => _isSubmitting = true);
     try {
       await _service.uploadEvidencia(
-        cxcId: widget.cxcData['id'],
+        cxcId: cxcId,
         fileBytes: bytes,
         fileName: fileName,
         token: token,
       );
 
+      await _cargarEvidencias();
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Row(
@@ -195,16 +260,102 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  void _mostrarEvidencia(dynamic ev) {
+    final String ruta = ev['ruta_archivo']?.toString() ?? '';
+    if (ruta.isEmpty) return;
+    final String urlStr = '$host/storage/$ruta';
+    final String tipo = ev['tipo_archivo']?.toString().toLowerCase() ?? '';
+    final bool isPdf = tipo == 'pdf' || ruta.toLowerCase().endsWith('.pdf');
+
+    if (isPdf) {
+      launchUrl(Uri.parse(urlStr), mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+          color: Colors.black,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                color: Colors.grey.shade900,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.image, color: Colors.white70, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        ev['nombre_archivo']?.toString() ?? 'Evidencia',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 18),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: InteractiveViewer(
+                  child: Image.network(
+                    urlStr,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const SizedBox(
+                        height: 200,
+                        child: Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => const Padding(
+                      padding: EdgeInsets.all(30),
+                      child: Text(
+                        'Error al cargar la imagen',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -514,6 +665,114 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
                                 ),
                               ],
                             ),
+                            if (_isLoadingEvidencias) ...[
+                              const SizedBox(height: 12),
+                              const LinearProgressIndicator(minHeight: 2),
+                            ],
+                            if (_evidencias.isNotEmpty) ...[
+                              const SizedBox(height: 14),
+                              const Divider(height: 1),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.folder_shared_rounded,
+                                    size: 14,
+                                    color: _blue,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Documentos Adjuntos (${_evidencias.length}):',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              ..._evidencias.map((ev) {
+                                final nombre =
+                                    ev['nombre_archivo']?.toString() ??
+                                    'Documento';
+                                final tipo =
+                                    ev['tipo_archivo']?.toString().toLowerCase() ??
+                                    '';
+                                final isPdf =
+                                    tipo == 'pdf' ||
+                                    nombre.toLowerCase().endsWith('.pdf');
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey.shade200,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isPdf
+                                            ? Icons.picture_as_pdf_rounded
+                                            : Icons.image_rounded,
+                                        size: 18,
+                                        color: isPdf
+                                            ? Colors.red.shade700
+                                            : _blue,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          nombre,
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      SizedBox(
+                                        height: 28,
+                                        child: ElevatedButton.icon(
+                                          onPressed: () => _mostrarEvidencia(ev),
+                                          icon: const Icon(
+                                            Icons.visibility_rounded,
+                                            size: 12,
+                                          ),
+                                          label: const Text(
+                                            'Ver Documento',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: _blue,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            elevation: 0,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
                           ],
                         ),
                       ),

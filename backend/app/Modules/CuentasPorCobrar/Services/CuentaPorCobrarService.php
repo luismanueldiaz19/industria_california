@@ -13,6 +13,8 @@ use App\Modules\CuentasPorCobrar\Models\CxcAlerta;
 use App\Modules\CuentasPorCobrar\Models\CxcEvidencia;
 use App\Modules\CuentasPorCobrar\Models\CxcSoporte;
 use App\Modules\CuentasPorCobrar\Repositories\Contracts\CuentaPorCobrarRepositoryInterface;
+use App\Services\PdfSecurityService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\UploadedFile;
@@ -169,16 +171,31 @@ class CuentaPorCobrarService
                 'fecha_revision' => now(),
             ]);
 
-            if (!empty($data['actualizar_cxc'])) {
+            if (!empty($data['actualizar_cxc']) && $alerta->cxc) {
                 $cxc = $alerta->cxc;
                 $updates = [];
 
                 if (isset($data['monto_pagado'])) {
-                    $updates['monto_pagado']   = $data['monto_pagado'];
-                    $updates['monto_pendiente'] = (float)$cxc->monto_factura - (float)$data['monto_pagado'];
+                    $pago = (float) $data['monto_pagado'];
+                    $saldoPendiente = (float) $cxc->monto_pendiente;
+                    $nuevoPendiente = max(0, (float) $cxc->monto_factura - $pago);
+
+                    $updates['monto_pagado']    = $pago;
+                    $updates['monto_pendiente'] = $nuevoPendiente;
+
+                    // Si el monto pagado es mayor o igual al balance pendiente (o el saldo restante llega a 0),
+                    // marcar automáticamente la CXC en estado 'pagado' para evitar que se quede en pendiente por descuido.
+                    if (round($pago, 2) >= round($saldoPendiente, 2) || $nuevoPendiente <= 0.0001) {
+                        $updates['estado'] = EstadoCxc::Pagado->value;
+                    }
                 }
+
                 if (isset($data['estado_cxc'])) {
-                    $updates['estado'] = $data['estado_cxc'];
+                    if (!isset($updates['estado'])) {
+                        $updates['estado'] = $data['estado_cxc'];
+                    } elseif ($data['estado_cxc'] === EstadoCxc::Cancelado->value) {
+                        $updates['estado'] = EstadoCxc::Cancelado->value;
+                    }
                 }
 
                 if (!empty($updates)) {
@@ -569,5 +586,80 @@ class CuentaPorCobrarService
             'message'         => "Importado exitosamente. {$importedCount} registros procesados.",
             'registros_count' => $importedCount,
         ];
+    }
+
+    /**
+     * Genera una URL segura temporal para el PDF de CXC del vendedor.
+     */
+    public function obtenerPdfUrlVendedor(array $params, User $usuario): string
+    {
+        return PdfSecurityService::generarUrl(
+            'cxc_vendedor',
+            [
+                'vendedor_id' => $usuario->id,
+                'search'      => $params['search'] ?? null,
+                'vencidos'    => $params['vencidos'] ?? null,
+                'con_alerta'  => $params['con_alerta'] ?? null,
+                'orden_monto' => $params['orden_monto'] ?? null,
+            ],
+            $usuario->id,
+            minutos: 30
+        );
+    }
+
+    /**
+     * Construye y genera el PDF de CXC para el vendedor.
+     */
+    public function generarPdfVendedor(array $params): array  {
+        $vendedorId = $params['vendedor_id'] ?? null;
+        $user = $vendedorId ? User::find($vendedorId) : null;
+
+        $query = CuentaPorCobrar::with(['cliente'])
+            ->where('estado', '!=', EstadoCxc::Pagado->value)
+            ->where('monto_pendiente', '>', 0);
+
+        if ($user) {
+            $query->where('vendedor_id', $user->id);
+        }
+
+        if (!empty($params['search'])) {
+            $search = TextNormalizer::normalize(trim($params['search']));
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(documento) LIKE ?', ["%{$search}%"])
+                  ->orWhereHas('cliente', function ($q2) use ($search) {
+                      $q2->whereRaw('LOWER(nombre) LIKE ?', ["%{$search}%"])
+                         ->orWhereRaw('LOWER(documento) LIKE ?', ["%{$search}%"]);
+                  });
+            });
+        }
+
+        $isVencidos = !empty($params['vencidos']) && $params['vencidos'] == '1';
+        if ($isVencidos) {
+            $query->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
+        }
+
+        if (!empty($params['con_alerta']) && $params['con_alerta'] == '1') {
+            $query->whereHas('alertas');
+        }
+
+        if (!empty($params['orden_monto'])) {
+            $query->orderBy('monto_pendiente', $params['orden_monto'] === 'desc' ? 'desc' : 'asc');
+        } else {
+            $query->orderBy('fecha_vencimiento', 'asc');
+        }
+
+        $cxcs = $query->get();
+
+        $pdf = Pdf::loadView('pdf.cxc_vendedor', [
+            'cxcs'       => $cxcs,
+            'vendedor'   => $user,
+            'isVencidos' => $isVencidos,
+            'search'     => $params['search'] ?? null,
+        ]);
+
+        $nombreVendedor = $user ? preg_replace('/[^A-Za-z0-9\-]/', '_', $user->name) : 'Vendedor';
+        $filename = "Reporte_Mis_CXC_{$nombreVendedor}.pdf";
+
+        return [$pdf, $filename];
     }
 }

@@ -121,7 +121,9 @@ class _PedidosTableState extends State<PedidosTable> {
   ) {
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
-        backgroundColor: PedidoUtils.getColorForEstado(estado).withValues(alpha: 0.2),
+        backgroundColor: PedidoUtils.getColorForEstado(
+          estado,
+        ).withValues(alpha: 0.2),
         foregroundColor: PedidoUtils.getColorForEstado(estado),
         elevation: 0,
         side: BorderSide(color: PedidoUtils.getColorForEstado(estado)),
@@ -229,7 +231,7 @@ class _PedidosTableState extends State<PedidosTable> {
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF2C2F33),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(4),
                 border: Border.all(color: Colors.white10),
               ),
               child: SingleChildScrollView(
@@ -366,7 +368,9 @@ class _PedidosTableState extends State<PedidosTable> {
                     ),
                   ],
                   rows: provider.pedidos.map((pedido) {
-                    final colorEstado = PedidoUtils.getColorForEstado(pedido.estado);
+                    final colorEstado = PedidoUtils.getColorForEstado(
+                      pedido.estado,
+                    );
                     double faltante = 0;
                     for (var det in pedido.detalles) {
                       faltante +=

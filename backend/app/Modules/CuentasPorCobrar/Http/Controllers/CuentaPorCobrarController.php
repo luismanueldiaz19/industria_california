@@ -14,6 +14,9 @@ use App\Modules\CuentasPorCobrar\Http\Resources\CxcAlertaResource;
 use App\Modules\CuentasPorCobrar\Http\Resources\CxcEvidenciaResource;
 use App\Modules\CuentasPorCobrar\Http\Resources\CxcSoporteResource;
 use App\Modules\CuentasPorCobrar\Services\CuentaPorCobrarService;
+use App\Models\User;
+use App\Services\PdfSecurityService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
@@ -120,6 +123,23 @@ class CuentaPorCobrarController extends Controller
             'total'            => $paginator->total(),
             'totales_globales' => $result['totales_globales'],
         ]);
+    }
+
+    public function misCxcPdfUrl(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user || !$user->hasRole('vendedor')) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $url = $this->service->obtenerPdfUrlVendedor($request->all(), $user);
+        return response()->json(['url' => $url]);
+    }
+
+    public function exportMisCxcPdf(Request $request)
+    {
+        [$pdf, $filename] = $this->service->generarPdfVendedor($request->all());
+        return $pdf->download($filename);
     }
 
     public function grouped(Request $request): JsonResponse

@@ -6,14 +6,16 @@ import '../models/cxc_alerta_model.dart';
 
 class AlertasDataTable extends StatelessWidget {
   final List<CxcAlertaModel> alertas;
-  final bool isPendiente;
+  final bool? isPendiente;
+  final String? filtroEstado;
   final Set<int> facturasRepetidasIds;
   final void Function(CxcAlertaModel alerta) onGestionarAlerta;
 
   const AlertasDataTable({
     super.key,
     required this.alertas,
-    required this.isPendiente,
+    this.isPendiente,
+    this.filtroEstado,
     required this.facturasRepetidasIds,
     required this.onGestionarAlerta,
   });
@@ -51,22 +53,28 @@ class AlertasDataTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (alertas.isEmpty) {
+      final String emptyMsg = (filtroEstado == 'pendiente' || isPendiente == true)
+          ? 'Sin alertas pendientes'
+          : (filtroEstado == 'procesada' || isPendiente == false)
+              ? 'Sin alertas procesadas'
+              : 'No se encontraron alertas';
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isPendiente
-                  ? Icons.notifications_none_rounded
-                  : Icons.check_circle_outline_rounded,
-              size: 56,
+              (filtroEstado == 'procesada' || isPendiente == false)
+                  ? Icons.check_circle_outline_rounded
+                  : Icons.notifications_none_rounded,
+              size: 48,
               color: Colors.grey.shade700,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
-              isPendiente ? 'Sin alertas pendientes' : 'Sin alertas procesadas',
+              emptyMsg,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 color: Colors.grey.shade400,
                 fontWeight: FontWeight.bold,
               ),
@@ -84,18 +92,16 @@ class AlertasDataTable extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             physics: const ClampingScrollPhysics(),
             child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: constraints.maxWidth,
-              ),
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: AppTheme.darkCardColor,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(5),
                   border: Border.all(color: AppTheme.darkBorderColor),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(5),
                   child: Theme(
                     data: Theme.of(context).copyWith(
                       dividerColor: AppTheme.darkBorderColor,
@@ -112,6 +118,7 @@ class AlertasDataTable extends StatelessWidget {
                       ),
                     ),
                     child: DataTable(
+                      showCheckboxColumn: false,
                       dataRowMinHeight: 38,
                       dataRowMaxHeight: 44,
                       columnSpacing: 18,
@@ -129,6 +136,7 @@ class AlertasDataTable extends StatelessWidget {
                         DataColumn(label: Text('CONCEPTO')),
                         DataColumn(label: Text('FACTURA')),
                         DataColumn(label: Text('MONTO')),
+                        DataColumn(label: Text('ESTADO')),
                         DataColumn(label: Text('VENDEDOR')),
                         DataColumn(label: Text('ACCIÓN')),
                       ],
@@ -149,9 +157,11 @@ class AlertasDataTable extends StatelessWidget {
     final cxc = alerta.cxc;
     final cliente = cxc?.cliente;
     final tipoColor = _getTipoColor(tipo);
-    final tieneEvidencias = alerta.evidencias.isNotEmpty || (cxc?.evidencias.isNotEmpty ?? false);
+    final tieneEvidencias =
+        alerta.evidencias.isNotEmpty || (cxc?.evidencias.isNotEmpty ?? false);
     final tieneNota = alerta.nota != null && alerta.nota!.trim().isNotEmpty;
     final tieneRepetidas = cxc != null && facturasRepetidasIds.contains(cxc.id);
+    final bool rowIsPendiente = alerta.estadoAlerta == 'pendiente';
 
     return DataRow(
       onSelectChanged: (_) => onGestionarAlerta(alerta),
@@ -198,7 +208,10 @@ class AlertasDataTable extends StatelessWidget {
                     Container(
                       width: 5,
                       height: 5,
-                      decoration: BoxDecoration(color: tipoColor, shape: BoxShape.circle),
+                      decoration: BoxDecoration(
+                        color: tipoColor,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                     const SizedBox(width: 5),
                     Text(
@@ -217,7 +230,11 @@ class AlertasDataTable extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 4),
                   child: Tooltip(
                     message: alerta.nota!,
-                    child: Icon(Icons.chat_bubble_outline_rounded, size: 12, color: Colors.grey.shade400),
+                    child: Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 12,
+                      color: Colors.grey.shade400,
+                    ),
                   ),
                 ),
               if (tieneEvidencias)
@@ -225,7 +242,11 @@ class AlertasDataTable extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 4),
                   child: Tooltip(
                     message: 'Tiene archivos adjuntos',
-                    child: const Icon(Icons.attach_file_rounded, size: 12, color: Colors.redAccent),
+                    child: const Icon(
+                      Icons.attach_file_rounded,
+                      size: 12,
+                      color: Colors.redAccent,
+                    ),
                   ),
                 ),
             ],
@@ -264,7 +285,9 @@ class AlertasDataTable extends StatelessWidget {
         // 5. MONTO
         DataCell(
           Text(
-            alerta.montoInformado != null ? _formatCurrency(alerta.montoInformado!) : '-',
+            alerta.montoInformado != null
+                ? _formatCurrency(alerta.montoInformado!)
+                : '-',
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 11,
@@ -273,7 +296,33 @@ class AlertasDataTable extends StatelessWidget {
           ),
         ),
 
-        // 6. VENDEDOR
+        // 6. ESTADO
+        DataCell(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: rowIsPendiente
+                  ? Colors.orangeAccent.withValues(alpha: 0.12)
+                  : Colors.greenAccent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: rowIsPendiente
+                    ? Colors.orangeAccent.withValues(alpha: 0.3)
+                    : Colors.greenAccent.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Text(
+              rowIsPendiente ? 'Pendiente' : 'Procesada',
+              style: TextStyle(
+                color: rowIsPendiente ? Colors.orangeAccent : Colors.greenAccent,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+
+        // 7. VENDEDOR
         DataCell(
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 100),
@@ -285,7 +334,7 @@ class AlertasDataTable extends StatelessWidget {
           ),
         ),
 
-        // 7. ACCIÓN / GESTIONAR
+        // 8. ACCIÓN / GESTIONAR
         DataCell(
           InkWell(
             onTap: () => onGestionarAlerta(alerta),
@@ -293,23 +342,25 @@ class AlertasDataTable extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: AppTheme.ledhouseBlue.withValues(alpha: 0.15),
+                color: (rowIsPendiente ? AppTheme.ledhouseBlue : Colors.greenAccent).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.ledhouseBlue.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: (rowIsPendiente ? AppTheme.ledhouseBlue : Colors.greenAccent).withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    isPendiente ? Icons.tune_rounded : Icons.visibility_rounded,
+                    rowIsPendiente ? Icons.tune_rounded : Icons.visibility_rounded,
                     size: 12,
-                    color: AppTheme.ledhouseBlue,
+                    color: rowIsPendiente ? AppTheme.ledhouseBlue : Colors.greenAccent,
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    isPendiente ? 'Gestionar' : 'Ver',
+                    rowIsPendiente ? 'Gestionar' : 'Ver',
                     style: TextStyle(
-                      color: AppTheme.ledhouseBlue,
+                      color: rowIsPendiente ? AppTheme.ledhouseBlue : Colors.greenAccent,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),

@@ -16,6 +16,7 @@ use App\Modules\Vehiculo\Models\VehiculoMantenimiento;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
+use App\Modules\CuentasPorCobrar\Services\CuentaPorCobrarService;
 
 class PdfSecurityService
 {
@@ -169,33 +170,8 @@ class PdfSecurityService
                 break;
 
             case 'cxc_vendedor':
-                $vendedorId = $params['vendedor_id'] ?? null;
-                $user = $vendedorId ? User::find($vendedorId) : null;
-                $query = LedhouseCxc::with(['cliente']);
-                if ($user) {
-                    $query->where('vendedor_id', $user->id);
-                }
-                if (!empty($params['search'])) {
-                    $search = $params['search'];
-                    $query->where(function($q) use ($search) {
-                        $q->where('documento', 'like', "%{$search}%")
-                          ->orWhereHas('cliente', fn($q2) => $q2->where('nombre', 'like', "%{$search}%"));
-                    });
-                }
-                $isVencidos = !empty($params['vencidos']) && $params['vencidos'] == '1';
-                if ($isVencidos) {
-                    $query->where('monto_pendiente', '>', 0)
-                          ->where('estado', '!=', 'pagado')
-                          ->whereDate('fecha_vencimiento', '<', now()->format('Y-m-d'));
-                }
-                $cxcs = $query->orderBy('fecha_vencimiento', 'asc')->get();
-                $pdf = Pdf::loadView('pdf.cxc_vendedor', [
-                    'cxcs' => $cxcs,
-                    'vendedor' => $user,
-                    'isVencidos' => $isVencidos,
-                    'search' => $params['search'] ?? null,
-                ]);
-                $filename = 'Reporte_Mis_CXC.pdf';
+                $cxcService = app(CuentaPorCobrarService::class);
+                [$pdf, $filename] = $cxcService->generarPdfVendedor($params);
                 break;
 
             case 'cxc_cliente':

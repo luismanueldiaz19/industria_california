@@ -12,4 +12,5 @@ return [
     App\Modules\ChequeFuturista\Providers\ChequeFuturistaServiceProvider::class,
     App\Modules\Cliente\Providers\ClienteServiceProvider::class,
     App\Modules\CuentasPorCobrar\Providers\CuentasPorCobrarServiceProvider::class,
+    App\Modules\Alerta\Providers\AlertaServiceProvider::class,
 ];

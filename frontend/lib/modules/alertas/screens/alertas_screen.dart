@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -22,24 +23,28 @@ class AlertasScreen extends StatefulWidget {
   State<AlertasScreen> createState() => _AlertasScreenState();
 }
 
-class _AlertasScreenState extends State<AlertasScreen>
-    with SingleTickerProviderStateMixin {
+class _AlertasScreenState extends State<AlertasScreen> {
   final _service = CxcAlertaService();
+  final _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
-  late TabController _tabController;
-  List<CxcAlertaModel> _alertasPendientes = [];
-  List<CxcAlertaModel> _alertasProcesadas = [];
+  List<CxcAlertaModel> _alertas = [];
   bool _isLoading = true;
 
-  // Paginación y fechas para Procesadas
-  DateTime? _startDate = DateTime.now();
-  DateTime? _endDate = DateTime.now();
+  // Estado de consulta: 'pendiente' (por defecto), 'procesada', 'todos'
+  String _filtroEstado = 'pendiente';
+
+  // Rango de fechas: por defecto null (para consultar todas las pendientes sin restricción)
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  // Paginación y límite de filas
   int _currentPage = 1;
   int _limit = 20;
   int _totalRows = 0;
   int _lastPage = 1;
 
-  // Filtros
+  // Filtros adicionales
   String _filtroVendedor = 'Todos';
   String _searchQuery = '';
   String _filtroTipo = 'Todos';
@@ -56,7 +61,7 @@ class _AlertasScreenState extends State<AlertasScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _initTipos();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _load();
     });
@@ -64,8 +69,17 @@ class _AlertasScreenState extends State<AlertasScreen>
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _searchDebounce?.cancel();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _initTipos() {
+    _mapaTipos.clear();
+    for (var t in AlertaUtils.tiposDeAlerta) {
+      _mapaTipos[AlertaUtils.getTipoLabel(t)] = t;
+    }
+    _tipos = ['Todos', ..._mapaTipos.keys];
   }
 
   Future<void> _load() async {
@@ -75,14 +89,6 @@ class _AlertasScreenState extends State<AlertasScreen>
         await Provider.of<CxcProvider>(context, listen: false).fetchCxcs();
       }
 
-      final pendientesRes = await _service.getAlertas(estado: 'pendiente');
-      List<CxcAlertaModel> pendientes = [];
-      if (pendientesRes is List) {
-        pendientes = pendientesRes.cast<CxcAlertaModel>();
-      } else if (pendientesRes is Map) {
-        pendientes = (pendientesRes['data'] as List).cast<CxcAlertaModel>();
-      }
-
       final startStr = _startDate != null
           ? DateFormat('yyyy-MM-dd').format(_startDate!)
           : null;
@@ -90,28 +96,48 @@ class _AlertasScreenState extends State<AlertasScreen>
           ? DateFormat('yyyy-MM-dd').format(_endDate!)
           : null;
 
-      final procesadasRes = await _service.getAlertas(
-        estado: 'procesada',
+      final String? tipoParam =
+          (_filtroTipo != 'Todos' && _mapaTipos.containsKey(_filtroTipo))
+          ? _mapaTipos[_filtroTipo]
+          : null;
+
+      final int? vendedorIdParam =
+          (_filtroVendedor != 'Todos' &&
+              _mapaVendedores.containsKey(_filtroVendedor))
+          ? _mapaVendedores[_filtroVendedor]
+          : null;
+
+      final String estadoParam = _filtroEstado == 'todos'
+          ? 'todos'
+          : _filtroEstado;
+
+      final res = await _service.getAlertas(
+        estado: estadoParam,
         page: _currentPage,
         limit: _limit,
         startDate: startStr,
         endDate: endStr,
+        tipo: tipoParam,
+        vendedorId: vendedorIdParam,
+        search: _searchQuery.trim().isNotEmpty ? _searchQuery.trim() : null,
       );
 
-      List<CxcAlertaModel> procesadas = [];
-      if (procesadasRes is List) {
-        procesadas = procesadasRes.cast<CxcAlertaModel>();
-      } else if (procesadasRes is Map) {
-        procesadas = (procesadasRes['data'] as List).cast<CxcAlertaModel>();
-        _totalRows = procesadasRes['total'] ?? 0;
-        _lastPage = procesadasRes['last_page'] ?? 1;
+      List<CxcAlertaModel> lista = [];
+      if (res is List) {
+        lista = res.cast<CxcAlertaModel>();
+        _totalRows = lista.length;
+        _lastPage = 1;
+      } else if (res is Map) {
+        lista = (res['data'] as List).cast<CxcAlertaModel>();
+        _totalRows = res['total'] ?? lista.length;
+        _lastPage = res['last_page'] ?? 1;
       }
 
       if (mounted) {
         setState(() {
-          _alertasPendientes = pendientes;
-          _alertasProcesadas = procesadas;
-          _extraerFiltros();
+          _alertas = lista;
+          _extraerVendedores(lista);
+          _calcularRepetidas(lista);
         });
       }
     } catch (_) {
@@ -122,64 +148,89 @@ class _AlertasScreenState extends State<AlertasScreen>
     }
   }
 
-  void _extraerFiltros() {
-    _mapaVendedores.clear();
-    _mapaTipos.clear();
-
-    final Map<int, int> conteoFacturas = {};
-    final todos = [..._alertasPendientes, ..._alertasProcesadas];
-
-    for (var a in todos) {
-      if (a.cxc != null) {
-        conteoFacturas[a.cxc!.id] = (conteoFacturas[a.cxc!.id] ?? 0) + 1;
-      }
-
+  void _extraerVendedores(List<CxcAlertaModel> lista) {
+    for (var a in lista) {
       if (a.vendedor != null) {
         _mapaVendedores[a.vendedor!.name] = a.vendedor!.id;
       }
-      if (a.tipo.isNotEmpty) {
-        _mapaTipos[AlertaUtils.getTipoLabel(a.tipo)] = a.tipo;
-      }
     }
 
+    _vendedores = ['Todos', ..._mapaVendedores.keys.toList()..sort()];
+    if (!_vendedores.contains(_filtroVendedor)) {
+      _filtroVendedor = 'Todos';
+    }
+  }
+
+  void _calcularRepetidas(List<CxcAlertaModel> lista) {
+    final Map<int, int> conteoFacturas = {};
+    for (var a in lista) {
+      if (a.cxc != null) {
+        conteoFacturas[a.cxc!.id] = (conteoFacturas[a.cxc!.id] ?? 0) + 1;
+      }
+    }
     _facturasRepetidasIds = conteoFacturas.entries
         .where((e) => e.value > 1)
         .map((e) => e.key)
         .toSet();
-
-    _vendedores = ['Todos', ..._mapaVendedores.keys.toList()..sort()];
-    _tipos = ['Todos', ..._mapaTipos.keys.toList()..sort()];
-
-    if (!_vendedores.contains(_filtroVendedor)) _filtroVendedor = 'Todos';
-    if (!_tipos.contains(_filtroTipo)) _filtroTipo = 'Todos';
   }
 
-  List<CxcAlertaModel> _filtrarLista(List<CxcAlertaModel> lista) {
-    return lista.where((a) {
-      final matchVendedor =
-          _filtroVendedor == 'Todos' || (a.vendedor?.name == _filtroVendedor);
-      final matchTipo =
-          _filtroTipo == 'Todos' ||
-          (AlertaUtils.getTipoLabel(a.tipo) == _filtroTipo);
+  List<CxcAlertaModel> get _alertasMostradas {
+    if (!_soloRepetidas) return _alertas;
+    return _alertas
+        .where(
+          (a) => a.cxc != null && _facturasRepetidasIds.contains(a.cxc!.id),
+        )
+        .toList();
+  }
 
-      bool matchSearch = true;
-      if (_searchQuery.isNotEmpty) {
-        final q = _searchQuery.toLowerCase();
-        final nombre = a.cxc?.cliente?.nombre.toLowerCase() ?? '';
-        final fact = a.cxc?.noFactura.toLowerCase() ?? '';
-        matchSearch = nombre.contains(q) || fact.contains(q);
-      }
+  void _onSearchChanged(String query) {
+    _searchQuery = query;
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      _currentPage = 1;
+      _load();
+    });
+  }
 
-      if (!(matchVendedor && matchSearch && matchTipo)) return false;
+  Future<void> _pickDateRange() async {
+    final res = await AppDatePickerDark.showRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDateRange: _startDate != null && _endDate != null
+          ? DateTimeRange(start: _startDate!, end: _endDate!)
+          : DateTimeRange(start: DateTime.now(), end: DateTime.now()),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Colors.blueAccent,
+              onPrimary: Colors.white,
+              surface: Color(0xFF1E1E1E),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (res != null) {
+      setState(() {
+        _startDate = res.start;
+        _endDate = res.end;
+        _currentPage = 1;
+      });
+      _load();
+    }
+  }
 
-      if (_soloRepetidas) {
-        if (a.cxc == null || !_facturasRepetidasIds.contains(a.cxc!.id)) {
-          return false;
-        }
-      }
-
-      return true;
-    }).toList();
+  void _clearDateRange() {
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+      _currentPage = 1;
+    });
+    _load();
   }
 
   Future<void> _generarPdf() async {
@@ -193,15 +244,22 @@ class _AlertasScreenState extends State<AlertasScreen>
         );
       }
 
-      String estado = _tabController.index == 0 ? "pendiente" : "procesada";
-      Map<String, String> params = {'estado': estado};
-
+      Map<String, String> params = {};
+      if (_filtroEstado != 'todos') {
+        params['estado'] = _filtroEstado;
+      }
+      if (_startDate != null) {
+        params['start_date'] = DateFormat('yyyy-MM-dd').format(_startDate!);
+      }
+      if (_endDate != null) {
+        params['end_date'] = DateFormat('yyyy-MM-dd').format(_endDate!);
+      }
       if (_filtroVendedor != 'Todos' &&
           _mapaVendedores[_filtroVendedor] != null) {
         params['vendedor_id'] = _mapaVendedores[_filtroVendedor].toString();
       }
-      if (_searchQuery.isNotEmpty) {
-        params['search'] = _searchQuery;
+      if (_searchQuery.trim().isNotEmpty) {
+        params['search'] = _searchQuery.trim();
       }
       if (_filtroTipo != 'Todos' && _mapaTipos[_filtroTipo] != null) {
         params['tipo'] = _mapaTipos[_filtroTipo].toString();
@@ -250,179 +308,91 @@ class _AlertasScreenState extends State<AlertasScreen>
     );
   }
 
-  Widget _buildProcesadasFilters() {
-    final format = DateFormat('dd-MM-yyyy');
-    final startStr = _startDate != null ? format.format(_startDate!) : '-';
-    final endStr = _endDate != null ? format.format(_endDate!) : '-';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      color: AppTheme.darkCardColor,
-      child: Row(
-        children: [
-          Text(
-            'Fechas:',
-            style: TextStyle(
-              color: Colors.grey.shade400,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(width: 8),
-          InkWell(
-            onTap: _pickDateRange,
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppTheme.darkBorderColor),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    size: 13,
-                    color: Colors.blueAccent,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$startStr  →  $endStr',
-                    style: const TextStyle(color: Colors.white, fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          if (_startDate != null || _endDate != null)
-            IconButton(
-              icon: const Icon(Icons.clear, color: Colors.redAccent, size: 16),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () {
-                setState(() {
-                  _startDate = DateTime.now();
-                  _endDate = DateTime.now();
-                  _currentPage = 1;
-                });
-                _load();
-              },
-            ),
-          const Spacer(),
-          Text(
-            'Filas: ',
-            style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
-          ),
-          DropdownButton<int>(
-            value: _limit,
-            dropdownColor: AppTheme.darkInputColor,
-            underline: const SizedBox(),
-            items: [20, 50, 100]
-                .map(
-                  (e) => DropdownMenuItem(
-                    value: e,
-                    child: Text(
-                      '$e',
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
-                    ),
-                  ),
-                )
-                .toList(),
-            onChanged: (v) {
-              if (v != null) {
-                setState(() {
-                  _limit = v;
-                  _currentPage = 1;
-                });
-                _load();
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _pickDateRange() async {
-    final res = await AppDatePickerDark.showRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-      initialDateRange: _startDate != null && _endDate != null
-          ? DateTimeRange(start: _startDate!, end: _endDate!)
-          : DateTimeRange(start: DateTime.now(), end: DateTime.now()),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Colors.blueAccent,
-              onPrimary: Colors.white,
-              surface: Color(0xFF1E1E1E),
-              onSurface: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (res != null) {
-      setState(() {
-        _startDate = res.start;
-        _endDate = res.end;
-        _currentPage = 1;
-      });
-      _load();
-    }
-  }
-
   Widget _buildPaginationControls() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       color: AppTheme.darkCardColor,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Total: $_totalRows registros | Página $_currentPage de $_lastPage',
-            style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
-          ),
-          const SizedBox(width: 14),
-          IconButton(
-            icon: const Icon(Icons.chevron_left, size: 18),
-            color: _currentPage > 1 ? Colors.white : Colors.grey,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: _currentPage > 1
-                ? () {
-                    setState(() => _currentPage--);
+          Row(
+            children: [
+              Text(
+                'Filas por pág: ',
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
+              ),
+              DropdownButton<int>(
+                value: _limit,
+                dropdownColor: AppTheme.darkInputColor,
+                underline: const SizedBox(),
+                items: [20, 50, 100]
+                    .map(
+                      (e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(
+                          '$e',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) {
+                    setState(() {
+                      _limit = v;
+                      _currentPage = 1;
+                    });
                     _load();
                   }
-                : null,
+                },
+              ),
+            ],
           ),
-          const SizedBox(width: 14),
-          IconButton(
-            icon: const Icon(Icons.chevron_right, size: 18),
-            color: _currentPage < _lastPage ? Colors.white : Colors.grey,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: _currentPage < _lastPage
-                ? () {
-                    setState(() => _currentPage++);
-                    _load();
-                  }
-                : null,
+          Row(
+            children: [
+              Text(
+                'Total: $_totalRows registros | Página $_currentPage de $_lastPage',
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
+              ),
+              const SizedBox(width: 14),
+              IconButton(
+                icon: const Icon(Icons.chevron_left, size: 18),
+                color: _currentPage > 1 ? Colors.white : Colors.grey,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: _currentPage > 1
+                    ? () {
+                        setState(() => _currentPage--);
+                        _load();
+                      }
+                    : null,
+              ),
+              const SizedBox(width: 14),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, size: 18),
+                color: _currentPage < _lastPage ? Colors.white : Colors.grey,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: _currentPage < _lastPage
+                    ? () {
+                        setState(() => _currentPage++);
+                        _load();
+                      }
+                    : null,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAlertasListTab(
-    List<CxcAlertaModel> alertas, {
-    required bool isPendiente,
-  }) {
-    final double totalInformado = alertas.fold(
+  @override
+  Widget build(BuildContext context) {
+    final double totalInformado = _alertasMostradas.fold(
       0.0,
       (sum, a) => sum + (a.montoInformado ?? 0.0),
     );
@@ -437,8 +407,8 @@ class _AlertasScreenState extends State<AlertasScreen>
             matches = false;
           }
         }
-        if (_searchQuery.isNotEmpty) {
-          final q = _searchQuery.toLowerCase();
+        if (_searchQuery.trim().isNotEmpty) {
+          final q = _searchQuery.trim().toLowerCase();
           final nombre = cxc.cliente.toLowerCase();
           final cxcDoc = cxc.documento.toLowerCase();
           if (!(nombre.contains(q) || cxcDoc.contains(q))) {
@@ -453,35 +423,6 @@ class _AlertasScreenState extends State<AlertasScreen>
 
     final double montoReal = totalPendiente - totalInformado;
 
-    return Column(
-      children: [
-        if (!isPendiente) _buildProcesadasFilters(),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _load,
-            color: AppTheme.ledhouseBlue,
-            child: AlertasDataTable(
-              alertas: alertas,
-              isPendiente: isPendiente,
-              facturasRepetidasIds: _facturasRepetidasIds,
-              onGestionarAlerta: _gestionarAlerta,
-            ),
-          ),
-        ),
-        if (!isPendiente && _alertasProcesadas.isNotEmpty)
-          _buildPaginationControls(),
-        if (alertas.isNotEmpty)
-          AlertasTotalsBar(
-            totalInformado: totalInformado,
-            totalPendiente: totalPendiente,
-            montoReal: montoReal,
-          ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.darkBgColor,
       body: Column(
@@ -510,69 +451,43 @@ class _AlertasScreenState extends State<AlertasScreen>
             vendedores: _vendedores,
             tipos: _tipos,
             filtroVendedor: _filtroVendedor,
-            searchQuery: _searchQuery,
             filtroTipo: _filtroTipo,
+            filtroEstado: _filtroEstado,
             soloRepetidas: _soloRepetidas,
-            onChangedVendedor: (v) => setState(() => _filtroVendedor = v!),
-            onSearchChanged: (v) => setState(() => _searchQuery = v),
-            onChangedTipo: (v) => setState(() => _filtroTipo = v!),
+            searchController: _searchController,
+            startDate: _startDate,
+            endDate: _endDate,
+            onPickDateRange: _pickDateRange,
+            onClearDateRange: _clearDateRange,
+            onChangedVendedor: (v) {
+              if (v != null) {
+                setState(() {
+                  _filtroVendedor = v;
+                  _currentPage = 1;
+                });
+                _load();
+              }
+            },
+            onSearchChanged: _onSearchChanged,
+            onChangedTipo: (v) {
+              if (v != null) {
+                setState(() {
+                  _filtroTipo = v;
+                  _currentPage = 1;
+                });
+                _load();
+              }
+            },
+            onChangedEstado: (v) {
+              if (v != null) {
+                setState(() {
+                  _filtroEstado = v;
+                  _currentPage = 1;
+                });
+                _load();
+              }
+            },
             onChangedSoloRepetidas: (v) => setState(() => _soloRepetidas = v),
-          ),
-          Container(
-            color: AppTheme.darkCardColor,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppTheme.ledhouseBlue,
-              unselectedLabelColor: Colors.grey.shade500,
-              indicatorColor: AppTheme.ledhouseBlue,
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-              tabs: [
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.pending_actions, size: 15),
-                      const SizedBox(width: 6),
-                      const Text('Pendientes'),
-                      if (_alertasPendientes.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${_alertasPendientes.length}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle_outline, size: 15),
-                      SizedBox(width: 6),
-                      Text('Procesadas'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
           ),
           Expanded(
             child: _isLoading
@@ -581,17 +496,27 @@ class _AlertasScreenState extends State<AlertasScreen>
                       valueColor: AlwaysStoppedAnimation(AppTheme.ledhouseBlue),
                     ),
                   )
-                : TabBarView(
-                    controller: _tabController,
+                : Column(
                     children: [
-                      _buildAlertasListTab(
-                        _filtrarLista(_alertasPendientes),
-                        isPendiente: true,
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: _load,
+                          color: AppTheme.ledhouseBlue,
+                          child: AlertasDataTable(
+                            alertas: _alertasMostradas,
+                            filtroEstado: _filtroEstado,
+                            facturasRepetidasIds: _facturasRepetidasIds,
+                            onGestionarAlerta: _gestionarAlerta,
+                          ),
+                        ),
                       ),
-                      _buildAlertasListTab(
-                        _filtrarLista(_alertasProcesadas),
-                        isPendiente: false,
-                      ),
+                      if (_totalRows > 0) _buildPaginationControls(),
+                      if (_alertasMostradas.isNotEmpty)
+                        AlertasTotalsBar(
+                          totalInformado: totalInformado,
+                          totalPendiente: totalPendiente,
+                          montoReal: montoReal,
+                        ),
                     ],
                   ),
           ),

@@ -122,7 +122,9 @@ class LedhouseCxcController extends Controller
         $user = \App\Models\User::findOrFail($vendedorId);
 
         $query = LedhouseCxc::with(['cliente'])
-            ->where('vendedor_id', $user->id);
+            ->where('vendedor_id', $user->id)
+            ->where('estado', '!=', 'pagado')
+            ->where('monto_pendiente', '>', 0);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -882,16 +884,14 @@ class LedhouseCxcController extends Controller
             'nota'            => 'required|string|max:1000',
         ]);
 
-        $alerta = LedhouseCxcAlerta::create([
+        $alerta = app(\App\Modules\Alerta\Services\AlertaService::class)->crear([
             'ledhouse_cxc_id' => $cxc->id,
-            'vendedor_id'     => $user->id,
             'tipo'            => $validated['tipo'],
             'monto_informado' => $validated['monto_informado'] ?? null,
             'nota'            => $validated['nota'],
-            'estado_alerta'   => 'pendiente',
-        ]);
+        ], $user);
 
-        return response()->json($alerta->load('vendedor'), 201);
+        return response()->json($alerta, 201);
     }
 
     /**
@@ -916,16 +916,31 @@ class LedhouseCxcController extends Controller
         ]);
 
         // Actualizar el CXC si se solicita
-        if (!empty($validated['actualizar_cxc'])) {
+        if (!empty($validated['actualizar_cxc']) && $alerta->cxc) {
             $cxc = $alerta->cxc;
             $updates = [];
 
             if (isset($validated['monto_pagado'])) {
-                $updates['monto_pagado']   = $validated['monto_pagado'];
-                $updates['monto_pendiente'] = $cxc->monto_factura - $validated['monto_pagado'];
+                $pago = (float) $validated['monto_pagado'];
+                $saldoPendiente = (float) $cxc->monto_pendiente;
+                $nuevoPendiente = max(0, (float) $cxc->monto_factura - $pago);
+
+                $updates['monto_pagado']    = $pago;
+                $updates['monto_pendiente'] = $nuevoPendiente;
+
+                // Si el monto pagado es mayor o igual al balance pendiente (o el saldo restante llega a 0),
+                // marcar automáticamente la CXC en estado 'pagado' para evitar que se quede en pendiente por descuido.
+                if (round($pago, 2) >= round($saldoPendiente, 2) || $nuevoPendiente <= 0.0001) {
+                    $updates['estado'] = 'pagado';
+                }
             }
+
             if (isset($validated['estado_cxc'])) {
-                $updates['estado'] = $validated['estado_cxc'];
+                if (!isset($updates['estado'])) {
+                    $updates['estado'] = $validated['estado_cxc'];
+                } elseif ($validated['estado_cxc'] === 'cancelado') {
+                    $updates['estado'] = 'cancelado';
+                }
             }
 
             if (!empty($updates)) {

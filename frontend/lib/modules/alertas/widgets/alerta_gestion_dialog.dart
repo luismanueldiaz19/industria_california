@@ -25,8 +25,7 @@ class AlertaGestionDialog extends StatefulWidget {
     return showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (_) =>
-          AlertaGestionDialog(alerta: alerta, onUpdated: onUpdated),
+      builder: (_) => AlertaGestionDialog(alerta: alerta, onUpdated: onUpdated),
     );
   }
 
@@ -49,13 +48,18 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
   void initState() {
     super.initState();
     _tipoSeleccionado = widget.alerta.tipo;
+    final montoInicial =
+        widget.alerta.montoInformado ?? widget.alerta.cxc?.montoPendiente;
     _montoController = TextEditingController(
-      text:
-          widget.alerta.montoInformado?.toStringAsFixed(2) ??
-          widget.alerta.cxc?.montoPendiente.toStringAsFixed(2) ??
-          '',
+      text: montoInicial?.toStringAsFixed(2) ?? '',
     );
-    _estadoCxc = 'pendiente';
+    final saldoPendiente = widget.alerta.cxc?.montoPendiente ?? 0.0;
+    _estadoCxc =
+        (montoInicial != null &&
+            saldoPendiente > 0 &&
+            montoInicial >= saldoPendiente)
+        ? 'pagado'
+        : 'pendiente';
     _actualizarCxc = widget.alerta.tipo == 'pago_recibido';
   }
 
@@ -594,9 +598,9 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
                         style: TextStyle(
                           color:
                               (widget.alerta.nota != null &&
-                                      widget.alerta.nota!.trim().isNotEmpty)
-                                  ? Colors.white
-                                  : Colors.grey.shade500,
+                                  widget.alerta.nota!.trim().isNotEmpty)
+                              ? Colors.white
+                              : Colors.grey.shade500,
                           fontSize: 12,
                           height: 1.35,
                         ),
@@ -745,6 +749,30 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
                                           color: Colors.white,
                                           fontSize: 12,
                                         ),
+                                        onChanged: (val) {
+                                          final monto = double.tryParse(
+                                            val.replaceAll(',', '').trim(),
+                                          );
+                                          final saldo =
+                                              widget
+                                                  .alerta
+                                                  .cxc
+                                                  ?.montoPendiente ??
+                                              0.0;
+                                          if (monto != null && saldo > 0) {
+                                            if (monto >= saldo &&
+                                                _estadoCxc != 'pagado') {
+                                              setState(
+                                                () => _estadoCxc = 'pagado',
+                                              );
+                                            } else if (monto < saldo &&
+                                                _estadoCxc == 'pagado') {
+                                              setState(
+                                                () => _estadoCxc = 'pendiente',
+                                              );
+                                            }
+                                          }
+                                        },
                                         decoration: InputDecoration(
                                           labelText: 'Monto pagado a registrar',
                                           labelStyle: TextStyle(

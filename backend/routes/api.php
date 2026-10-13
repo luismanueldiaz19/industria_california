@@ -26,6 +26,7 @@ use App\Modules\Vehiculo\Http\Controllers\VehiculoController;
 use App\Modules\Vehiculo\Http\Controllers\TipoGastoController;
 use App\Http\Controllers\Api\ChoferController;
 use App\Modules\ChequeFuturista\Http\Controllers\ChequeFuturistaController;
+use App\Modules\Alerta\Http\Controllers\AlertaController;
 
 // =========================================================
 // RUTA PÚBLICA DE DOCUMENTOS SEGUROS CON TOKEN (COMPATIBLE CON APACHE)
@@ -53,7 +54,8 @@ Route::prefix('v1')->group(function () {
             $genPdf = Route::get('cxc/reporte-general-pdf', [LedhouseCxcController::class, 'reporteGeneralPdf'])->middleware('signed');
             $agrPdf = Route::get('cxc/reporte-agrupado-pdf', [LedhouseCxcController::class, 'reporteAgrupadoPdf'])->middleware('signed');
             Route::get('cxc/reporte-pdf/{cliente_id}', [LedhouseCxcController::class, 'reportePdf']);
-            Route::get('cxc/alertas-pdf', [LedhouseCxcController::class, 'reporteAlertasPdf']);
+            // Route::get('cxc/alertas-pdf', [AlertaController::class, 'reportePdf']);
+            // Route::get('alertas/pdf', [AlertaController::class, 'reportePdf']);
             $venPdf = Route::get('cxc/vendedor/mis-cxc-pdf', [LedhouseCxcController::class, 'exportMisCxcPdf'])->middleware('signed');
             
             // Ruta pública para generar PDF del Pedido
@@ -127,7 +129,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('cxc/reporte-general-pdf-url', [LedhouseCxcController::class, 'getReporteGeneralPdfUrl']);
                 Route::get('cxc/reporte-agrupado-pdf-url', [LedhouseCxcController::class, 'getReporteAgrupadoPdfUrl']);
                 Route::get('cxc/reporte-pdf-url/{cliente_id}', [LedhouseCxcController::class, 'getReporteClientePdfUrl']);
-                Route::get('cxc/alertas-pdf-url', [LedhouseCxcController::class, 'getReporteAlertasPdfUrl']);
+                // Route::get('cxc/alertas-pdf-url', [AlertaController::class, 'pdfUrl']);
 
                 // Rutas para el vendedor
                 Route::get('cxc/vendedor/mis-cxc', [LedhouseCxcController::class, 'getMisCxcPaginated']);
@@ -138,12 +140,20 @@ Route::prefix('v1')->group(function () {
                 // Sync masivo (Fase 1 preview + Fase 2 confirm)
                 Route::post('cxc/sync-preview', [LedhouseCxcController::class, 'syncPreview']);
                 Route::post('cxc/sync-confirm', [LedhouseCxcController::class, 'syncConfirm']);
-                // Alertas del Vendedor
-                Route::get('cxc/alertas', [LedhouseCxcController::class, 'getAlertas']);
-                Route::post('cxc/{cxc}/alerta', [LedhouseCxcController::class, 'addAlerta']);
-                Route::patch('cxc/alertas/{alerta}/resolver', [LedhouseCxcController::class, 'resolverAlerta']);
-                Route::patch('cxc/alertas/{alerta}/tipo', [LedhouseCxcController::class, 'updateTipoAlerta']);
-                Route::delete('cxc/alertas/{alerta}', [LedhouseCxcController::class, 'destroyAlerta']);
+
+                // --- MODULO ALERTAS (Rutas V1 comentadas para probar V2 pura) ---
+                // Route::get('alertas/resumen', [AlertaController::class, 'resumen']);
+                // Route::get('alertas/pdf-url', [AlertaController::class, 'pdfUrl']);
+                // Route::patch('alertas/{alerta}/resolver', [AlertaController::class, 'resolver']);
+                // Route::patch('alertas/{alerta}/tipo', [AlertaController::class, 'updateTipo']);
+                // Route::apiResource('alertas', AlertaController::class);
+
+                // Rutas Legacy de Alertas (comentadas para probar V2 pura)
+                // Route::get('cxc/alertas', [AlertaController::class, 'index']);
+                // Route::post('cxc/{cxc}/alerta', [LedhouseCxcController::class, 'addAlerta']);
+                // Route::patch('cxc/alertas/{alerta}/resolver', [AlertaController::class, 'resolver']);
+                // Route::patch('cxc/alertas/{alerta}/tipo', [AlertaController::class, 'updateTipo']);
+                // Route::delete('cxc/alertas/{alerta}', [AlertaController::class, 'destroy']);
                 // Evidencias (archivos PDF/JPG)
                 Route::post('cxc/{cxc}/evidencia', [LedhouseCxcController::class, 'uploadEvidencia']);
                 Route::get('cxc/{cxc}/evidencias', [LedhouseCxcController::class, 'getEvidencias']);
@@ -270,6 +280,7 @@ Route::prefix('v1')->group(function () {
 Route::prefix('v2')->middleware('auth:sanctum')->group(function () {
     require base_path('app/Modules/Cliente/routes/api.php');
     require base_path('app/Modules/CuentasPorCobrar/routes/api.php');
+    require base_path('app/Modules/Alerta/routes/api.php');
 });
 
 
