@@ -4,8 +4,14 @@ import '../../models/vehiculo.dart';
 class VehiculoCard extends StatelessWidget {
   final Vehiculo vehiculo;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
 
-  const VehiculoCard({super.key, required this.vehiculo, required this.onTap});
+  const VehiculoCard({
+    super.key,
+    required this.vehiculo,
+    required this.onTap,
+    this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +201,7 @@ class VehiculoCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: onTap,
+                            onPressed: onEdit ?? onTap,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFE31E24),
                               foregroundColor: Colors.white,
@@ -206,7 +212,7 @@ class VehiculoCard extends StatelessWidget {
                               ),
                             ),
                             child: const Text(
-                              'GESTIONAR',
+                              'EDITAR',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,

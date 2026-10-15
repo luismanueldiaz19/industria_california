@@ -165,6 +165,17 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
                             Icons.map,
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildInfoCard(
+                            'No. Factura',
+                            (pedido.numFactura != null &&
+                                    pedido.numFactura!.trim().isNotEmpty)
+                                ? pedido.numFactura!
+                                : 'Sin asignar',
+                            Icons.receipt_long,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 14),

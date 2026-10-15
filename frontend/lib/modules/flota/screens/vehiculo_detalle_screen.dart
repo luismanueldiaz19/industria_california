@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/vehiculo.dart';
+import '../providers/vehiculo_provider.dart';
+import '../widgets/vehiculos/vehiculo_form_modal.dart';
 import '../widgets/vehiculos/vehiculo_mantenimientos_tab.dart';
 
 class VehiculoDetalleScreen extends StatelessWidget {
@@ -9,56 +12,86 @@ class VehiculoDetalleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        backgroundColor: const Color(0xFF1A1C1E),
-        appBar: AppBar(
-          title: Text(
-            'Vehículo: ${vehiculo.ficha}',
-            style: const TextStyle(color: Colors.white),
+    return Consumer<VehiculoProvider>(
+      builder: (context, provider, child) {
+        final currentVehiculo = provider.vehiculos.firstWhere(
+          (v) => v.id == vehiculo.id,
+          orElse: () => vehiculo,
+        );
+
+        return DefaultTabController(
+          length: 3,
+          child: Scaffold(
+            backgroundColor: const Color(0xFF1A1C1E),
+            appBar: AppBar(
+              title: Text(
+                'Vehículo: ${currentVehiculo.ficha}',
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: const Color(0xFF2C2F33),
+              iconTheme: const IconThemeData(color: Colors.white),
+              elevation: 0,
+              actions: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  tooltip: 'Editar Vehículo',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) =>
+                          VehiculoFormModal(vehiculo: currentVehiculo),
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
+              bottom: const TabBar(
+                indicatorColor: Color(0xFFE31E24),
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white54,
+                tabs: [
+                  Tab(text: 'INFORMACIÓN'),
+                  Tab(text: 'MANTENIMIENTOS'),
+                  Tab(text: 'GASTOS / ENERGÍA'),
+                ],
+              ),
+            ),
+            body: TabBarView(
+              children: [
+                _buildInfoTab(currentVehiculo),
+                _buildMantenimientosTab(currentVehiculo),
+                _buildGastosTab(),
+              ],
+            ),
           ),
-          backgroundColor: const Color(0xFF2C2F33),
-          iconTheme: const IconThemeData(color: Colors.white),
-          elevation: 0,
-          bottom: const TabBar(
-            indicatorColor: Color(0xFFE31E24),
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white54,
-            tabs: [
-              Tab(text: 'INFORMACIÓN'),
-              Tab(text: 'MANTENIMIENTOS'),
-              Tab(text: 'GASTOS / ENERGÍA'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            _buildInfoTab(),
-            _buildMantenimientosTab(),
-            _buildGastosTab(),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildInfoTab() {
+  Widget _buildInfoTab(Vehiculo v) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoRow('Ficha:', vehiculo.ficha),
-          _buildInfoRow('Placa:', vehiculo.placa ?? 'S/N'),
+          _buildInfoRow('Ficha:', v.ficha),
+          _buildInfoRow('Placa:', v.placa ?? 'S/N'),
           _buildInfoRow(
             'Marca / Modelo:',
-            '${vehiculo.marca ?? 'N/A'} ${vehiculo.modelo ?? ''}',
+            '${v.marca ?? 'N/A'} ${v.modelo ?? ''}',
           ),
-          _buildInfoRow('Energía:', vehiculo.tipoEnergia.toUpperCase()),
+          if (v.anio != null) _buildInfoRow('Año:', v.anio.toString()),
+          if (v.capacidadCarga != null)
+            _buildInfoRow('Capacidad Carga:', '${v.capacidadCarga} kg'),
+          _buildInfoRow('Energía:', v.tipoEnergia.toUpperCase()),
           _buildInfoRow(
             'Estado:',
-            vehiculo.estado.toUpperCase().replaceAll('_', ' '),
+            v.estado.toUpperCase().replaceAll('_', ' '),
           ),
         ],
       ),
@@ -87,8 +120,8 @@ class VehiculoDetalleScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMantenimientosTab() {
-    return VehiculoMantenimientosTab(vehiculoId: vehiculo.id);
+  Widget _buildMantenimientosTab(Vehiculo v) {
+    return VehiculoMantenimientosTab(vehiculoId: v.id);
   }
 
   Widget _buildGastosTab() {

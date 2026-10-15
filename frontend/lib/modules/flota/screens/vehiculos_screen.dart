@@ -131,6 +131,13 @@ class _VehiculosScreenState extends State<VehiculosScreen> {
                                 ),
                               );
                             },
+                            onEdit: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) =>
+                                    VehiculoFormModal(vehiculo: vehiculo),
+                              );
+                            },
                           );
                         },
                       ),

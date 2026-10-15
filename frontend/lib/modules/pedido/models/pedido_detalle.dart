@@ -11,6 +11,7 @@ class PedidoDetalle {
   // Extra fields for UI mapping
   final String? productoNombre;
   final String? productoCodigo;
+  final String? productoUnidad;
 
   PedidoDetalle({
     required this.id,
@@ -23,6 +24,7 @@ class PedidoDetalle {
     this.observacion,
     this.productoNombre,
     this.productoCodigo,
+    this.productoUnidad,
   });
 
   factory PedidoDetalle.fromJson(Map<String, dynamic> json) {
@@ -64,6 +66,9 @@ class PedidoDetalle {
           buildNombreCompleto(json['producto']) ??
           json['producto']?['nombre_completo'],
       productoCodigo: json['producto']?['codigo'],
+      productoUnidad: json['producto']?['unidad']?.toString() ??
+          json['producto_unidad']?.toString() ??
+          json['unidad']?.toString(),
     );
   }
 

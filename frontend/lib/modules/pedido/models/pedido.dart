@@ -12,6 +12,7 @@ class Pedido {
   final DateTime createdAt;
   final DateTime? fechaEntrega;
   final String? notaProduccion;
+  final String? numFactura;
   
   // Relations mapped from JSON
   final String? clienteNombre;
@@ -31,6 +32,7 @@ class Pedido {
     required this.createdAt,
     this.fechaEntrega,
     this.notaProduccion,
+    this.numFactura,
     this.clienteNombre,
     this.rutaNombre,
     this.vendedorNombre,
@@ -53,6 +55,7 @@ class Pedido {
       createdAt: DateTime.parse(json['created_at']),
       fechaEntrega: json['fecha_entrega'] != null ? DateTime.parse(json['fecha_entrega']) : null,
       notaProduccion: json['nota_produccion'],
+      numFactura: json['num_factura']?.toString(),
       clienteNombre: json['cliente']?['nombre'],
       rutaNombre: json['ruta']?['nombre'],
       vendedorNombre: json['vendedor']?['name'],

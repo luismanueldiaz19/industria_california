@@ -43,6 +43,8 @@ class PedidoController extends Controller
                 $q->orWhereHas('cliente', function ($q2) use ($search) {
                     $q2->whereRaw('LOWER(nombre) LIKE ?', ['%' . mb_strtolower($search) . '%']);
                 });
+
+                $q->orWhereRaw('LOWER(num_factura) LIKE ?', ['%' . mb_strtolower($search) . '%']);
             });
         }
         if ($request->filled('ruta_id')) {
@@ -132,7 +134,8 @@ class PedidoController extends Controller
     public function changeStatus(Request $request, Pedido $pedido)
     {
         $request->validate([
-            'estado' => 'required|in:borrador,enviado,facturado,cancelado,cotizacion'
+            'estado' => 'required|in:borrador,enviado,facturado,cancelado,cotizacion',
+            'num_factura' => 'nullable|string|max:100',
         ]);
 
         $nuevoEstado = $request->estado;
@@ -143,9 +146,56 @@ class PedidoController extends Controller
             }
         }
 
-        $pedido = $this->pedidoService->cambiarEstado($pedido, $nuevoEstado, Auth::user());
+        $pedido = $this->pedidoService->cambiarEstado(
+            $pedido, 
+            $nuevoEstado, 
+            Auth::user(), 
+            $request->num_factura
+        );
 
         return response()->json($pedido);
+    }
+
+    public function updateNumFactura(Request $request, Pedido $pedido)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'No autorizado para modificar el número de factura.'], 403);
+        }
+
+        $request->validate([
+            'num_factura' => 'nullable|string|max:100',
+        ]);
+
+        $pedido->num_factura = $request->num_factura;
+        $pedido->save();
+
+        return response()->json($pedido);
+    }
+
+    public function updateInformacion(Request $request, Pedido $pedido)
+    {
+        if (!Auth::user()->hasRole('admin') && $pedido->vendedor_id !== Auth::id()) {
+            return response()->json(['message' => 'No autorizado para editar este pedido.'], 403);
+        }
+
+        $request->validate([
+            'cliente_id' => 'nullable|integer|exists:ledhouse_clientes,id',
+            'ruta_id' => 'nullable|integer|exists:rutas,id',
+            'vendedor_id' => 'nullable|integer|exists:users,id',
+            'num_factura' => 'nullable|string|max:100',
+            'estado' => 'nullable|string|in:borrador,cotizacion,enviado,facturado,cancelado',
+            'fecha_entrega' => 'nullable|date',
+            'comentario' => 'nullable|string|max:2000',
+            'nota_produccion' => 'nullable|string|max:2000',
+        ]);
+
+        $pedidoActualizado = $this->pedidoService->actualizarInformacionPrincipal(
+            $pedido, 
+            $request->all(), 
+            Auth::user()
+        );
+
+        return response()->json($pedidoActualizado);
     }
 
     public function getGeneralPdfUrl(Request $request)

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../../auth/providers/auth_provider.dart';
 import '../models/pedido.dart';
 import '../providers/pedido_provider.dart';
 import '../utils/pedido_utils.dart';
-import 'pedido_detalle_dialog.dart';
+import 'pedido_gestion_dialog.dart';
 
 class PedidosTable extends StatefulWidget {
   const PedidosTable({super.key});
@@ -19,186 +17,12 @@ class PedidosTable extends StatefulWidget {
 class _PedidosTableState extends State<PedidosTable> {
   final _currencyFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
 
-  Future<void> _generarPdf(int id) async {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Generando Factura...')));
-    try {
-      final urlStr = await context.read<PedidoProvider>().getPdfUrl(id);
-      final url = Uri.parse(urlStr);
-      if (!await launchUrl(url)) {
-        throw Exception('No se pudo abrir el enlace');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al abrir PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _goToDetalle(Pedido pedido) {
-    showDialog(
+  void _trabajarPedido(Pedido pedido) {
+    PedidoGestionDialog.show(
       context: context,
-      builder: (context) => PedidoDetalleDialog(pedido: pedido),
-    );
-  }
-
-  void _showProcesarDialog(Pedido pedido) {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF2C2F33),
-          title: const Text(
-            'Procesar Pedido',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: SizedBox(
-            width: 300,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Seleccione el nuevo estado para el pedido #${pedido.id}',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    _btnProcesar(
-                      ctx,
-                      pedido.id,
-                      'borrador',
-                      'Devolver a Borrador',
-                      Icons.undo,
-                    ),
-                    _btnProcesar(
-                      ctx,
-                      pedido.id,
-                      'facturado',
-                      'Marcar Facturado',
-                      Icons.check_circle,
-                    ),
-                    _btnProcesar(
-                      ctx,
-                      pedido.id,
-                      'cancelado',
-                      'Cancelar Pedido',
-                      Icons.cancel,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'Cerrar',
-                style: TextStyle(color: Colors.white54),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _btnProcesar(
-    BuildContext ctx,
-    int id,
-    String estado,
-    String label,
-    IconData icon,
-  ) {
-    return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: PedidoUtils.getColorForEstado(
-          estado,
-        ).withValues(alpha: 0.2),
-        foregroundColor: PedidoUtils.getColorForEstado(estado),
-        elevation: 0,
-        side: BorderSide(color: PedidoUtils.getColorForEstado(estado)),
-      ),
-      icon: Icon(icon, size: 16),
-      label: Text(label),
-      onPressed: () async {
-        Navigator.pop(ctx);
-        final provider = context.read<PedidoProvider>();
-        final success = await provider.changeStatus(id, estado);
-        if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Estado cambiado a $estado'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      },
-    );
-  }
-
-  void _confirmDelete(Pedido pedido) {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF2C2F33),
-          title: const Text(
-            'Eliminar Pedido',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: Text(
-            '¿Estás seguro de eliminar el pedido #${pedido.id}? Esta acción no se puede deshacer.',
-            style: const TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'Cancelar',
-                style: TextStyle(color: Colors.white54),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
-              ),
-              onPressed: () async {
-                Navigator.pop(ctx);
-                final provider = context.read<PedidoProvider>();
-                final success = await provider.deletePedido(pedido.id);
-                if (success && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Pedido eliminado'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: ${provider.error}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              child: const Text(
-                'Eliminar',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        );
+      pedido: pedido,
+      onUpdated: () {
+        context.read<PedidoProvider>().fetchPedidos();
       },
     );
   }
@@ -206,7 +30,6 @@ class _PedidosTableState extends State<PedidosTable> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<PedidoProvider>();
-    final isAdmin = context.watch<AuthProvider>().isAdmin;
 
     if (provider.isLoading && provider.pedidos.isEmpty) {
       return const Center(
@@ -248,6 +71,9 @@ class _PedidosTableState extends State<PedidosTable> {
                   dataRowColor: WidgetStateProperty.resolveWith<Color?>((
                     Set<WidgetState> states,
                   ) {
+                    if (states.contains(WidgetState.hovered)) {
+                      return Colors.white.withValues(alpha: 0.05);
+                    }
                     if (states.contains(WidgetState.selected)) {
                       return const Color(0xFF2196F3).withValues(alpha: 0.15);
                     }
@@ -259,6 +85,16 @@ class _PedidosTableState extends State<PedidosTable> {
                     DataColumn(
                       label: Text(
                         '#',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'No. Factura',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -356,16 +192,6 @@ class _PedidosTableState extends State<PedidosTable> {
                         ),
                       ),
                     ),
-                    DataColumn(
-                      label: Text(
-                        'Acciones',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
                   ],
                   rows: provider.pedidos.map((pedido) {
                     final colorEstado = PedidoUtils.getColorForEstado(
@@ -377,6 +203,7 @@ class _PedidosTableState extends State<PedidosTable> {
                           (det.cantidadEnProduccion * det.precioUnitario);
                     }
                     return DataRow(
+                      onSelectChanged: (_) => _trabajarPedido(pedido),
                       cells: [
                         DataCell(
                           Text(
@@ -387,6 +214,53 @@ class _PedidosTableState extends State<PedidosTable> {
                               fontSize: 12,
                             ),
                           ),
+                        ),
+                        DataCell(
+                          (pedido.numFactura != null &&
+                                  pedido.numFactura!.trim().isNotEmpty)
+                              ? Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF2196F3,
+                                    ).withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFF2196F3,
+                                      ).withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.receipt_long,
+                                        size: 11,
+                                        color: Color(0xFF2196F3),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        pedido.numFactura!,
+                                        style: const TextStyle(
+                                          color: Color(0xFF2196F3),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : const Text(
+                                  '-',
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 12,
+                                  ),
+                                ),
                         ),
                         DataCell(
                           Text(
@@ -500,63 +374,6 @@ class _PedidosTableState extends State<PedidosTable> {
                                   : Colors.white70,
                               fontSize: 12,
                             ),
-                          ),
-                        ),
-                        DataCell(
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            spacing: 10,
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.visibility,
-                                  color: Colors.white70,
-                                  size: 18,
-                                ),
-                                tooltip: 'Ver Detalles',
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () => _goToDetalle(pedido),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.picture_as_pdf,
-                                  color: Colors.redAccent,
-                                  size: 18,
-                                ),
-                                tooltip: 'Ver Factura',
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () => _generarPdf(pedido.id),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.edit_note,
-                                  color: Colors.blueAccent,
-                                  size: 18,
-                                ),
-                                tooltip: 'Procesar',
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () => _showProcesarDialog(pedido),
-                              ),
-                              if (isAdmin) ...[
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.white38,
-                                    size: 18,
-                                  ),
-                                  tooltip: 'Eliminar',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  onPressed: () => _confirmDelete(pedido),
-                                ),
-                              ],
-                            ],
                           ),
                         ),
                       ],

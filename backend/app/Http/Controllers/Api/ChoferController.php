@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 
 class ChoferController extends Controller
 {
@@ -47,8 +48,13 @@ class ChoferController extends Controller
                 'password' => Hash::make($request->password ?: '12345678'), // Default password if empty
             ]);
 
-            // Assign role 'chofer' if it exists in Spatie permissions
-            $user->assignRole('chofer');
+            // Assign role 'chofer' safely
+            try {
+                $role = Role::firstOrCreate(['name' => 'chofer']);
+                $user->assignRole($role);
+            } catch (\Throwable $roleEx) {
+                \Illuminate\Support\Facades\Log::warning('No se pudo asignar rol chofer: ' . $roleEx->getMessage());
+            }
 
             $chofer = Chofer::create([
                 'user_id' => $user->id,

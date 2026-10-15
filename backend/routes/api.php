@@ -193,14 +193,7 @@ Route::prefix('v1')->group(function () {
 
                 // ── MÓDULO LOGÍSTICA / PEDIDOS ────────────────────────
                 Route::apiResource('rutas', RutaController::class)->except(['show']);
-                Route::post('pedidos/assign-ruta', [PedidoController::class, 'assignRuta']);
-                Route::post('pedidos/optimize-route', [PedidoController::class, 'optimizeDayRoute']);
-                Route::patch('pedidos/{pedido}/estado', [PedidoController::class, 'changeStatus']);
-                Route::get('pedidos-pdf-url', [PedidoController::class, 'getGeneralPdfUrl']);
-                Route::get('pedidos/{id}/pdf-url', [PedidoController::class, 'getPdfUrl']);
-                Route::get('pedidos/reporte-vendedores', [PedidoController::class, 'reporteVendedores']);
-                Route::get('pedidos-vendedores-pdf-url', [PedidoController::class, 'getReporteVendedoresPdfUrl']);
-                Route::apiResource('pedidos', PedidoController::class);
+                require base_path('app/Modules/Pedido/routes/api.php');
                 Route::get('choferes/pdf-url', [ChoferController::class, 'getChoferesPdfUrl']);
                 Route::apiResource('choferes', ChoferController::class);
                 
@@ -281,6 +274,7 @@ Route::prefix('v2')->middleware('auth:sanctum')->group(function () {
     require base_path('app/Modules/Cliente/routes/api.php');
     require base_path('app/Modules/CuentasPorCobrar/routes/api.php');
     require base_path('app/Modules/Alerta/routes/api.php');
+    require base_path('app/Modules/Pedido/routes/api.php');
 });
 
 

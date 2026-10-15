@@ -104,9 +104,25 @@ class PedidoEnCamionTile extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Pedido #${pedido.id}',
-              style: const TextStyle(color: Colors.white54, fontSize: 11),
+            Row(
+              children: [
+                Text(
+                  'Pedido #${pedido.id}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+                // if (pedido.numFactura != null &&
+                //     pedido.numFactura!.trim().isNotEmpty) ...[
+                //   const SizedBox(width: 6),
+                //   Text(
+                //     '• Fac: ${pedido.numFactura}',
+                //     style: const TextStyle(
+                //       color: Color(0xFF67E8F9),
+                //       fontSize: 11,
+                //       fontWeight: FontWeight.bold,
+                //     ),
+                //   ),
+                // ],
+              ],
             ),
             if (pedido.clienteDireccion != null)
               Text(

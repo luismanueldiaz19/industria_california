@@ -284,6 +284,14 @@ class _VendedorPedidoDetalleScreenState
                 DateFormat('dd/MM/yyyy').format(pedido.fechaEntrega!),
               ),
             ],
+            if (pedido.numFactura != null && pedido.numFactura!.isNotEmpty) ...[
+              const Divider(height: 8, thickness: 0.5),
+              _infoRow(
+                Icons.receipt_long_outlined,
+                'No. Factura',
+                pedido.numFactura!,
+              ),
+            ],
           ],
         ),
       ),
@@ -409,6 +417,7 @@ class _VendedorPedidoDetalleScreenState
             observacion: 'Faltante del Pedido #${pedido.id}',
             productoNombre: f.productoNombre,
             productoCodigo: f.productoCodigo,
+            productoUnidad: f.productoUnidad,
           ),
         )
         .toList();

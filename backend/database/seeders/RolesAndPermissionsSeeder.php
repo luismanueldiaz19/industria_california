@@ -126,5 +126,8 @@ class RolesAndPermissionsSeeder extends Seeder {
             'ver_gastos', 'crear_gastos', // Asumiendo que también edita gastos si fuera necesario, o solo crear
             'ver_estadisticas'
         ]);
+
+        // 🚗 6. CHOFER
+        Role::firstOrCreate(['name' => 'chofer', 'description' => 'Chofer / Conductor']);
     }
 }

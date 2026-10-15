@@ -177,9 +177,53 @@ class PedidoProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> changeStatus(int id, String estado) async {
+  Future<bool> changeStatus(int id, String estado, {String? numFactura}) async {
     try {
-      await _service.changeStatus(id, estado);
+      await _service.changeStatus(id, estado, numFactura: numFactura);
+      await fetchPedidos();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateNumFactura(int id, String? numFactura) async {
+    try {
+      await _service.updateNumFactura(id, numFactura);
+      await fetchPedidos();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateInformacion(
+    int id, {
+    int? clienteId,
+    int? rutaId,
+    int? vendedorId,
+    String? numFactura,
+    String? estado,
+    DateTime? fechaEntrega,
+    String? comentario,
+    String? notaProduccion,
+  }) async {
+    try {
+      await _service.updateInformacion(
+        id,
+        clienteId: clienteId,
+        rutaId: rutaId,
+        vendedorId: vendedorId,
+        numFactura: numFactura,
+        estado: estado,
+        fechaEntrega: fechaEntrega,
+        comentario: comentario,
+        notaProduccion: notaProduccion,
+      );
       await fetchPedidos();
       return true;
     } catch (e) {

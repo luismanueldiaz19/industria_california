@@ -21,6 +21,7 @@ class Pedido extends Model
         'ruta_id',
         'vendedor_id',
         'facturador_id',
+        'num_factura',
         'estado',
         'comentario',
         'total',

@@ -134,6 +134,9 @@
                         @if($pedido->fecha_entrega)
                         <span class="label">Entrega:</span> {{ \Carbon\Carbon::parse($pedido->fecha_entrega)->format('d/m/Y') }}<br>
                         @endif
+                        @if($pedido->num_factura)
+                        <span class="label">No. Factura:</span> {{ $pedido->num_factura }}<br>
+                        @endif
                         <span class="label">Comentario:</span> {{ $pedido->comentario ?? 'Ninguno' }}
                     </div>
                 </td>

@@ -296,10 +296,8 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                   'Añadir Vehículo',
                                   accentColor,
                                   () {
-                                    showModalBottomSheet(
+                                    showDialog(
                                       context: context,
-                                      isScrollControlled: true,
-                                      backgroundColor: Colors.transparent,
                                       builder: (context) =>
                                           const VehiculoFormModal(),
                                     );
@@ -340,10 +338,8 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                     'Añadir Chofer',
                                     accentColor,
                                     () {
-                                      showModalBottomSheet(
+                                      showDialog(
                                         context: context,
-                                        isScrollControlled: true,
-                                        backgroundColor: Colors.transparent,
                                         builder: (context) =>
                                             const ChoferFormModal(),
                                       );

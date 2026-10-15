@@ -42,6 +42,7 @@ class PedidoService
                     'vendedor_id' => $vendedor->id,
                     'estado' => $datos['estado'],
                     'comentario' => $datos['comentario'] ?? null,
+                    'num_factura' => $datos['num_factura'] ?? null,
                     'total' => $total,
                     'latitud' => $datos['latitud'] ?? null,
                     'longitud' => $datos['longitud'] ?? null,
@@ -87,7 +88,7 @@ class PedidoService
                 PedidoDetalle::create($det);
             }
 
-            $pedido->update([
+            $updateData = [
                 'cliente_id' => $datos['cliente_id'],
                 'ruta_id' => $datos['ruta_id'] ?? null,
                 'estado' => $datos['estado'],
@@ -97,7 +98,13 @@ class PedidoService
                 'longitud' => $datos['longitud'] ?? null,
                 'fecha_entrega' => $datos['fecha_entrega'] ?? null,
                 'nota_produccion' => $datos['nota_produccion'] ?? null,
-            ]);
+            ];
+
+            if (array_key_exists('num_factura', $datos)) {
+                $updateData['num_factura'] = $datos['num_factura'];
+            }
+
+            $pedido->update($updateData);
 
             if (in_array($originalEstado->value, ['borrador', 'cotizacion']) && $datos['estado'] === 'enviado') {
                 $this->deducirInventario($pedido->load('detalles'));
@@ -107,13 +114,17 @@ class PedidoService
         });
     }
 
-    public function cambiarEstado(Pedido $pedido, string $nuevoEstado, User $usuario): Pedido
+    public function cambiarEstado(Pedido $pedido, string $nuevoEstado, User $usuario, ?string $numFactura = null): Pedido
     {
-        return DB::transaction(function () use ($pedido, $nuevoEstado, $usuario) {
+        return DB::transaction(function () use ($pedido, $nuevoEstado, $usuario, $numFactura) {
             $estadoAnterior = $pedido->estado;
 
             if ($nuevoEstado === 'facturado' || $nuevoEstado === 'cancelado') {
                 $pedido->facturador_id = $usuario->id;
+            }
+
+            if ($numFactura !== null) {
+                $pedido->num_factura = $numFactura;
             }
 
             $pedido->estado = $nuevoEstado;
@@ -124,6 +135,61 @@ class PedidoService
             }
 
             return $pedido;
+        });
+    }
+
+    public function actualizarInformacionPrincipal(Pedido $pedido, array $datos, User $usuario): Pedido
+    {
+        return DB::transaction(function () use ($pedido, $datos, $usuario) {
+            $estadoAnterior = $pedido->estado;
+
+            if (array_key_exists('cliente_id', $datos) && !empty($datos['cliente_id'])) {
+                $pedido->cliente_id = $datos['cliente_id'];
+            }
+            if (array_key_exists('ruta_id', $datos)) {
+                $pedido->ruta_id = $datos['ruta_id'];
+            }
+            if (array_key_exists('vendedor_id', $datos) && !empty($datos['vendedor_id'])) {
+                $pedido->vendedor_id = $datos['vendedor_id'];
+            }
+            if (array_key_exists('num_factura', $datos)) {
+                $pedido->num_factura = $datos['num_factura'];
+            }
+            if (array_key_exists('fecha_entrega', $datos)) {
+                $pedido->fecha_entrega = $datos['fecha_entrega'];
+            }
+            if (array_key_exists('comentario', $datos)) {
+                $pedido->comentario = $datos['comentario'];
+            }
+            if (array_key_exists('nota_produccion', $datos)) {
+                $pedido->nota_produccion = $datos['nota_produccion'];
+            }
+
+            if (!empty($datos['estado'])) {
+                $nuevoEstado = is_string($datos['estado']) ? $datos['estado'] : (is_object($datos['estado']) ? $datos['estado']->value : strval($datos['estado']));
+                $anteriorValor = is_string($estadoAnterior) ? $estadoAnterior : (is_object($estadoAnterior) ? $estadoAnterior->value : strval($estadoAnterior));
+                
+                if ($nuevoEstado !== $anteriorValor) {
+                    if ($nuevoEstado === 'facturado' || $nuevoEstado === 'cancelado') {
+                        $pedido->facturador_id = $usuario->id;
+                    }
+                    $pedido->estado = $nuevoEstado;
+
+                    if ($anteriorValor === 'borrador' && $nuevoEstado === 'enviado') {
+                        $this->deducirInventario($pedido->load('detalles'));
+                    }
+                }
+            }
+
+            $pedido->save();
+
+            return $pedido->load([
+                'cliente:id,nombre',
+                'ruta:id,nombre',
+                'vendedor:id,name',
+                'facturador:id,name',
+                'detalles.producto:id,codigo,descripcion,imagen_producto,unidad,medidas,capacidad'
+            ]);
         });
     }
 

@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import '../../../core/services/http_service.dart';
 import '../models/pedido.dart';
 
@@ -53,8 +54,43 @@ class PedidoService {
     return Pedido.fromJson(response);
   }
 
-  Future<Pedido> changeStatus(int id, String estado) async {
-    final response = await _http.patch('$_base/$id/estado', {'estado': estado});
+  Future<Pedido> changeStatus(int id, String estado, {String? numFactura}) async {
+    final response = await _http.patch('$_base/$id/estado', {
+      'estado': estado,
+      if (numFactura != null) 'num_factura': numFactura,
+    });
+    return Pedido.fromJson(response);
+  }
+
+  Future<Pedido> updateNumFactura(int id, String? numFactura) async {
+    final response = await _http.patch('$_base/$id/num-factura', {
+      'num_factura': numFactura,
+    });
+    return Pedido.fromJson(response);
+  }
+
+  Future<Pedido> updateInformacion(
+    int id, {
+    int? clienteId,
+    int? rutaId,
+    int? vendedorId,
+    String? numFactura,
+    String? estado,
+    DateTime? fechaEntrega,
+    String? comentario,
+    String? notaProduccion,
+  }) async {
+    final Map<String, dynamic> data = {
+      if (clienteId != null) 'cliente_id': clienteId,
+      'ruta_id': rutaId,
+      if (vendedorId != null) 'vendedor_id': vendedorId,
+      'num_factura': numFactura,
+      if (estado != null) 'estado': estado,
+      'fecha_entrega': fechaEntrega != null ? DateFormat('yyyy-MM-dd').format(fechaEntrega) : null,
+      'comentario': comentario,
+      'nota_produccion': notaProduccion,
+    };
+    final response = await _http.patch('$_base/$id/informacion', data);
     return Pedido.fromJson(response);
   }
 

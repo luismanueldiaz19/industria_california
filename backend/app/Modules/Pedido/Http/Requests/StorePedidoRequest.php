@@ -19,6 +19,7 @@ class StorePedidoRequest extends FormRequest
             'cliente_id' => ['required', 'integer', 'exists:ledhouse_clientes,id'],
             'ruta_id' => ['nullable', 'integer', 'exists:rutas,id'],
             'comentario' => ['nullable', 'string', 'max:2000'],
+            'num_factura' => ['nullable', 'string', 'max:100'],
             'estado' => ['required', Rule::in(['borrador', 'enviado', 'cotizacion'])],
 
             'detalles' => ['required', 'array', 'min:1', 'max:200'],

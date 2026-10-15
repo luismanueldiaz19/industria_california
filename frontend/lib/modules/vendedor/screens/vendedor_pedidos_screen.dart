@@ -490,6 +490,9 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
     final disponible = pedido.total - faltante;
     final hasFaltante = faltante > 0;
 
+    final bool hasFactura =
+        pedido.numFactura != null && pedido.numFactura!.trim().isNotEmpty;
+
     return GestureDetector(
       onTap: () => _goToDetalle(pedido),
       child: Container(
@@ -535,6 +538,46 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                             fontSize: 14,
                           ),
                         ),
+                        if (hasFactura) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(0xFFBFDBFE),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.receipt_long_rounded,
+                                  size: 11,
+                                  color: Color(0xFF1D4ED8),
+                                ),
+                                const SizedBox(width: 3),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 85),
+                                  child: Text(
+                                    pedido.numFactura!,
+                                    style: const TextStyle(
+                                      color: Color(0xFF1D4ED8),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         if (hasFaltante) ...[
                           const SizedBox(width: 6),
                           const Icon(
@@ -590,6 +633,16 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                             ],
                             const SizedBox(height: 6),
                             _infoRow(Icons.schedule_outlined, fecha),
+                            if (hasFactura) ...[
+                              const SizedBox(height: 6),
+                              _infoRow(
+                                Icons.receipt_long_outlined,
+                                'Factura: #${pedido.numFactura}',
+                                textColor: const Color(0xFF1D4ED8),
+                                iconColor: const Color(0xFF2563EB),
+                                isBold: true,
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -692,15 +745,25 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
     );
   }
 
-  Widget _infoRow(IconData icon, String text) {
+  Widget _infoRow(
+    IconData icon,
+    String text, {
+    Color? textColor,
+    Color? iconColor,
+    bool isBold = false,
+  }) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: Colors.grey.shade500),
+        Icon(icon, size: 14, color: iconColor ?? Colors.grey.shade500),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
-            style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+            style: TextStyle(
+              color: textColor ?? Colors.grey.shade700,
+              fontSize: 13,
+              fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),

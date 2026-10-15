@@ -3,18 +3,58 @@ import 'package:provider/provider.dart';
 import '../../models/chofer.dart';
 import '../../providers/chofer_provider.dart';
 
-class ChoferFormModal extends StatefulWidget {
+class ChoferFormModal extends StatelessWidget {
   final Chofer? chofer;
 
   const ChoferFormModal({super.key, this.chofer});
 
+  static Future<bool?> show(BuildContext context, {Chofer? chofer}) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => ChoferFormModal(chofer: chofer),
+    );
+  }
+
   @override
-  State<ChoferFormModal> createState() => _ChoferFormModalState();
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: const Color(0xFF2C2F33),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Colors.white12),
+      ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 540),
+        child: ChoferFormWidget(
+          chofer: chofer,
+          onClose: () => Navigator.pop(context),
+          onSuccess: () => Navigator.pop(context, true),
+        ),
+      ),
+    );
+  }
 }
 
-class _ChoferFormModalState extends State<ChoferFormModal> {
+class ChoferFormWidget extends StatefulWidget {
+  final Chofer? chofer;
+  final VoidCallback? onClose;
+  final VoidCallback? onSuccess;
+
+  const ChoferFormWidget({
+    super.key,
+    this.chofer,
+    this.onClose,
+    this.onSuccess,
+  });
+
+  @override
+  State<ChoferFormWidget> createState() => _ChoferFormWidgetState();
+}
+
+class _ChoferFormWidgetState extends State<ChoferFormWidget> {
   final _formKey = GlobalKey<FormState>();
-  
+
   late TextEditingController _nameController;
   late TextEditingController _usernameController;
   late TextEditingController _emailController;
@@ -23,31 +63,56 @@ class _ChoferFormModalState extends State<ChoferFormModal> {
   late TextEditingController _tipoLicenciaController;
   late TextEditingController _vencimientoLicenciaController;
   late TextEditingController _contactoEmergenciaController;
-  
+
   String _estado = 'activo';
   bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  bool get isEditing => widget.chofer != null;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.chofer?.name ?? '');
-    _usernameController = TextEditingController(text: widget.chofer?.username ?? '');
-    _emailController = TextEditingController(text: widget.chofer?.email ?? '');
+    _nameController = TextEditingController();
+    _usernameController = TextEditingController();
+    _emailController = TextEditingController();
     _passwordController = TextEditingController();
-    _licenciaController = TextEditingController(text: widget.chofer?.numeroLicencia ?? '');
-    _tipoLicenciaController = TextEditingController(text: widget.chofer?.tipoLicencia ?? '');
-    
-    // Parse vencimiento_licencia to YYYY-MM-DD
-    String vencimiento = '';
-    if (widget.chofer?.vencimientoLicencia != null) {
-      vencimiento = widget.chofer!.vencimientoLicencia!.split('T').first;
+    _licenciaController = TextEditingController();
+    _tipoLicenciaController = TextEditingController();
+    _vencimientoLicenciaController = TextEditingController();
+    _contactoEmergenciaController = TextEditingController();
+    _initData();
+  }
+
+  @override
+  void didUpdateWidget(covariant ChoferFormWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.chofer?.id != widget.chofer?.id) {
+      _initData();
     }
-    _vencimientoLicenciaController = TextEditingController(text: vencimiento);
-    
-    _contactoEmergenciaController = TextEditingController(text: widget.chofer?.contactoEmergencia ?? '');
-    
-    if (widget.chofer != null) {
-      _estado = widget.chofer!.estado;
+  }
+
+  void _initData() {
+    final c = widget.chofer;
+    _nameController.text = c?.name ?? '';
+    _usernameController.text = c?.username ?? '';
+    _emailController.text = c?.email ?? '';
+    _passwordController.clear();
+    _licenciaController.text = c?.numeroLicencia ?? '';
+    _tipoLicenciaController.text = c?.tipoLicencia ?? '';
+
+    String vencimiento = '';
+    if (c?.vencimientoLicencia != null) {
+      vencimiento = c!.vencimientoLicencia!.split('T').first;
+    }
+    _vencimientoLicenciaController.text = vencimiento;
+    _contactoEmergenciaController.text = c?.contactoEmergencia ?? '';
+
+    const validEstados = ['activo', 'vacaciones', 'inactivo'];
+    if (c != null && validEstados.contains(c.estado)) {
+      _estado = c.estado;
+    } else {
+      _estado = 'activo';
     }
   }
 
@@ -64,75 +129,116 @@ class _ChoferFormModalState extends State<ChoferFormModal> {
     super.dispose();
   }
 
+  Future<void> _seleccionarFechaVencimiento() async {
+    DateTime initial = DateTime.now();
+    if (_vencimientoLicenciaController.text.isNotEmpty) {
+      final parsed = DateTime.tryParse(_vencimientoLicenciaController.text);
+      if (parsed != null) initial = parsed;
+    }
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFE31E24),
+              onPrimary: Colors.white,
+              surface: Color(0xFF2C2F33),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (date != null) {
+      setState(() {
+        _vencimientoLicenciaController.text = date
+            .toIso8601String()
+            .split('T')
+            .first;
+      });
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    final data = {
+    final data = <String, dynamic>{
       'name': _nameController.text.trim(),
       'username': _usernameController.text.trim(),
-      'email': _emailController.text.trim(),
-      'numero_licencia': _licenciaController.text.trim(),
-      'tipo_licencia': _tipoLicenciaController.text.trim(),
-      'vencimiento_licencia': _vencimientoLicenciaController.text.trim(),
-      'contacto_emergencia': _contactoEmergenciaController.text.trim(),
+      'email': _emailController.text.trim().isEmpty
+          ? null
+          : _emailController.text.trim(),
+      'numero_licencia': _licenciaController.text.trim().isEmpty
+          ? null
+          : _licenciaController.text.trim(),
+      'tipo_licencia': _tipoLicenciaController.text.trim().isEmpty
+          ? null
+          : _tipoLicenciaController.text.trim(),
+      'vencimiento_licencia': _vencimientoLicenciaController.text.trim().isEmpty
+          ? null
+          : _vencimientoLicenciaController.text.trim(),
+      'contacto_emergencia': _contactoEmergenciaController.text.trim().isEmpty
+          ? null
+          : _contactoEmergenciaController.text.trim(),
       'estado': _estado,
     };
 
-    if (_passwordController.text.isNotEmpty) {
-      data['password'] = _passwordController.text;
+    if (_passwordController.text.trim().isNotEmpty) {
+      data['password'] = _passwordController.text.trim();
     }
 
     try {
       if (widget.chofer == null) {
         await context.read<ChoferProvider>().createChofer(data);
       } else {
-        await context.read<ChoferProvider>().updateChofer(widget.chofer!.id, data);
-      }
-      
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.chofer == null 
-              ? 'Chofer creado correctamente' 
-              : 'Chofer actualizado correctamente'),
-            backgroundColor: Colors.green,
-          ),
+        await context.read<ChoferProvider>().updateChofer(
+          widget.chofer!.id,
+          data,
         );
       }
+
+      if (!mounted) return;
+      if (widget.onSuccess != null) {
+        widget.onSuccess!();
+      } else {
+        Navigator.pop(context, true);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.chofer == null
+                ? 'Chofer creado correctamente'
+                : 'Chofer actualizado correctamente',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      final cleanMsg = e
+          .toString()
+          .replaceFirst('Exception: ', '')
+          .replaceFirst('HttpException: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(cleanMsg), backgroundColor: Colors.red),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.chofer != null;
-    
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF2C2F33),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: EdgeInsets.only(
-        top: 24,
-        left: 24,
-        right: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -140,168 +246,280 @@ class _ChoferFormModalState extends State<ChoferFormModal> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                isEditing ? 'Editar Chofer' : 'Añadir Chofer',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+              // Header
+              Row(
+                children: [
+                  Icon(
+                    isEditing
+                        ? Icons.edit_note
+                        : Icons.person_add_alt_1_outlined,
+                    color: const Color(0xFFE31E24),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isEditing ? 'Editar Chofer' : 'Añadir Chofer',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white54,
+                      size: 18,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () {
+                      if (widget.onClose != null) {
+                        widget.onClose!();
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-              _buildTextField(
-                controller: _nameController,
-                label: 'Nombre Completo',
-                icon: Icons.person,
-                validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
+              const Divider(height: 18, color: Colors.white12),
+
+              // Nombre Completo & Nombre de Usuario
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _nameController,
+                      label: 'Nombre Completo',
+                      icon: Icons.person_outline,
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Requerido' : null,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _usernameController,
+                      label: 'Nombre de Usuario',
+                      icon: Icons.account_circle_outlined,
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Requerido' : null,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _usernameController,
-                label: 'Nombre de Usuario',
-                icon: Icons.account_circle,
-                validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+
+              // Correo Electrónico
               _buildTextField(
                 controller: _emailController,
                 label: 'Correo Electrónico (Opcional)',
-                icon: Icons.email,
+                icon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+
+              // Contraseña
               _buildTextField(
                 controller: _passwordController,
-                label: isEditing ? 'Contraseña (Dejar en blanco para no cambiar)' : 'Contraseña (Opcional, 12345678 por defecto)',
-                icon: Icons.lock,
-                obscureText: true,
+                label: isEditing
+                    ? 'Contraseña (Opcional, dejar vacía para conservar)'
+                    : 'Contraseña (Defecto: 12345678)',
+                icon: Icons.lock_outline,
+                obscureText: _obscurePassword,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.white38,
+                    size: 16,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+
+              // No. Licencia & Tipo Licencia
               Row(
                 children: [
                   Expanded(
                     child: _buildTextField(
                       controller: _licenciaController,
                       label: 'No. Licencia',
-                      icon: Icons.badge,
+                      icon: Icons.badge_outlined,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _buildTextField(
                       controller: _tipoLicenciaController,
                       label: 'Tipo Licencia',
-                      icon: Icons.card_membership,
+                      icon: Icons.card_membership_outlined,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+
+              // Vencimiento Lic. & Contacto Emergencia
               Row(
                 children: [
                   Expanded(
                     child: InkWell(
-                      onTap: () async {
-                        final date = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                          builder: (context, child) {
-                            return Theme(
-                              data: Theme.of(context).copyWith(
-                                colorScheme: const ColorScheme.dark(
-                                  primary: Color(0xFFE31E24),
-                                  onPrimary: Colors.white,
-                                  surface: Color(0xFF2C2F33),
-                                  onSurface: Colors.white,
-                                ),
-                              ),
-                              child: child!,
-                            );
-                          },
-                        );
-                        if (date != null) {
-                          setState(() {
-                            _vencimientoLicenciaController.text = date.toIso8601String().split('T').first;
-                          });
-                        }
-                      },
+                      onTap: _seleccionarFechaVencimiento,
                       child: IgnorePointer(
                         child: _buildTextField(
                           controller: _vencimientoLicenciaController,
                           label: 'Vencimiento Lic.',
-                          icon: Icons.calendar_today,
+                          icon: Icons.calendar_today_outlined,
+                          suffixIcon: const Icon(
+                            Icons.calendar_month,
+                            color: Colors.white38,
+                            size: 16,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _buildTextField(
                       controller: _contactoEmergenciaController,
                       label: 'Contacto de Emergencia',
-                      icon: Icons.phone,
+                      icon: Icons.phone_outlined,
+                      keyboardType: TextInputType.phone,
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 8),
+
+              // Estado
+              DropdownButtonFormField<String>(
+                initialValue: _estado,
+                isExpanded: true,
+                iconSize: 18,
+                decoration: _inputDecoration('Estado', Icons.info_outline),
+                dropdownColor: const Color(0xFF2C2F33),
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                items: const [
+                  DropdownMenuItem(value: 'activo', child: Text('Activo')),
+                  DropdownMenuItem(
+                    value: 'vacaciones',
+                    child: Text('Vacaciones'),
+                  ),
+                  DropdownMenuItem(value: 'inactivo', child: Text('Inactivo')),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _estado = v);
+                },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _estado,
-                dropdownColor: const Color(0xFF3B3E43),
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Estado',
-                  labelStyle: const TextStyle(color: Colors.white54),
-                  filled: true,
-                  fillColor: const Color(0xFF1A1C1E),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                  prefixIcon: const Icon(Icons.info, color: Colors.white54),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'activo', child: Text('ACTIVO')),
-                  DropdownMenuItem(value: 'vacaciones', child: Text('VACACIONES')),
-                  DropdownMenuItem(value: 'inactivo', child: Text('INACTIVO')),
-                ],
-                onChanged: (v) => setState(() => _estado = v!),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE31E24),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+
+              // Actions
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        if (widget.onClose != null) {
+                          widget.onClose!();
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white70,
+                        side: const BorderSide(color: Colors.white24),
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      child: const Text(
+                        'CANCELAR',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                  onPressed: _isLoading ? null : _submit,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          isEditing ? 'GUARDAR CAMBIOS' : 'CREAR CHOFER',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
-                          ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE31E24),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                ),
+                      ),
+                      onPressed: _isLoading ? null : _submit,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              isEditing ? 'GUARDAR CAMBIOS' : 'CREAR CHOFER',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 2),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(
+    String label,
+    IconData icon, {
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.white54, fontSize: 11),
+      prefixIcon: Icon(icon, color: Colors.white54, size: 16),
+      prefixIconConstraints: const BoxConstraints(minWidth: 32),
+      suffixIcon: suffixIcon,
+      suffixIconConstraints: const BoxConstraints(minWidth: 32),
+      filled: true,
+      fillColor: const Color(0xFF1A1C1E),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: Colors.white10),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: Color(0xFFE31E24), width: 1.2),
       ),
     );
   }
@@ -312,22 +530,15 @@ class _ChoferFormModalState extends State<ChoferFormModal> {
     required IconData icon,
     String? Function(String?)? validator,
     bool obscureText = false,
+    TextInputType? keyboardType,
+    Widget? suffixIcon,
   }) {
     return TextFormField(
       controller: controller,
-      style: const TextStyle(color: Colors.white),
+      keyboardType: keyboardType,
+      style: const TextStyle(color: Colors.white, fontSize: 12),
       obscureText: obscureText,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54),
-        filled: true,
-        fillColor: const Color(0xFF1A1C1E),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        prefixIcon: Icon(icon, color: Colors.white54),
-      ),
+      decoration: _inputDecoration(label, icon, suffixIcon: suffixIcon),
       validator: validator,
     );
   }

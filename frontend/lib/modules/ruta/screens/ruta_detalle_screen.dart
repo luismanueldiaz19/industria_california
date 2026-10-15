@@ -179,7 +179,7 @@ class _RutaDetalleScreenState extends State<RutaDetalleScreen> {
                       children: [
                         const SizedBox(height: 4),
                         Text(
-                          'Pedido #${pedido.id} • ${Formatters.currency.format(pedido.total)}',
+                          'Pedido #${pedido.id}${pedido.numFactura != null && pedido.numFactura!.trim().isNotEmpty ? ' • Fac: ${pedido.numFactura}' : ''} • ${Formatters.currency.format(pedido.total)}',
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
