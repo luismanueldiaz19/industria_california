@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:top_snackbar_flutter/top_snack_bar.dart';
-import 'package:top_snackbar_flutter/custom_snack_bar.dart';
+import '../../../../core/widgets/compact_snack_bar.dart';
 import '../../../camion_victual/models/camion_victual.dart';
 import '../../../camion_victual/providers/camion_victual_provider.dart';
 
@@ -251,21 +250,17 @@ class CamionVictualPedidosModal extends StatelessWidget {
                                 final exito = await provider.vaciarCamion(
                                   currentCamion.id,
                                 );
+                                if (!context.mounted) return;
                                 if (exito) {
-                                  showTopSnackBar(
-                                    Overlay.of(context),
-                                    const CustomSnackBar.success(
-                                      message: 'Camión vaciado',
-                                    ),
+                                  CompactSnackBar.showSuccess(
+                                    context,
+                                    'Camión vaciado',
                                   );
                                   Navigator.of(context).pop();
                                 } else {
-                                  showTopSnackBar(
-                                    Overlay.of(context),
-                                    CustomSnackBar.error(
-                                      message:
-                                          provider.error ?? 'Error al vaciar',
-                                    ),
+                                  CompactSnackBar.showError(
+                                    context,
+                                    provider.error ?? 'Error al vaciar',
                                   );
                                 }
                               }
@@ -457,18 +452,14 @@ class CamionVictualPedidosModal extends StatelessWidget {
                   det.id,
                   nuevoEstado,
                 );
+                if (!context.mounted) return;
                 if (exito) {
-                  showTopSnackBar(
-                    Overlay.of(context),
-                    const CustomSnackBar.success(
-                      message: 'Estado de entrega actualizado',
-                    ),
+                  CompactSnackBar.showSuccess(
+                    context,
+                    'Estado de entrega actualizado',
                   );
                 } else {
-                  showTopSnackBar(
-                    Overlay.of(context),
-                    CustomSnackBar.error(message: provider.error ?? 'Error'),
-                  );
+                  CompactSnackBar.showError(context, provider.error ?? 'Error');
                 }
               },
               child: Row(
