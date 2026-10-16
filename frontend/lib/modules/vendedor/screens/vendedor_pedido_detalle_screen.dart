@@ -8,7 +8,6 @@ import '../../pedido/models/pedido_detalle.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../pedido/providers/pedido_provider.dart';
-import 'vendedor_pedido_flow_screen.dart';
 
 /// Pantalla de detalle de un pedido existente.
 /// Solo muestra — no edita directamente (navega a Form para eso).
@@ -325,124 +324,7 @@ class _VendedorPedidoDetalleScreenState
             }).toList(),
           ),
         ),
-        if (pedido.detalles.any((d) => d.cantidadEnProduccion > 0)) ...[
-          const SizedBox(height: 12),
-          Consumer<PedidoProvider>(
-            builder: (ctx, provider, _) {
-              final alreadyGenerated = provider.pedidos.any(
-                (p) =>
-                    p.comentario ==
-                    'Pedido generado por faltantes del Pedido #${pedido.id}',
-              );
-
-              if (alreadyGenerated) {
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.green.shade200),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        color: Colors.green.shade600,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Pedido por faltante ya generado',
-                        style: TextStyle(
-                          color: Colors.green.shade800,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _generarPedidoFaltante,
-                  icon: const Icon(
-                    Icons.add_shopping_cart,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  label: const Text(
-                    'Generar Pedido por Faltante',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
       ],
-    );
-  }
-
-  void _generarPedidoFaltante() {
-    // Collect the missing items
-    final faltantes = pedido.detalles
-        .where((d) => d.cantidadEnProduccion > 0)
-        .toList();
-    if (faltantes.isEmpty) return;
-
-    // Create a mock order with ONLY the missing quantities
-    final mockDetalles = faltantes
-        .map(
-          (f) => PedidoDetalle(
-            id: 0,
-            productoId: f.productoId,
-            cantidad: f.cantidadEnProduccion,
-            cantidadEnProduccion: 0,
-            precioUnitario: f.precioUnitario,
-            subtotal: f.cantidadEnProduccion * f.precioUnitario,
-            observacion: 'Faltante del Pedido #${pedido.id}',
-            productoNombre: f.productoNombre,
-            productoCodigo: f.productoCodigo,
-            productoUnidad: f.productoUnidad,
-          ),
-        )
-        .toList();
-
-    final mockPedido = Pedido(
-      id: 0,
-      clienteId: pedido.clienteId,
-      rutaId: pedido.rutaId,
-      vendedorId: pedido.vendedorId,
-      estado: 'borrador',
-      total: mockDetalles.fold(0, (sum, item) => sum + item.subtotal),
-      createdAt: DateTime.now(),
-      comentario: 'Pedido generado por faltantes del Pedido #${pedido.id}',
-      detalles: mockDetalles,
-    );
-
-    // Navigating back first to prevent deep stacking (optional) or just push
-    Navigator.of(context).pop();
-
-    // We need to pass a flag to VendedorPedidoFlowScreen indicating it's a template, not an edit.
-    // By passing a pedido with id: 0, it acts as a template.
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => VendedorPedidoFlowScreen(pedidoOriginal: mockPedido),
-      ),
     );
   }
 

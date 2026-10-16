@@ -4,12 +4,18 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/themes/app_theme.dart';
+import '../../../core/widgets/cancel_button.dart';
+import '../../../core/widgets/custom_button.dart';
+import '../../../core/widgets/drop_down_widget.dart';
+import '../../../core/widgets/input_field.dart';
+import '../../../core/widgets/single_date_picker.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../led_house/providers/ledhouse_cliente_provider.dart';
 import '../../ruta/providers/ruta_provider.dart';
 import '../../users/providers/users_provider.dart';
 import '../models/pedido.dart';
 import '../providers/pedido_provider.dart';
+import '../utils/pedido_utils.dart';
+import '../../produccion/widgets/orden_produccion_pedido_dialog.dart';
 
 class PedidoGestionDialog extends StatefulWidget {
   final Pedido pedido;
@@ -41,9 +47,21 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
   final _currencyFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
   final _formKey = GlobalKey<FormState>();
 
+  // ── Light Theme Palette (AppTheme) ──
+  static const _bgDialog = AppTheme.dialogBg;
+  static const _headerBg = AppTheme.dialogHeaderBg;
+  static const _footerBg = AppTheme.dialogFooterBg;
+  static const _cardSubtleBg = AppTheme.dialogCardSubtleBg;
+  static const _borderColor = AppTheme.dialogBorderColor;
+  static const _textPrimary = AppTheme.dialogTextPrimary;
+  static const _textSecondary = AppTheme.dialogTextSecondary;
+  static const _textMuted = AppTheme.dialogTextMuted;
+
   late TextEditingController _numFacturaCtrl;
+  late TextEditingController _clienteCtrl;
   late TextEditingController _comentarioCtrl;
   late TextEditingController _notaProduccionCtrl;
+  final _numFacturaFocusNode = FocusNode();
 
   late String _estadoSeleccionado;
   int? _clienteId;
@@ -53,19 +71,16 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
 
   bool _isSaving = false;
 
-  final List<String> _estadosDisponibles = [
-    'borrador',
-    'cotizacion',
-    'enviado',
-    'facturado',
-    'cancelado',
-  ];
+  late final List<String> _estadosDisponibles;
 
   @override
   void initState() {
     super.initState();
     _numFacturaCtrl = TextEditingController(
       text: widget.pedido.numFactura ?? '',
+    );
+    _clienteCtrl = TextEditingController(
+      text: widget.pedido.clienteNombre ?? 'Cliente sin nombre',
     );
     _comentarioCtrl = TextEditingController(
       text: widget.pedido.comentario ?? '',
@@ -74,9 +89,52 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
       text: widget.pedido.notaProduccion ?? '',
     );
 
-    _estadoSeleccionado = widget.pedido.estado.toLowerCase();
+    final estadoOriginal = widget.pedido.estado.toLowerCase();
+    _estadoSeleccionado = estadoOriginal;
+
+    // Reglas de transición solicitadas:
+    // 1. Facturado no puede cambiar a ningún otro.
+    // 2. Enviado puede ponerse en borrador, facturado o cancelado.
+    // 3. Cotización puede ponerse en borrador, facturar o cancelar.
+    // 4. Cancelado queda cerrado.
+    // 5. Borrador puede pasar a cotización, enviado, facturado o cancelado.
+    switch (estadoOriginal) {
+      case 'facturado':
+        _estadosDisponibles = const ['facturado'];
+        break;
+      case 'enviado':
+        _estadosDisponibles = const [
+          'enviado',
+          'borrador',
+          'facturado',
+          'cancelado',
+        ];
+        break;
+      case 'cotizacion':
+        _estadosDisponibles = const [
+          'cotizacion',
+          'borrador',
+          'facturado',
+          'cancelado',
+        ];
+        break;
+      case 'cancelado':
+        _estadosDisponibles = const ['cancelado'];
+        break;
+      case 'borrador':
+      default:
+        _estadosDisponibles = const [
+          'borrador',
+          'enviado',
+          'cotizacion',
+          'facturado',
+          'cancelado',
+        ];
+        break;
+    }
+
     if (!_estadosDisponibles.contains(_estadoSeleccionado)) {
-      _estadoSeleccionado = 'borrador';
+      _estadoSeleccionado = _estadosDisponibles.first;
     }
 
     _clienteId = widget.pedido.clienteId;
@@ -85,7 +143,6 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
     _fechaEntrega = widget.pedido.fechaEntrega;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LedhouseClienteProvider>().fetchClientes();
       context.read<RutaProvider>().fetchRutas();
       context.read<UsersProvider>().fetchUsers();
     });
@@ -94,42 +151,35 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
   @override
   void dispose() {
     _numFacturaCtrl.dispose();
+    _clienteCtrl.dispose();
     _comentarioCtrl.dispose();
     _notaProduccionCtrl.dispose();
+    _numFacturaFocusNode.dispose();
     super.dispose();
   }
 
-  Future<void> _selectFechaEntrega() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _fechaEntrega ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.dark(
-              primary: AppTheme.primaryBlue,
-              onPrimary: Colors.white,
-              surface: AppTheme.darkCardColor,
-              onSurface: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() => _fechaEntrega = picked);
-    }
-  }
-
   Future<void> _guardarCambios() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final esFacturado = _estadoSeleccionado.toLowerCase() == 'facturado';
+
+    if (esFacturado && _numFacturaCtrl.text.trim().isEmpty) {
+      _numFacturaFocusNode.requestFocus();
+      _formKey.currentState?.validate();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            '⚠️ Debes ingresar el número de factura para guardar el pedido como FACTURADO.',
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     final provider = context.read<PedidoProvider>();
-    final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
 
     setState(() => _isSaving = true);
@@ -160,7 +210,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
           const SnackBar(
             content: Text('Pedido actualizado exitosamente'),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: Duration(milliseconds: 300),
           ),
         );
       } else {
@@ -173,7 +223,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
         SnackBar(
           content: Text('Error al guardar: $e'),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+          duration: Duration(seconds: 1),
         ),
       );
     } finally {
@@ -209,31 +259,37 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2C2F33),
+          backgroundColor: _bgDialog,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: Colors.white12),
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: _borderColor),
           ),
           title: const Text(
             'Eliminar Pedido',
-            style: TextStyle(color: Colors.white, fontSize: 15),
+            style: TextStyle(
+              color: _textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           content: Text(
             '¿Estás seguro de eliminar el pedido #${widget.pedido.id}? Esta acción no se puede deshacer.',
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+            style: const TextStyle(color: _textSecondary, fontSize: 13),
           ),
           actions: [
-            TextButton(
+            CancelButton(
+              text: 'CANCELAR',
+              isDark: false,
+              height: 36,
+              borderRadius: 6,
               onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'Cancelar',
-                style: TextStyle(color: Colors.white54, fontSize: 11),
-              ),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
-              ),
+            CustomButton(
+              text: 'ELIMINAR',
+              color: const Color(0xFFE31E24),
+              height: 36,
+              fontSize: 11,
+              borderRadius: 6,
               onPressed: () async {
                 Navigator.pop(ctx);
                 final provider = context.read<PedidoProvider>();
@@ -256,10 +312,6 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                   );
                 }
               },
-              child: const Text(
-                'Eliminar',
-                style: TextStyle(color: Colors.white, fontSize: 11),
-              ),
             ),
           ],
         );
@@ -267,40 +319,330 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
     );
   }
 
-  Color _getEstadoColor(String estado) {
-    switch (estado.toLowerCase()) {
-      case 'borrador':
-        return const Color(0xFFFF9800);
-      case 'cotizacion':
-        return const Color(0xFF9C27B0);
-      case 'enviado':
-        return const Color(0xFF2196F3);
-      case 'facturado':
-        return const Color(0xFF4CAF50);
-      case 'cancelado':
-        return const Color(0xFFE53935);
-      default:
-        return Colors.grey;
+  void _abrirDialogFacturarVigente({
+    required double totalVigente,
+    required double totalFaltante,
+  }) {
+    if (totalVigente <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No hay artículos disponibles en stock para facturar (\$0.00). Todos los ítems están en producción.',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
     }
+    final numFacturaInputCtrl = TextEditingController(
+      text: _numFacturaCtrl.text,
+    );
+    final formKey = GlobalKey<FormState>();
+    final comentarioLocalCtrl = TextEditingController();
+    bool isProcessing = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Dialog(
+          backgroundColor: _bgDialog,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: _borderColor),
+          ),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFA7F3D0)),
+                          ),
+                          child: const Icon(
+                            Icons.receipt_long_rounded,
+                            color: Color(0xFF059669),
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Facturar Artículos Vigentes',
+                                style: TextStyle(
+                                  color: _textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Despacho de lote disponible en almacén',
+                                style: TextStyle(
+                                  color: _textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Resumen de la escisión
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _cardSubtleBg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: _borderColor),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'A Facturar Ahora (En Stock):',
+                                style: TextStyle(
+                                  color: _textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                _currencyFmt.format(totalVigente),
+                                style: const TextStyle(
+                                  color: Color(0xFF059669),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 14, color: _borderColor),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'A Escindir (Orden de Producción):',
+                                style: TextStyle(
+                                  color: _textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                _currencyFmt.format(totalFaltante),
+                                style: const TextStyle(
+                                  color: Color(0xFFDC2626),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    Text(
+                      'Al confirmar, el Pedido #${widget.pedido.id} quedará FACTURADO con el lote disponible (${_currencyFmt.format(totalVigente)}). Se creará automáticamente un Pedido Remanente para los artículos faltantes vinculado a Producción.',
+                      style: const TextStyle(
+                        color: _textSecondary,
+                        fontSize: 11,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    InputField(
+                      label: 'No. de Factura *',
+                      controller: numFacturaInputCtrl,
+                      hint: 'Ej: B0100000045',
+                      icon: Icons.receipt_rounded,
+                      isDark: false,
+                      dense: true,
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'Ingresa el número de factura';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    InputField(
+                      label: 'Nota de Facturación (Opcional)',
+                      controller: comentarioLocalCtrl,
+                      hint: 'Ej: Entregado parcialmente según disponibilidad',
+                      icon: Icons.note_rounded,
+                      isDark: false,
+                      dense: true,
+                      optional: true,
+                    ),
+                    const SizedBox(height: 20),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        CancelButton(
+                          text: 'CANCELAR',
+                          onPressed: isProcessing
+                              ? null
+                              : () => Navigator.pop(ctx),
+                          isDark: false,
+                          height: 36,
+                          borderRadius: 6,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        CustomButton(
+                          text: isProcessing
+                              ? 'PROCESANDO...'
+                              : 'CONFIRMAR Y FACTURAR',
+                          color: const Color(0xFF059669),
+                          textColor: Colors.white,
+                          isLoading: isProcessing,
+                          height: 36,
+                          fontSize: 11,
+                          borderRadius: 6,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          onPressed: isProcessing
+                              ? null
+                              : () async {
+                                  if (!formKey.currentState!.validate()) return;
+
+                                  final messenger = ScaffoldMessenger.of(
+                                    context,
+                                  );
+                                  final nav = Navigator.of(context);
+                                  final dialogNav = Navigator.of(ctx);
+                                  final pedidoProv = context
+                                      .read<PedidoProvider>();
+
+                                  setDialogState(() => isProcessing = true);
+                                  final numFac = numFacturaInputCtrl.text
+                                      .trim();
+                                  final res = await pedidoProv.facturarVigente(
+                                    widget.pedido.id,
+                                    numFactura: numFac,
+                                    fechaEntrega: _fechaEntrega,
+                                    notaProduccion:
+                                        _notaProduccionCtrl.text.trim().isEmpty
+                                        ? null
+                                        : _notaProduccionCtrl.text.trim(),
+                                    comentario:
+                                        comentarioLocalCtrl.text.trim().isEmpty
+                                        ? null
+                                        : comentarioLocalCtrl.text.trim(),
+                                  );
+
+                                  if (!mounted) return;
+                                  dialogNav.pop();
+                                  if (res != null) {
+                                    nav.pop();
+                                    widget.onUpdated();
+                                    final remanente = res['pedido_remanente'];
+                                    final remanenteId = remanente?['id'];
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Pedido #${widget.pedido.id} facturado por ${_currencyFmt.format(totalVigente)}.'
+                                          '${remanenteId != null ? " Creado Pedido Remanente #$remanenteId para producción." : ""}',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                        duration: const Duration(seconds: 4),
+                                      ),
+                                    );
+                                  } else {
+                                    final err =
+                                        pedidoProv.error ??
+                                        'Error al procesar la facturación';
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(err),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isAdmin = context.watch<AuthProvider>().isAdmin;
-    final estadoColor = _getEstadoColor(_estadoSeleccionado);
+    final estadoColor = PedidoUtils.getColorForEstado(_estadoSeleccionado);
     final fechaCreacion = DateFormat(
       'dd/MM/yyyy HH:mm',
     ).format(widget.pedido.createdAt);
 
+    double totalFaltante = 0.0;
+    double totalVigente = 0.0;
+    for (var det in widget.pedido.detalles) {
+      final cantFaltante = det.cantidadEnProduccion;
+      final cantVigente = (det.cantidad - cantFaltante).clamp(
+        0.0,
+        double.infinity,
+      );
+      totalFaltante += (cantFaltante * det.precioUnitario);
+      totalVigente += (cantVigente * det.precioUnitario);
+    }
+    final tieneFaltantes = totalFaltante > 0;
+    final estadoLower = widget.pedido.estado.toLowerCase();
+    final isFacturado = estadoLower == 'facturado';
+    final isCancelado = estadoLower == 'cancelado';
+    final puedeFacturarVigente =
+        !isFacturado && !isCancelado && tieneFaltantes && totalVigente > 0;
+    final puedeVerOrdenProd = !isCancelado && tieneFaltantes;
+
     return Dialog(
-      backgroundColor: AppTheme.darkCardColor,
+      backgroundColor: _bgDialog,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppTheme.darkBorderColor),
+        side: const BorderSide(color: _borderColor),
       ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720, maxHeight: 820),
+        constraints: const BoxConstraints(maxWidth: 550, maxHeight: 750),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -308,21 +650,17 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
             // ── HEADER ──
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.darkInputColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-                border: Border(
-                  bottom: BorderSide(color: AppTheme.darkBorderColor),
-                ),
+              decoration: const BoxDecoration(
+                color: _headerBg,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                border: Border(bottom: BorderSide(color: _borderColor)),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: estadoColor.withValues(alpha: 0.15),
+                      color: estadoColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -341,7 +679,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                             Text(
                               'Trabajar Pedido #${widget.pedido.id}',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: _textPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -353,10 +691,10 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: estadoColor.withValues(alpha: 0.15),
+                                color: estadoColor.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: estadoColor,
+                                  color: estadoColor.withValues(alpha: 0.5),
                                   width: 0.8,
                                 ),
                               ),
@@ -369,13 +707,73 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                 ),
                               ),
                             ),
+                            if (widget.pedido.tieneOrdenProduccion) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(0xFFFDE68A),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.precision_manufacturing_rounded,
+                                      size: 10,
+                                      color: Color(0xFFB45309),
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      'OP #${widget.pedido.ordenProduccionId} (${widget.pedido.ordenProduccionEstado?.toUpperCase()})',
+                                      style: const TextStyle(
+                                        color: Color(0xFFB45309),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ] else if (tieneFaltantes) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(0xFFFECACA),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: const Text(
+                                  'FALTANTES',
+                                  style: TextStyle(
+                                    color: Color(0xFFDC2626),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '${widget.pedido.clienteNombre ?? 'Cliente sin nombre'} • Vendedor: ${widget.pedido.vendedorNombre ?? '-'} • $fechaCreacion',
-                          style: TextStyle(
-                            color: Colors.grey.shade400,
+                          style: const TextStyle(
+                            color: _textSecondary,
                             fontSize: 11,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -398,7 +796,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                   IconButton(
                     icon: const Icon(
                       Icons.close_rounded,
-                      color: Colors.grey,
+                      color: _textSecondary,
                       size: 20,
                     ),
                     padding: EdgeInsets.zero,
@@ -425,56 +823,147 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.darkInputColor.withValues(alpha: 0.5),
+                          color: _cardSubtleBg,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppTheme.darkBorderColor),
+                          border: Border.all(color: _borderColor),
                         ),
                         child: Row(
                           children: [
-                            Expanded(
-                              child: _buildMetricItem(
-                                'Total Pedido',
-                                _currencyFmt.format(widget.pedido.total),
-                                AppTheme.successColor,
+                            if (tieneFaltantes) ...[
+                              Expanded(
+                                child: _buildMetricItem(
+                                  'Total Original',
+                                  _currencyFmt.format(widget.pedido.total),
+                                  _textPrimary,
+                                ),
                               ),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 28,
-                              color: AppTheme.darkBorderColor,
-                            ),
-                            Expanded(
-                              child: _buildMetricItem(
-                                'Productos',
-                                '${widget.pedido.detalles.length} ítem(s)',
-                                Colors.white70,
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: _borderColor,
                               ),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 28,
-                              color: AppTheme.darkBorderColor,
-                            ),
-                            Expanded(
-                              child: _buildMetricItem(
-                                'Factura Actual',
-                                (widget.pedido.numFactura != null &&
-                                        widget.pedido.numFactura!
-                                            .trim()
-                                            .isNotEmpty)
-                                    ? widget.pedido.numFactura!
-                                    : 'Sin Facturar',
-                                (widget.pedido.numFactura != null &&
-                                        widget.pedido.numFactura!
-                                            .trim()
-                                            .isNotEmpty)
-                                    ? const Color(0xFF60A5FA)
-                                    : Colors.grey.shade400,
+                              Expanded(
+                                child: _buildMetricItem(
+                                  'Vigente (Stock)',
+                                  _currencyFmt.format(totalVigente),
+                                  const Color(0xFF059669),
+                                ),
                               ),
-                            ),
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: _borderColor,
+                              ),
+                              Expanded(
+                                child: _buildMetricItem(
+                                  'Faltante (OP)',
+                                  _currencyFmt.format(totalFaltante),
+                                  const Color(0xFFDC2626),
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: _borderColor,
+                              ),
+                              Expanded(
+                                child: _buildMetricItem(
+                                  'Factura',
+                                  (widget.pedido.numFactura != null &&
+                                          widget.pedido.numFactura!
+                                              .trim()
+                                              .isNotEmpty)
+                                      ? widget.pedido.numFactura!
+                                      : 'Sin Facturar',
+                                  (widget.pedido.numFactura != null &&
+                                          widget.pedido.numFactura!
+                                              .trim()
+                                              .isNotEmpty)
+                                      ? const Color(0xFF2563EB)
+                                      : _textMuted,
+                                ),
+                              ),
+                            ] else ...[
+                              Expanded(
+                                child: _buildMetricItem(
+                                  'Total Pedido',
+                                  _currencyFmt.format(widget.pedido.total),
+                                  const Color(0xFF059669),
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: _borderColor,
+                              ),
+                              Expanded(
+                                child: _buildMetricItem(
+                                  'Productos',
+                                  '${widget.pedido.detalles.length} ítem(s)',
+                                  _textSecondary,
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: _borderColor,
+                              ),
+                              Expanded(
+                                child: _buildMetricItem(
+                                  'Factura Actual',
+                                  (widget.pedido.numFactura != null &&
+                                          widget.pedido.numFactura!
+                                              .trim()
+                                              .isNotEmpty)
+                                      ? widget.pedido.numFactura!
+                                      : 'Sin Facturar',
+                                  (widget.pedido.numFactura != null &&
+                                          widget.pedido.numFactura!
+                                              .trim()
+                                              .isNotEmpty)
+                                      ? const Color(0xFF2563EB)
+                                      : _textMuted,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
+
+                      if (tieneFaltantes) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFFECACA)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                color: Color(0xFFDC2626),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Hay faltantes de inventario por ${_currencyFmt.format(totalFaltante)}. Puedes facturar lo vigente disponible hoy (${_currencyFmt.format(totalVigente)}) y escindir los faltantes a un Pedido Remanente con Orden de Producción.',
+                                  style: const TextStyle(
+                                    color: Color(0xFF991B1B),
+                                    fontSize: 10.5,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 18),
 
                       // ── SECCIÓN 1: INFORMACIÓN PRINCIPAL (EDITABLE) ──
@@ -489,7 +978,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                           const Text(
                             'Información Principal (Editable)',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: _textPrimary,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.3,
@@ -505,128 +994,99 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                         children: [
                           // Estado
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildFieldLabel('Estado del Pedido:'),
-                                Container(
-                                  height: 40,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.darkInputColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: estadoColor.withValues(alpha: 0.4),
-                                    ),
-                                  ),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: _estadoSeleccionado,
-                                      dropdownColor: AppTheme.darkCardColor,
-                                      isExpanded: true,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white,
+                            child: DropDownWidget<String>(
+                              label: _estadosDisponibles.length <= 1
+                                  ? 'Estado del Pedido (Bloqueado):'
+                                  : 'Estado del Pedido:',
+                              value: _estadoSeleccionado,
+                              icon: _estadosDisponibles.length <= 1
+                                  ? Icons.lock_outline_rounded
+                                  : Icons.tune_rounded,
+                              iconColor: estadoColor,
+                              isDark: false,
+                              dense: true,
+                              customItems: _estadosDisponibles.map((e) {
+                                final col = PedidoUtils.getColorForEstado(e);
+                                return DropdownMenuItem<String>(
+                                  value: e,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: col,
+                                          shape: BoxShape.circle,
+                                        ),
                                       ),
-                                      icon: Icon(
-                                        Icons.arrow_drop_down,
-                                        color: estadoColor,
-                                        size: 20,
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        e.toUpperCase(),
+                                        style: TextStyle(
+                                          color: col,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
-                                      items: _estadosDisponibles.map((e) {
-                                        final col = _getEstadoColor(e);
-                                        return DropdownMenuItem(
-                                          value: e,
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 8,
-                                                height: 8,
-                                                decoration: BoxDecoration(
-                                                  color: col,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                e.toUpperCase(),
-                                                style: TextStyle(
-                                                  color: col,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: _estadosDisponibles.length <= 1
+                                  ? null
+                                  : (val) {
+                                      if (val != null) {
+                                        setState(
+                                          () => _estadoSeleccionado = val,
                                         );
-                                      }).toList(),
-                                      onChanged: (val) {
-                                        if (val != null) {
-                                          setState(
-                                            () => _estadoSeleccionado = val,
-                                          );
+                                        if (val.toLowerCase() == 'facturado' &&
+                                            _numFacturaCtrl.text
+                                                .trim()
+                                                .isEmpty) {
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) {
+                                                _numFacturaFocusNode
+                                                    .requestFocus();
+                                                _formKey.currentState
+                                                    ?.validate();
+                                              });
                                         }
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                      }
+                                    },
                             ),
                           ),
                           const SizedBox(width: 12),
                           // No. Factura
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildFieldLabel('No. Factura:'),
-                                SizedBox(
-                                  height: 40,
-                                  child: TextFormField(
-                                    controller: _numFacturaCtrl,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                    ),
-                                    decoration: InputDecoration(
-                                      hintText: 'Ej. B0100000045 (opcional)',
-                                      hintStyle: TextStyle(
-                                        color: Colors.grey.shade500,
-                                        fontSize: 11,
-                                      ),
-                                      prefixIcon: const Icon(
-                                        Icons.receipt_long_rounded,
-                                        size: 16,
-                                        color: Color(0xFF60A5FA),
-                                      ),
-                                      filled: true,
-                                      fillColor: AppTheme.darkInputColor,
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 8,
-                                          ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                        borderSide: BorderSide(
-                                          color: AppTheme.darkBorderColor,
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                        borderSide: const BorderSide(
-                                          color: AppTheme.primaryBlue,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            child: InputField(
+                              controller: _numFacturaCtrl,
+                              focusNode: _numFacturaFocusNode,
+                              label:
+                                  _estadoSeleccionado.toLowerCase() ==
+                                      'facturado'
+                                  ? 'No. Factura: *'
+                                  : 'No. Factura:',
+                              hint:
+                                  _estadoSeleccionado.toLowerCase() ==
+                                      'facturado'
+                                  ? 'Ej. B0100000045 (obligatorio)'
+                                  : 'Ej. B0100000045 (opcional)',
+                              icon: Icons.receipt_long_rounded,
+                              iconColor: const Color(0xFF3B82F6),
+                              isDark: false,
+                              dense: true,
+                              optional:
+                                  _estadoSeleccionado.toLowerCase() !=
+                                  'facturado',
+                              validator: (val) {
+                                if (_estadoSeleccionado.toLowerCase() ==
+                                    'facturado') {
+                                  if (val == null || val.trim().isEmpty) {
+                                    return 'Requerido al facturar';
+                                  }
+                                }
+                                return null;
+                              },
                             ),
                           ),
                         ],
@@ -637,166 +1097,74 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Cliente
+                          // Cliente (Solo lectura)
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildFieldLabel('Cliente:'),
-                                Consumer<LedhouseClienteProvider>(
-                                  builder: (context, clienteProv, _) {
-                                    final clientes = clienteProv.clientes;
-                                    final tieneActual = clientes.any(
-                                      (c) => c.id == _clienteId,
-                                    );
-
-                                    return Container(
-                                      height: 40,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.darkInputColor,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: AppTheme.darkBorderColor,
-                                        ),
-                                      ),
-                                      child: DropdownButtonHideUnderline(
-                                        child: DropdownButton<int>(
-                                          value: tieneActual
-                                              ? _clienteId
-                                              : null,
-                                          hint: Text(
-                                            widget.pedido.clienteNombre ??
-                                                'Seleccionar cliente',
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          dropdownColor: AppTheme.darkCardColor,
-                                          isExpanded: true,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.white,
-                                          ),
-                                          icon: const Icon(
-                                            Icons.arrow_drop_down,
-                                            color: Colors.grey,
-                                            size: 20,
-                                          ),
-                                          items: clientes.map((c) {
-                                            return DropdownMenuItem<int>(
-                                              value: c.id,
-                                              child: Text(
-                                                c.nombre,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.white,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            );
-                                          }).toList(),
-                                          onChanged: (val) {
-                                            if (val != null) {
-                                              setState(() => _clienteId = val);
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                    );
-                                  },
+                            child: InputField(
+                              controller: _clienteCtrl,
+                              label: 'Cliente:',
+                              hint: 'Sin cliente asignado',
+                              icon: Icons.person_rounded,
+                              iconColor: AppTheme.primaryBlue,
+                              isDark: false,
+                              dense: true,
+                              readOnly: true,
+                              suffixIcon: const Padding(
+                                padding: EdgeInsets.only(right: 10),
+                                child: Icon(
+                                  Icons.lock_outline_rounded,
+                                  size: 15,
+                                  color: _textMuted,
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           // Ruta
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildFieldLabel('Ruta de Entrega:'),
-                                Consumer<RutaProvider>(
-                                  builder: (context, rutaProv, _) {
-                                    final rutas = rutaProv.rutas;
-                                    final tieneActual = rutas.any(
-                                      (r) => r.id == _rutaId,
-                                    );
-
-                                    return Container(
-                                      height: 40,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.darkInputColor,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: AppTheme.darkBorderColor,
+                            child: Consumer<RutaProvider>(
+                              builder: (context, rutaProv, _) {
+                                final rutas = rutaProv.rutas;
+                                return DropDownWidget<int?>(
+                                  label: 'Ruta de Entrega:',
+                                  value: _rutaId,
+                                  hint:
+                                      widget.pedido.rutaNombre ??
+                                      'Sin ruta asignada',
+                                  icon: Icons.local_shipping_rounded,
+                                  iconColor: Colors.blueAccent,
+                                  isDark: false,
+                                  dense: true,
+                                  optional: true,
+                                  customItems: [
+                                    const DropdownMenuItem<int?>(
+                                      value: null,
+                                      child: Text(
+                                        '-- Sin ruta asignada --',
+                                        style: TextStyle(
+                                          color: _textMuted,
+                                          fontSize: 12,
                                         ),
                                       ),
-                                      child: DropdownButtonHideUnderline(
-                                        child: DropdownButton<int?>(
-                                          value: tieneActual ? _rutaId : null,
-                                          hint: Text(
-                                            widget.pedido.rutaNombre ??
-                                                'Sin ruta asignada',
-                                            style: TextStyle(
-                                              color: Colors.grey.shade400,
-                                              fontSize: 12,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          dropdownColor: AppTheme.darkCardColor,
-                                          isExpanded: true,
+                                    ),
+                                    ...rutas.map((r) {
+                                      return DropdownMenuItem<int?>(
+                                        value: r.id,
+                                        child: Text(
+                                          r.nombre,
                                           style: const TextStyle(
                                             fontSize: 12,
-                                            color: Colors.white,
+                                            color: _textPrimary,
                                           ),
-                                          icon: const Icon(
-                                            Icons.arrow_drop_down,
-                                            color: Colors.grey,
-                                            size: 20,
-                                          ),
-                                          items: [
-                                            const DropdownMenuItem<int?>(
-                                              value: null,
-                                              child: Text(
-                                                '-- Sin ruta asignada --',
-                                                style: TextStyle(
-                                                  color: Colors.grey,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ),
-                                            ...rutas.map((r) {
-                                              return DropdownMenuItem<int?>(
-                                                value: r.id,
-                                                child: Text(
-                                                  r.nombre,
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.white,
-                                                  ),
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              );
-                                            }),
-                                          ],
-                                          onChanged: (val) {
-                                            setState(() => _rutaId = val);
-                                          },
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                    );
+                                      );
+                                    }),
+                                  ],
+                                  onChanged: (val) {
+                                    setState(() => _rutaId = val);
                                   },
-                                ),
-                              ],
+                                );
+                              },
                             ),
                           ),
                         ],
@@ -809,144 +1177,58 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                         children: [
                           // Vendedor
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildFieldLabel('Vendedor Asignado:'),
-                                Consumer<UsersProvider>(
-                                  builder: (context, userProv, _) {
-                                    final users = userProv.users;
-                                    final tieneActual = users.any(
-                                      (u) => u['id'] == _vendedorId,
-                                    );
-
-                                    return Container(
-                                      height: 40,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.darkInputColor,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: AppTheme.darkBorderColor,
+                            child: Consumer<UsersProvider>(
+                              builder: (context, userProv, _) {
+                                final users = userProv.users;
+                                return DropDownWidget<int>(
+                                  label: 'Vendedor Asignado:',
+                                  value: _vendedorId,
+                                  hint:
+                                      widget.pedido.vendedorNombre ??
+                                      'Seleccionar vendedor',
+                                  icon: Icons.badge_rounded,
+                                  iconColor: Colors.teal.shade700,
+                                  isDark: false,
+                                  dense: true,
+                                  customItems: users.map((u) {
+                                    final id = u['id'] as int;
+                                    final name = u['name'] ?? 'Usuario #$id';
+                                    return DropdownMenuItem<int>(
+                                      value: id,
+                                      child: Text(
+                                        name,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: _textPrimary,
                                         ),
-                                      ),
-                                      child: DropdownButtonHideUnderline(
-                                        child: DropdownButton<int>(
-                                          value: tieneActual
-                                              ? _vendedorId
-                                              : null,
-                                          hint: Text(
-                                            widget.pedido.vendedorNombre ??
-                                                'Seleccionar vendedor',
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          dropdownColor: AppTheme.darkCardColor,
-                                          isExpanded: true,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.white,
-                                          ),
-                                          icon: const Icon(
-                                            Icons.arrow_drop_down,
-                                            color: Colors.grey,
-                                            size: 20,
-                                          ),
-                                          items: users.map((u) {
-                                            final id = u['id'] as int;
-                                            final name =
-                                                u['name'] ?? 'Usuario #$id';
-                                            return DropdownMenuItem<int>(
-                                              value: id,
-                                              child: Text(
-                                                name,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.white,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            );
-                                          }).toList(),
-                                          onChanged: (val) {
-                                            if (val != null) {
-                                              setState(() => _vendedorId = val);
-                                            }
-                                          },
-                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     );
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() => _vendedorId = val);
+                                    }
                                   },
-                                ),
-                              ],
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(width: 12),
                           // Fecha de Entrega
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildFieldLabel('Fecha de Entrega Estimada:'),
-                                InkWell(
-                                  onTap: _selectFechaEntrega,
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    height: 40,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.darkInputColor,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: AppTheme.darkBorderColor,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.calendar_today_rounded,
-                                          size: 15,
-                                          color: Colors.amberAccent,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            _fechaEntrega != null
-                                                ? DateFormat(
-                                                    'dd/MM/yyyy',
-                                                  ).format(_fechaEntrega!)
-                                                : 'Sin fecha de entrega',
-                                            style: TextStyle(
-                                              color: _fechaEntrega != null
-                                                  ? Colors.white
-                                                  : Colors.grey.shade400,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                        if (_fechaEntrega != null)
-                                          GestureDetector(
-                                            onTap: () => setState(
-                                              () => _fechaEntrega = null,
-                                            ),
-                                            child: const Icon(
-                                              Icons.close_rounded,
-                                              size: 16,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            child: SingleDatePicker(
+                              label: 'Fecha de Entrega Estimada:',
+                              value: _fechaEntrega,
+                              hint: 'Sin fecha de entrega',
+                              icon: Icons.calendar_today_rounded,
+                              iconColor: const Color(0xFFD97706),
+                              isDark: false,
+                              dense: true,
+                              optional: true,
+                              onChanged: (picked) {
+                                setState(() => _fechaEntrega = picked);
+                              },
                             ),
                           ),
                         ],
@@ -954,84 +1236,30 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                       const SizedBox(height: 12),
 
                       // Comentarios
-                      _buildFieldLabel(
-                        'Comentarios / Observaciones del Pedido:',
-                      ),
-                      TextFormField(
+                      InputField(
                         controller: _comentarioCtrl,
+                        label: 'Comentarios / Observaciones del Pedido:',
+                        hint: 'Detalles u observaciones del cliente...',
+                        icon: Icons.comment_outlined,
+                        iconColor: _textSecondary,
+                        isDark: false,
+                        dense: true,
                         maxLines: 2,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Detalles u observaciones del cliente...',
-                          hintStyle: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 11,
-                          ),
-                          filled: true,
-                          fillColor: AppTheme.darkInputColor,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: AppTheme.darkBorderColor,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                              color: AppTheme.primaryBlue,
-                            ),
-                          ),
-                        ),
+                        optional: true,
                       ),
                       const SizedBox(height: 10),
 
                       // Nota de Producción
-                      _buildFieldLabel('Nota para Producción:'),
-                      TextFormField(
+                      InputField(
                         controller: _notaProduccionCtrl,
+                        label: 'Nota para Producción:',
+                        hint: 'Instrucciones para planta o despacho...',
+                        icon: Icons.precision_manufacturing_outlined,
+                        iconColor: const Color(0xFFEA580C),
+                        isDark: false,
+                        dense: true,
                         maxLines: 2,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Instrucciones para planta o despacho...',
-                          hintStyle: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 11,
-                          ),
-                          filled: true,
-                          fillColor: AppTheme.darkInputColor,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: AppTheme.darkBorderColor,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                              color: AppTheme.primaryBlue,
-                            ),
-                          ),
-                        ),
+                        optional: true,
                       ),
                       const SizedBox(height: 20),
 
@@ -1040,14 +1268,14 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                         children: [
                           const Icon(
                             Icons.inventory_2_outlined,
-                            color: Colors.amberAccent,
+                            color: Color(0xFFD97706),
                             size: 16,
                           ),
                           const SizedBox(width: 8),
                           const Text(
                             'Productos del Pedido',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: _textPrimary,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1059,10 +1287,10 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.amber.withValues(alpha: 0.12),
+                              color: const Color(0xFFFEF3C7),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Colors.amber.withValues(alpha: 0.3),
+                                color: const Color(0xFFFDE68A),
                               ),
                             ),
                             child: const Row(
@@ -1071,13 +1299,13 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                 Icon(
                                   Icons.lock_outline_rounded,
                                   size: 11,
-                                  color: Colors.amber,
+                                  color: Color(0xFFB45309),
                                 ),
                                 SizedBox(width: 4),
                                 Text(
                                   'Solo Lectura',
                                   style: TextStyle(
-                                    color: Colors.amber,
+                                    color: Color(0xFFB45309),
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -1092,33 +1320,41 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                       // Tabla de productos
                       Container(
                         decoration: BoxDecoration(
-                          color: AppTheme.darkInputColor.withValues(alpha: 0.4),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppTheme.darkBorderColor),
+                          border: Border.all(color: _borderColor),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Table(
                             columnWidths: const {
-                              0: FlexColumnWidth(4),
-                              1: FlexColumnWidth(2),
-                              2: FlexColumnWidth(2),
-                              3: FlexColumnWidth(2),
+                              0: FlexColumnWidth(2.8), // Producto
+                              1: FlexColumnWidth(1.1), // Solicitado
+                              2: FlexColumnWidth(0.9), // Vigente
+                              3: FlexColumnWidth(1.0), // Faltante
+                              4: FlexColumnWidth(1.1), // Precio
+                              5: FlexColumnWidth(1.4), // Subtotal
                             },
                             children: [
                               TableRow(
-                                decoration: BoxDecoration(
-                                  color: AppTheme.darkInputColor,
+                                decoration: const BoxDecoration(
+                                  color: _cardSubtleBg,
                                   border: Border(
-                                    bottom: BorderSide(
-                                      color: AppTheme.darkBorderColor,
-                                    ),
+                                    bottom: BorderSide(color: _borderColor),
                                   ),
                                 ),
                                 children: [
                                   _buildTableHeaderCell('PRODUCTO'),
                                   _buildTableHeaderCell(
-                                    'CANTIDAD',
+                                    'PEDIDO',
+                                    align: TextAlign.center,
+                                  ),
+                                  _buildTableHeaderCell(
+                                    'VIGENTE',
+                                    align: TextAlign.center,
+                                  ),
+                                  _buildTableHeaderCell(
+                                    'FALTANTE',
                                     align: TextAlign.center,
                                   ),
                                   _buildTableHeaderCell(
@@ -1132,20 +1368,26 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                 ],
                               ),
                               ...widget.pedido.detalles.map((det) {
+                                final cantFaltante = det.cantidadEnProduccion;
+                                final cantVigente =
+                                    (det.cantidad - cantFaltante).clamp(
+                                      0.0,
+                                      double.infinity,
+                                    );
+                                final subtotalVigente =
+                                    cantVigente * det.precioUnitario;
+
                                 return TableRow(
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     border: Border(
-                                      bottom: BorderSide(
-                                        color: AppTheme.darkBorderColor
-                                            .withValues(alpha: 0.5),
-                                      ),
+                                      bottom: BorderSide(color: _borderColor),
                                     ),
                                   ),
                                   children: [
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 8,
+                                        horizontal: 8,
+                                        vertical: 6,
                                       ),
                                       child: Column(
                                         crossAxisAlignment:
@@ -1155,7 +1397,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                             det.productoNombre ??
                                                 'Producto #${det.productoId}',
                                             style: const TextStyle(
-                                              color: Colors.white,
+                                              color: _textPrimary,
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -1165,8 +1407,8 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                               det.productoCodigo!.isNotEmpty)
                                             Text(
                                               'Cód: ${det.productoCodigo}',
-                                              style: TextStyle(
-                                                color: Colors.grey.shade400,
+                                              style: const TextStyle(
+                                                color: _textMuted,
                                                 fontSize: 10,
                                               ),
                                             ),
@@ -1177,7 +1419,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                             Text(
                                               'Obs: ${det.observacion}',
                                               style: const TextStyle(
-                                                color: Colors.amberAccent,
+                                                color: Color(0xFFB45309),
                                                 fontSize: 10,
                                                 fontStyle: FontStyle.italic,
                                               ),
@@ -1185,47 +1427,145 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                         ],
                                       ),
                                     ),
+                                    // Solicitado / Pedido
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 8,
+                                        horizontal: 4,
+                                        vertical: 6,
                                       ),
                                       child: Text(
                                         '${det.cantidad.toStringAsFixed(det.cantidad % 1 == 0 ? 0 : 2)}${det.productoUnidad != null && det.productoUnidad!.trim().isNotEmpty ? ' ${det.productoUnidad!.trim()}' : ''}',
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
-                                          color: Colors.white70,
+                                          color: _textSecondary,
                                           fontSize: 11,
                                         ),
                                       ),
                                     ),
+                                    // Vigente (Stock)
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 8,
+                                        horizontal: 4,
+                                        vertical: 6,
+                                      ),
+                                      child: Text(
+                                        cantVigente.toStringAsFixed(
+                                          cantVigente % 1 == 0 ? 0 : 2,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: cantFaltante > 0
+                                              ? const Color(0xFF059669)
+                                              : _textSecondary,
+                                          fontSize: 11,
+                                          fontWeight: cantFaltante > 0
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                    // Faltante (OP)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 6,
+                                      ),
+                                      child: cantFaltante > 0
+                                          ? Center(
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 5,
+                                                      vertical: 1.5,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(
+                                                    0xFFFEF2F2,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                  border: Border.all(
+                                                    color: const Color(
+                                                      0xFFFECACA,
+                                                    ),
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  cantFaltante.toStringAsFixed(
+                                                    cantFaltante % 1 == 0
+                                                        ? 0
+                                                        : 2,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                  style: const TextStyle(
+                                                    color: Color(0xFFDC2626),
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : const Text(
+                                              '-',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: _textMuted,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                    ),
+                                    // Precio
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 6,
                                       ),
                                       child: Text(
                                         _currencyFmt.format(det.precioUnitario),
                                         textAlign: TextAlign.right,
                                         style: const TextStyle(
-                                          color: Colors.white70,
+                                          color: _textSecondary,
                                           fontSize: 11,
                                         ),
                                       ),
                                     ),
+                                    // Subtotal
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 8,
+                                        horizontal: 6,
+                                        vertical: 6,
                                       ),
-                                      child: Text(
-                                        _currencyFmt.format(det.subtotal),
-                                        textAlign: TextAlign.right,
-                                        style: const TextStyle(
-                                          color: Colors.greenAccent,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            _currencyFmt.format(
+                                              cantFaltante > 0
+                                                  ? subtotalVigente
+                                                  : det.subtotal,
+                                            ),
+                                            textAlign: TextAlign.right,
+                                            style: const TextStyle(
+                                              color: Color(0xFF059669),
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          if (cantFaltante > 0)
+                                            Text(
+                                              'Orig: ${_currencyFmt.format(det.subtotal)}',
+                                              textAlign: TextAlign.right,
+                                              style: const TextStyle(
+                                                color: _textMuted,
+                                                fontSize: 9,
+                                                decoration:
+                                                    TextDecoration.lineThrough,
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -1235,11 +1575,66 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                           ),
                         ),
                       ),
+                      if (tieneFaltantes) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _cardSubtleBg,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: _borderColor),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle_outline_rounded,
+                                    size: 14,
+                                    color: Color(0xFF059669),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Subtotal Vigente: ${_currencyFmt.format(totalVigente)}',
+                                    style: const TextStyle(
+                                      color: Color(0xFF059669),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.precision_manufacturing_rounded,
+                                    size: 14,
+                                    color: Color(0xFFDC2626),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Faltante a Escindir: ${_currencyFmt.format(totalFaltante)}',
+                                    style: const TextStyle(
+                                      color: Color(0xFFDC2626),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 8),
-                      Text(
+                      const Text(
                         '* Los productos, cantidades y precios no se modifican desde este formulario para resguardar la consistencia contable y de inventario.',
                         style: TextStyle(
-                          color: Colors.grey.shade500,
+                          color: _textMuted,
                           fontSize: 10,
                           fontStyle: FontStyle.italic,
                         ),
@@ -1252,95 +1647,143 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
 
             // ── FOOTER ACTIONS ──
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.darkInputColor,
-                borderRadius: const BorderRadius.vertical(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: const BoxDecoration(
+                color: _footerBg,
+                borderRadius: BorderRadius.vertical(
                   bottom: Radius.circular(16),
                 ),
-                border: Border(
-                  top: BorderSide(color: AppTheme.darkBorderColor),
-                ),
+                border: Border(top: BorderSide(color: _borderColor)),
               ),
-              child: Row(
-                children: [
-                  if (isAdmin)
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.redAccent.shade100,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 620;
+
+                  final operationalActions = <Widget>[
+                    if (isAdmin)
+                      CustomButton(
+                        text: 'ELIMINAR',
+                        icon: Icons.delete_outline,
+                        isOutlined: true,
+                        color: const Color(0xFFE31E24),
+                        textColor: const Color(0xFFE31E24),
+                        height: 32,
+                        fontSize: 10.5,
+                        borderRadius: 6,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
-                          vertical: 8,
+                          vertical: 6,
                         ),
+                        onPressed: _isSaving ? null : _confirmDelete,
                       ),
-                      onPressed: _isSaving ? null : _confirmDelete,
-                      icon: const Icon(Icons.delete_outline, size: 16),
-                      label: const Text(
-                        'Eliminar Pedido',
-                        style: TextStyle(fontSize: 11),
+                    if (puedeVerOrdenProd)
+                      CustomButton(
+                        text: 'ORDEN PROD.',
+                        icon: Icons.precision_manufacturing_rounded,
+                        isOutlined: true,
+                        color: const Color(0xFFD97706),
+                        textColor: const Color(0xFFD97706),
+                        height: 32,
+                        fontSize: 10.5,
+                        borderRadius: 6,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        onPressed: () {
+                          OrdenProduccionPedidoDialog.show(
+                            context: context,
+                            pedido: widget.pedido,
+                            onUpdated: widget.onUpdated,
+                          );
+                        },
                       ),
-                    ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _isSaving ? null : () => Navigator.pop(context),
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
-                      foregroundColor: Colors.white,
+                    if (puedeFacturarVigente)
+                      CustomButton(
+                        text: 'FACTURAR VIGENTE',
+                        icon: Icons.receipt_long_rounded,
+                        color: const Color(0xFF059669),
+                        textColor: Colors.white,
+                        height: 32,
+                        fontSize: 10.5,
+                        borderRadius: 6,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        onPressed: _isSaving
+                            ? null
+                            : () => _abrirDialogFacturarVigente(
+                                totalVigente: totalVigente,
+                                totalFaltante: totalFaltante,
+                              ),
+                      ),
+                  ];
+
+                  final confirmActions = <Widget>[
+                    CancelButton(
+                      text: 'CANCELAR',
+                      onPressed: _isSaving
+                          ? null
+                          : () => Navigator.pop(context),
+                      isDark: false,
+                      height: 32,
+                      borderRadius: 6,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        horizontal: 14,
+                        vertical: 6,
                       ),
                     ),
-                    onPressed: _isSaving ? null : _guardarCambios,
-                    icon: _isSaving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.check_circle_outline_rounded,
-                            size: 16,
-                          ),
-                    label: Text(
-                      _isSaving ? 'Guardando...' : 'Guardar y Actualizar',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 8),
+                    CustomButton(
+                      text: _isSaving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS',
+                      color: const Color(0xFFE31E24),
+                      textColor: Colors.white,
+                      isLoading: _isSaving,
+                      height: 32,
+                      fontSize: 10.5,
+                      borderRadius: 6,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
                       ),
+                      onPressed: _isSaving ? null : _guardarCambios,
                     ),
-                  ),
-                ],
+                  ];
+
+                  if (isCompact && operationalActions.isNotEmpty) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: operationalActions,
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: confirmActions,
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      for (int i = 0; i < operationalActions.length; i++) ...[
+                        operationalActions[i],
+                        const SizedBox(width: 8),
+                      ],
+                      const Spacer(),
+                      ...confirmActions,
+                    ],
+                  );
+                },
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFieldLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: Colors.grey.shade400,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -1351,15 +1794,17 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
     TextAlign align = TextAlign.left,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
       child: Text(
         text,
         textAlign: align,
-        style: TextStyle(
-          color: Colors.grey.shade400,
-          fontSize: 10,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: _textSecondary,
+          fontSize: 9.5,
           fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
+          letterSpacing: 0.2,
         ),
       ),
     );
@@ -1372,8 +1817,8 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
       children: [
         Text(
           label.toUpperCase(),
-          style: TextStyle(
-            color: Colors.grey.shade400,
+          style: const TextStyle(
+            color: _textMuted,
             fontSize: 9,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.3,

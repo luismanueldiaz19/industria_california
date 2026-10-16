@@ -15,6 +15,7 @@ class CancelButton extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final TextStyle? textStyle;
   final double? height;
+  final bool isDark;
 
   const CancelButton({
     super.key,
@@ -28,12 +29,15 @@ class CancelButton extends StatelessWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     this.textStyle,
     this.height = 46.0,
+    this.isDark = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final effectiveForegroundColor = foregroundColor ?? Colors.grey.shade700;
-    final effectiveBorderColor = borderColor ?? Colors.grey.shade300;
+    final effectiveForegroundColor =
+        foregroundColor ?? (isDark ? Colors.white70 : Colors.grey.shade700);
+    final effectiveBorderColor =
+        borderColor ?? (isDark ? Colors.white24 : Colors.grey.shade300);
     final minSize = height != null ? Size(64, height!) : null;
 
     final effectiveStyle = OutlinedButton.styleFrom(
@@ -50,10 +54,12 @@ class CancelButton extends StatelessWidget {
         ? null
         : (onPressed ?? () => Navigator.of(context).pop(false));
 
-    final effectiveTextStyle = textStyle ??
-        const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
+    final effectiveTextStyle =
+        textStyle ??
+        TextStyle(
+          fontWeight: isDark ? FontWeight.bold : FontWeight.w600,
+          fontSize: isDark ? 11 : 14,
+          letterSpacing: isDark ? 0.4 : 0,
         );
 
     if (icon != null) {

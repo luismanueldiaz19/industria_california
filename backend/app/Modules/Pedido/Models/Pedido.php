@@ -70,4 +70,9 @@ class Pedido extends Model
             ->withPivot(['orden_entrega', 'estado_entrega', 'comentario_entrega'])
             ->withTimestamps();
     }
+
+    public function ordenProduccion()
+    {
+        return $this->hasOne(\App\Modules\Produccion\Models\OrdenProduccion::class, 'pedido_id');
+    }
 }

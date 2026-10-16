@@ -19,8 +19,6 @@ use App\Http\Controllers\Api\LedhouseProveedorController;
 // Módulo Logística/Ventas
 use App\Http\Controllers\Api\RutaController;
 use App\Modules\Pedido\Http\Controllers\PedidoController;
-use App\Modules\Produccion\Http\Controllers\OrdenProduccionController;
-use App\Modules\Produccion\Http\Controllers\ProduccionAgrupadaController;
 use App\Modules\CamionVictual\Http\Controllers\CamionVictualController;
 use App\Modules\Vehiculo\Http\Controllers\VehiculoController;
 use App\Modules\Vehiculo\Http\Controllers\TipoGastoController;
@@ -198,15 +196,7 @@ Route::prefix('v1')->group(function () {
                 Route::apiResource('choferes', ChoferController::class);
                 
                 // Órdenes de Producción
-                Route::get('produccion', [OrdenProduccionController::class, 'index']);
-                Route::get('produccion/agrupada/producto', [ProduccionAgrupadaController::class, 'porProducto']);
-                Route::get('produccion/agrupada/pedido', [ProduccionAgrupadaController::class, 'porPedido']);
-                Route::get('produccion/agrupada/cliente', [ProduccionAgrupadaController::class, 'porCliente']);
-                Route::get('produccion/agrupada/fecha', [ProduccionAgrupadaController::class, 'porFecha']);
-                Route::get('produccion/{id}', [OrdenProduccionController::class, 'show']);
-                Route::patch('produccion/detalles/{detalleId}/listo', [OrdenProduccionController::class, 'marcarDetalleListo']);
-                Route::post('produccion/agrupada/marcar-listo', [ProduccionAgrupadaController::class, 'marcarListoAgrupadoProducto']);
-                Route::get('produccion-agrupada/pdf-url', [ProduccionAgrupadaController::class, 'getPdfUrl']);
+                require base_path('app/Modules/Produccion/routes/api.php');
 
                 // ── MÓDULO CAMIONES VICTUALES ─────────────────────────
                 Route::get('camiones-victuales/monto-minimo', [CamionVictualController::class, 'montoMinimo']);
@@ -275,6 +265,7 @@ Route::prefix('v2')->middleware('auth:sanctum')->group(function () {
     require base_path('app/Modules/CuentasPorCobrar/routes/api.php');
     require base_path('app/Modules/Alerta/routes/api.php');
     require base_path('app/Modules/Pedido/routes/api.php');
+    require base_path('app/Modules/Produccion/routes/api.php');
 });
 
 

@@ -64,7 +64,7 @@ class ProduccionAgrupadaProvider extends ChangeNotifier {
         params['search'] = _searchQuery;
       }
 
-      final response = await _http.get(endpoint, params: params);
+      final response = await _http.getV2(endpoint, params: params);
 
       _datos = List<Map<String, dynamic>>.from(response['data']);
       _lastPage = response['last_page'] ?? 1;
@@ -79,8 +79,8 @@ class ProduccionAgrupadaProvider extends ChangeNotifier {
 
   Future<bool> marcarListoAgrupadoProducto(int productoId, int clienteId) async {
     try {
-      await _http.post(
-        'industria-california/produccion/agrupada/marcar-listo',
+      await _http.postV2(
+        'produccion/agrupada/marcar-listo',
         {
           'producto_id': productoId,
           'cliente_id': clienteId,
@@ -99,7 +99,7 @@ class ProduccionAgrupadaProvider extends ChangeNotifier {
 
   Future<String?> getPdfUrl(TipoAgrupacion tipo) async {
     try {
-      final endpoint = 'industria-california/produccion-agrupada/pdf-url';
+      final endpoint = 'produccion-agrupada/pdf-url';
       final params = <String, String>{};
       
       switch (tipo) {
@@ -113,7 +113,7 @@ class ProduccionAgrupadaProvider extends ChangeNotifier {
         params['search'] = _searchQuery;
       }
 
-      final response = await _http.get(endpoint, params: params);
+      final response = await _http.getV2(endpoint, params: params);
       return response['url']?.toString();
     } catch (e) {
       _error = e.toString();
@@ -125,13 +125,13 @@ class ProduccionAgrupadaProvider extends ChangeNotifier {
   String _getEndpoint(TipoAgrupacion tipo) {
     switch (tipo) {
       case TipoAgrupacion.producto:
-        return 'industria-california/produccion/agrupada/producto';
+        return 'produccion/agrupada/producto';
       case TipoAgrupacion.pedido:
-        return 'industria-california/produccion/agrupada/pedido';
+        return 'produccion/agrupada/pedido';
       case TipoAgrupacion.cliente:
-        return 'industria-california/produccion/agrupada/cliente';
+        return 'produccion/agrupada/cliente';
       case TipoAgrupacion.fecha:
-        return 'industria-california/produccion/agrupada/fecha';
+        return 'produccion/agrupada/fecha';
     }
   }
 }

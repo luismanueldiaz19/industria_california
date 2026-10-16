@@ -46,6 +46,26 @@ class AppTheme {
     0xFF424242,
   ); // Gris oscuro para bordes (grey.shade800)
 
+  // ── Light Dialog & Component Colors ───────────────────────────
+  static const lightDialogBg = Colors.white;
+  static const lightHeaderBg = Color(0xFFF8FAFC);
+  static const lightFooterBg = Color(0xFFF8FAFC);
+  static const lightCardSubtleBg = Color(0xFFF1F5F9);
+  static const lightBorderColor = Color(0xFFE2E8F0);
+  static const lightTextPrimary = Color(0xFF0F172A);
+  static const lightTextSecondary = Color(0xFF475569);
+  static const lightTextMuted = Color(0xFF94A3B8);
+
+  // Dialog Aliases
+  static const dialogBg = lightDialogBg;
+  static const dialogHeaderBg = lightHeaderBg;
+  static const dialogFooterBg = lightFooterBg;
+  static const dialogCardSubtleBg = lightCardSubtleBg;
+  static const dialogBorderColor = lightBorderColor;
+  static const dialogTextPrimary = lightTextPrimary;
+  static const dialogTextSecondary = lightTextSecondary;
+  static const dialogTextMuted = lightTextMuted;
+
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     primaryColor: primaryColor,

@@ -13,6 +13,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Modules\Produccion\Models\OrdenProduccionDetalle;
 
 class PedidoService
 {
@@ -117,7 +118,11 @@ class PedidoService
     public function cambiarEstado(Pedido $pedido, string $nuevoEstado, User $usuario, ?string $numFactura = null): Pedido
     {
         return DB::transaction(function () use ($pedido, $nuevoEstado, $usuario, $numFactura) {
-            $estadoAnterior = $pedido->estado;
+            $estadoAnterior = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+
+            if ($estadoAnterior === 'facturado' && $nuevoEstado !== 'facturado') {
+                throw new \InvalidArgumentException('Un pedido FACTURADO no puede cambiar a ningún otro estado.');
+            }
 
             if ($nuevoEstado === 'facturado' || $nuevoEstado === 'cancelado') {
                 $pedido->facturador_id = $usuario->id;
@@ -130,8 +135,13 @@ class PedidoService
             $pedido->estado = $nuevoEstado;
             $pedido->save();
 
-            if ($estadoAnterior->value === 'borrador' && $nuevoEstado === 'enviado') {
+            // Si pasa de borrador o cotización a enviado o facturado -> deducir
+            if (in_array($estadoAnterior, ['borrador', 'cotizacion'], true) && in_array($nuevoEstado, ['enviado', 'facturado'], true)) {
                 $this->deducirInventario($pedido->load('detalles'));
+            } 
+            // Si pasa de enviado a borrador o cancelado -> restaurar inventario
+            elseif ($estadoAnterior === 'enviado' && in_array($nuevoEstado, ['borrador', 'cancelado'], true)) {
+                $this->restaurarInventario($pedido->load('detalles'));
             }
 
             return $pedido;
@@ -170,13 +180,22 @@ class PedidoService
                 $anteriorValor = is_string($estadoAnterior) ? $estadoAnterior : (is_object($estadoAnterior) ? $estadoAnterior->value : strval($estadoAnterior));
                 
                 if ($nuevoEstado !== $anteriorValor) {
+                    if ($anteriorValor === 'facturado') {
+                        throw new \InvalidArgumentException('Un pedido FACTURADO no puede cambiar a ningún otro estado.');
+                    }
+
                     if ($nuevoEstado === 'facturado' || $nuevoEstado === 'cancelado') {
                         $pedido->facturador_id = $usuario->id;
                     }
                     $pedido->estado = $nuevoEstado;
 
-                    if ($anteriorValor === 'borrador' && $nuevoEstado === 'enviado') {
+                    // Si pasa de borrador o cotización a enviado o facturado -> deducir
+                    if (in_array($anteriorValor, ['borrador', 'cotizacion'], true) && in_array($nuevoEstado, ['enviado', 'facturado'], true)) {
                         $this->deducirInventario($pedido->load('detalles'));
+                    } 
+                    // Si pasa de enviado a borrador o cancelado -> restaurar inventario
+                    elseif ($anteriorValor === 'enviado' && in_array($nuevoEstado, ['borrador', 'cancelado'], true)) {
+                        $this->restaurarInventario($pedido->load('detalles'));
                     }
                 }
             }
@@ -188,8 +207,183 @@ class PedidoService
                 'ruta:id,nombre',
                 'vendedor:id,name',
                 'facturador:id,name',
+                'ordenProduccion:id,pedido_id,estado',
                 'detalles.producto:id,codigo,descripcion,imagen_producto,unidad,medidas,capacidad'
             ]);
+        });
+    }
+
+    public function facturarVigenteYEscindir(Pedido $pedido, array $datos, User $usuario): array
+    {
+        return DB::transaction(function () use ($pedido, $datos, $usuario) {
+            $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+            if (in_array(strtolower($estadoActual), ['facturado', 'cancelado'], true)) {
+                throw new \InvalidArgumentException("El pedido #{$pedido->id} ya se encuentra en estado '{$estadoActual}' y no puede ser facturado nuevamente.");
+            }
+
+            $detallesActuales = $pedido->detalles()->get();
+            if ($detallesActuales->isEmpty()) {
+                throw new \InvalidArgumentException("El pedido #{$pedido->id} no contiene artículos para facturar.");
+            }
+
+            $numFactura = $datos['num_factura'] ?? null;
+
+            $tieneFaltantes = $detallesActuales->contains(function ($det) {
+                return (float) $det->cantidad_en_produccion > 0;
+            });
+
+            // Si no tiene faltantes, simplemente se factura de forma normal
+            if (!$tieneFaltantes) {
+                $pedido->estado = 'facturado';
+                $pedido->facturador_id = $usuario->id;
+                if ($numFactura) {
+                    $pedido->num_factura = $numFactura;
+                }
+                $pedido->save();
+
+                return [
+                    'pedido_facturado' => $pedido->load([
+                        'cliente:id,nombre',
+                        'ruta:id,nombre',
+                        'vendedor:id,name',
+                        'facturador:id,name',
+                        'ordenProduccion:id,pedido_id,estado',
+                        'detalles.producto:id,codigo,descripcion,imagen_producto,unidad,medidas,capacidad'
+                    ]),
+                    'pedido_remanente' => null,
+                ];
+            }
+
+            // Validar que exista inventario disponible para facturar (total vigente > 0)
+            $totalVigenteCalculado = 0.0;
+            foreach ($detallesActuales as $det) {
+                $cantSolicitada = (float) $det->cantidad;
+                $cantFaltante = (float) $det->cantidad_en_produccion;
+                $cantVigente = max(0, $cantSolicitada - $cantFaltante);
+                $totalVigenteCalculado += round($cantVigente * (float) $det->precio_unitario, 2);
+            }
+
+            if ($totalVigenteCalculado <= 0) {
+                throw new \InvalidArgumentException("No es posible facturar lote vigente porque no hay artículos disponibles en inventario ($0.00 disponible). Todos los productos están pendientes de producción.");
+            }
+
+            // 1. Crear el nuevo Pedido Remanente para los faltantes
+            $pedidoRemanente = Pedido::create([
+                'cliente_id' => $pedido->cliente_id,
+                'ruta_id' => $pedido->ruta_id,
+                'vendedor_id' => $pedido->vendedor_id,
+                'estado' => 'enviado',
+                'comentario' => "Remanente generado por faltantes del Pedido #{$pedido->id}" . (!empty($datos['comentario']) ? " - " . $datos['comentario'] : ""),
+                'fecha_entrega' => $datos['fecha_entrega'] ?? $pedido->fecha_entrega,
+                'nota_produccion' => $datos['nota_produccion'] ?? $pedido->nota_produccion,
+                'total' => 0.0,
+            ]);
+
+            $totalRemanente = 0.0;
+            $totalVigente = 0.0;
+            $detallesFaltantesParaNuevaOp = [];
+
+            foreach ($detallesActuales as $det) {
+                $cantSolicitada = (float) $det->cantidad;
+                $cantFaltante = (float) $det->cantidad_en_produccion;
+                $cantVigente = max(0, $cantSolicitada - $cantFaltante);
+                $precio = (float) $det->precio_unitario;
+
+                // Crear detalle en el pedido remanente si hay faltante
+                if ($cantFaltante > 0) {
+                    $subtotalFaltante = round($cantFaltante * $precio, 2);
+                    $detRemanente = PedidoDetalle::create([
+                        'pedido_id' => $pedidoRemanente->id,
+                        'producto_id' => $det->producto_id,
+                        'cantidad' => $cantFaltante,
+                        'cantidad_en_produccion' => $cantFaltante,
+                        'precio_unitario' => $precio,
+                        'subtotal' => $subtotalFaltante,
+                        'observacion' => "Faltante del Pedido #{$pedido->id}",
+                    ]);
+                    $totalRemanente += $subtotalFaltante;
+
+                    // Re-vincular OrdenProduccionDetalle existente al nuevo detalle remanente
+                    $opDetalles = OrdenProduccionDetalle::where('pedido_detalle_id', $det->id)->get();
+                    if ($opDetalles->isNotEmpty()) {
+                        foreach ($opDetalles as $opd) {
+                            $opd->update(['pedido_detalle_id' => $detRemanente->id]);
+                            $op = $opd->ordenProduccion;
+                            if ($op && $op->pedido_id == $pedido->id) {
+                                $op->update([
+                                    'pedido_id' => $pedidoRemanente->id,
+                                    'notas' => trim(($op->notas ?? '') . " (Vinculado a Pedido Remanente #{$pedidoRemanente->id})"),
+                                ]);
+                            }
+                        }
+                    } else {
+                        $detallesFaltantesParaNuevaOp[] = [
+                            'producto_id' => $det->producto_id,
+                            'pedido_detalle_id' => $detRemanente->id,
+                            'cantidad_faltante' => $cantFaltante,
+                            'cantidad_producida' => 0,
+                            'estado' => 'pendiente',
+                        ];
+                    }
+                }
+
+                // Actualizar o eliminar el detalle original en el pedido facturado
+                if ($cantVigente > 0) {
+                    $subtotalVigente = round($cantVigente * $precio, 2);
+                    $det->update([
+                        'cantidad' => $cantVigente,
+                        'cantidad_en_produccion' => 0,
+                        'subtotal' => $subtotalVigente,
+                    ]);
+                    $totalVigente += $subtotalVigente;
+                } else {
+                    $det->delete();
+                }
+            }
+
+            // Si no existía OP para los faltantes, crearla ahora para el remanente
+            if (!empty($detallesFaltantesParaNuevaOp)) {
+                $this->produccionService->crearOrdenPorFaltantes(
+                    $pedidoRemanente->id,
+                    $pedidoRemanente->cliente_id,
+                    $pedidoRemanente->vendedor_id,
+                    $detallesFaltantesParaNuevaOp,
+                    $pedidoRemanente->fecha_entrega,
+                    $pedidoRemanente->nota_produccion
+                );
+            }
+
+            // Actualizar total y estado del pedido facturado
+            $pedido->total = $totalVigente;
+            $pedido->estado = 'facturado';
+            $pedido->facturador_id = $usuario->id;
+            if ($numFactura) {
+                $pedido->num_factura = $numFactura;
+            }
+            $notaEscision = "Facturado lote disponible ($" . number_format($totalVigente, 2) . "). Faltante escindido a Pedido #{$pedidoRemanente->id}";
+            $pedido->comentario = $pedido->comentario ? ($pedido->comentario . " | " . $notaEscision) : $notaEscision;
+            $pedido->save();
+
+            // Actualizar total del pedido remanente
+            $pedidoRemanente->update(['total' => $totalRemanente]);
+
+            return [
+                'pedido_facturado' => $pedido->load([
+                    'cliente:id,nombre',
+                    'ruta:id,nombre',
+                    'vendedor:id,name',
+                    'facturador:id,name',
+                    'ordenProduccion:id,pedido_id,estado',
+                    'detalles.producto:id,codigo,descripcion,imagen_producto,unidad,medidas,capacidad'
+                ]),
+                'pedido_remanente' => $pedidoRemanente->load([
+                    'cliente:id,nombre',
+                    'ruta:id,nombre',
+                    'vendedor:id,name',
+                    'ordenProduccion:id,pedido_id,estado',
+                    'detalles.producto:id,codigo,descripcion,imagen_producto,unidad,medidas,capacidad'
+                ]),
+            ];
         });
     }
 
@@ -231,8 +425,6 @@ class PedidoService
 
     public function deducirInventario(Pedido $pedido)
     {
-        $detallesFaltantes = [];
-
         foreach ($pedido->detalles as $detalle) {
             $producto = Producto::lockForUpdate()->find($detalle->producto_id);
             if ($producto) {
@@ -243,16 +435,6 @@ class PedidoService
                 $cantidadAEntregar = $cantidadSolicitada - $cantidadFaltante;
                 
                 $detalle->update(['cantidad_en_produccion' => $cantidadFaltante]);
-
-                if ($cantidadFaltante > 0) {
-                    $detallesFaltantes[] = [
-                        'producto_id'       => $detalle->producto_id,
-                        'pedido_detalle_id' => $detalle->id,
-                        'cantidad_faltante' => $cantidadFaltante,
-                        'cantidad_producida' => 0,
-                        'estado'            => 'pendiente',
-                    ];
-                }
 
                 if ($cantidadAEntregar > 0) {
                     $stockResultante = $stockReal - $cantidadAEntregar;
@@ -271,16 +453,36 @@ class PedidoService
                 }
             }
         }
+    }
 
-        if (count($detallesFaltantes) > 0) {
-            $this->produccionService->crearOrdenPorFaltantes(
-                $pedido->id, 
-                $pedido->cliente_id, 
-                $pedido->vendedor_id, 
-                $detallesFaltantes, 
-                $pedido->fecha_entrega, 
-                $pedido->nota_produccion
-            );
+    public function restaurarInventario(Pedido $pedido)
+    {
+        foreach ($pedido->detalles as $detalle) {
+            $producto = Producto::lockForUpdate()->find($detalle->producto_id);
+            if ($producto) {
+                $stockReal = (float) $producto->stock;
+                $cantidadSolicitada = (float) $detalle->cantidad;
+                $cantidadFaltante = (float) $detalle->cantidad_en_produccion;
+                $cantidadEntregada = max(0, $cantidadSolicitada - $cantidadFaltante);
+
+                if ($cantidadEntregada > 0) {
+                    $stockResultante = $stockReal + $cantidadEntregada;
+                    $producto->update(['stock' => $stockResultante]);
+
+                    InventarioMovimiento::create([
+                        'producto_id'      => $producto->id,
+                        'user_id'          => Auth::id(),
+                        'tipo'             => 'ENTRADA',
+                        'subtipo'          => 'RETORNO INVENTARIO',
+                        'cantidad'         => $cantidadEntregada,
+                        'stock_anterior'   => $stockReal,
+                        'stock_resultante' => $stockResultante,
+                        'nota'             => "Retorno de inventario Pedido #{$pedido->id} (cambio a borrador o cancelado)",
+                    ]);
+                }
+
+                $detalle->update(['cantidad_en_produccion' => 0]);
+            }
         }
     }
 

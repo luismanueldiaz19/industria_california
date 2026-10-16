@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/pedido.dart';
 import '../providers/pedido_provider.dart';
 import '../utils/pedido_utils.dart';
+import '../../produccion/widgets/orden_produccion_pedido_dialog.dart';
 import 'pedido_gestion_dialog.dart';
 
 class PedidosTable extends StatefulWidget {
@@ -62,8 +63,8 @@ class _PedidosTableState extends State<PedidosTable> {
                 child: DataTable(
                   showCheckboxColumn: false,
                   columnSpacing: 20,
-                  dataRowMinHeight: 40,
-                  dataRowMaxHeight: 50,
+                  dataRowMinHeight: 46,
+                  dataRowMaxHeight: 58,
                   headingRowHeight: 40,
                   headingRowColor: WidgetStateProperty.all(
                     const Color(0xFF23272A),
@@ -302,26 +303,40 @@ class _PedidosTableState extends State<PedidosTable> {
                           ),
                         ),
                         DataCell(
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorEstado.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: colorEstado.withValues(alpha: 0.5),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colorEstado.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: colorEstado.withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                child: Text(
+                                  pedido.estado.toUpperCase(),
+                                  style: TextStyle(
+                                    color: colorEstado,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              pedido.estado.toUpperCase(),
-                              style: TextStyle(
-                                color: colorEstado,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                              if (pedido.tieneOrdenProduccion) ...[
+                                const SizedBox(height: 3),
+                                _buildBadgeProduccion(context, pedido),
+                              ] else if (faltante > 0) ...[
+                                const SizedBox(height: 3),
+                                _buildBadgeFaltanteSinOp(context, pedido),
+                              ],
+                            ],
                           ),
                         ),
                         DataCell(
@@ -435,6 +450,121 @@ class _PedidosTableState extends State<PedidosTable> {
               ],
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBadgeProduccion(BuildContext context, Pedido pedido) {
+    final estadoOp = (pedido.ordenProduccionEstado ?? 'pendiente').toLowerCase();
+    Color color;
+    String texto;
+    IconData icono;
+
+    switch (estadoOp) {
+      case 'lista':
+      case 'listo':
+        color = const Color(0xFF10B981);
+        texto = 'OP LISTA';
+        icono = Icons.check_circle_rounded;
+        break;
+      case 'en_proceso':
+        color = const Color(0xFFF59E0B);
+        texto = 'EN PRODUCCIÓN';
+        icono = Icons.precision_manufacturing_rounded;
+        break;
+      case 'pendiente':
+      default:
+        color = const Color(0xFFEAB308);
+        texto = 'OP PENDIENTE';
+        icono = Icons.precision_manufacturing_rounded;
+        break;
+    }
+
+    return Tooltip(
+      message: 'Orden de Producción #OP-${pedido.ordenProduccionId} ($texto). Clic para abrir.',
+      child: InkWell(
+        onTap: () {
+          OrdenProduccionPedidoDialog.show(
+            context: context,
+            pedido: pedido,
+            onUpdated: () {
+              context.read<PedidoProvider>().fetchPedidos();
+            },
+          );
+        },
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: color.withValues(alpha: 0.5),
+              width: 0.8,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icono, size: 9, color: color),
+              const SizedBox(width: 3),
+              Text(
+                texto,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadgeFaltanteSinOp(BuildContext context, Pedido pedido) {
+    return Tooltip(
+      message: 'Tiene faltantes de inventario sin Orden de Producción. Clic para generar.',
+      child: InkWell(
+        onTap: () {
+          OrdenProduccionPedidoDialog.show(
+            context: context,
+            pedido: pedido,
+            onUpdated: () {
+              context.read<PedidoProvider>().fetchPedidos();
+            },
+          );
+        },
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+          decoration: BoxDecoration(
+            color: Colors.redAccent.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: Colors.redAccent.withValues(alpha: 0.5),
+              width: 0.8,
+            ),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 9, color: Colors.redAccent),
+              SizedBox(width: 3),
+              Text(
+                'SIN OP',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

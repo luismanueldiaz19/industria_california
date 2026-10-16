@@ -218,16 +218,15 @@ class _CamionVictualDetalleScreenState
         ),
       ),
     );
-    if (confirmar != true) return;
+    if (confirmar != true || !mounted) return;
 
-    final ok = await context.read<CamionVictualProvider>().quitarPedido(
-      widget.camionId,
-      pedido.id,
-    );
+    final prov = context.read<CamionVictualProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await prov.quitarPedido(widget.camionId, pedido.id);
     if (!mounted) return;
     if (ok) {
       _sincronizarLocal();
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Pedido quitado del camión'),
           backgroundColor: Color(0xFF4CAF50),
@@ -235,9 +234,9 @@ class _CamionVictualDetalleScreenState
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
-          content: Text(context.read<CamionVictualProvider>().error ?? 'Error'),
+          content: Text(prov.error ?? 'Error'),
           backgroundColor: const Color(0xFFE53935),
           behavior: SnackBarBehavior.floating,
         ),
@@ -267,7 +266,7 @@ class _CamionVictualDetalleScreenState
   @override
   Widget build(BuildContext context) {
     return Consumer<CamionVictualProvider>(
-      builder: (_, provider, __) {
+      builder: (context, provider, child) {
         final camion = provider.camiones.firstWhere(
           (c) => c.id == widget.camionId,
           orElse: () => CamionVictual(
@@ -628,16 +627,7 @@ class _CamionVictualDetalleScreenState
                 final p = _pedidosLocales[i];
                 return PedidoEnCamionTile(
                   key: ValueKey(p.id),
-                  pedido: CamionPedido(
-                    id: p.id,
-                    clienteId: p.clienteId,
-                    total: p.total,
-                    estadoPedido: p.estadoPedido,
-                    clienteNombre: p.clienteNombre,
-                    clienteDireccion: p.clienteDireccion,
-                    ordenViaje: i + 1, // mostrar el orden temporal
-                    estadoEntrega: p.estadoEntrega,
-                  ),
+                  pedido: p.copyWith(ordenViaje: i + 1),
                   showDragHandle: true,
                   index: i,
                   onTap: () => _mostrarDetalle(p),

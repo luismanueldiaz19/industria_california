@@ -18,6 +18,8 @@ class Pedido {
   final String? clienteNombre;
   final String? rutaNombre;
   final String? vendedorNombre;
+  final int? ordenProduccionId;
+  final String? ordenProduccionEstado;
   final List<PedidoDetalle> detalles;
 
   Pedido({
@@ -36,8 +38,13 @@ class Pedido {
     this.clienteNombre,
     this.rutaNombre,
     this.vendedorNombre,
+    this.ordenProduccionId,
+    this.ordenProduccionEstado,
     this.detalles = const [],
   });
+
+  bool get tieneOrdenProduccion => ordenProduccionId != null;
+  bool get tieneFaltantes => detalles.any((d) => d.cantidadEnProduccion > 0);
 
   factory Pedido.fromJson(Map<String, dynamic> json) {
     var list = json['detalles'] as List? ?? [];
@@ -59,6 +66,8 @@ class Pedido {
       clienteNombre: json['cliente']?['nombre'],
       rutaNombre: json['ruta']?['nombre'],
       vendedorNombre: json['vendedor']?['name'],
+      ordenProduccionId: json['orden_produccion']?['id'],
+      ordenProduccionEstado: json['orden_produccion']?['estado'],
       detalles: detallesList,
     );
   }

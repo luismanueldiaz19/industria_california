@@ -63,6 +63,7 @@ class CamionVictual {
 /// Pedido dentro de un camión victual con sus datos de pivot.
 class CamionPedido {
   final int id;
+  final String? numFactura;
   final int clienteId;
   final double total;
   final String estadoPedido;
@@ -76,6 +77,7 @@ class CamionPedido {
 
   const CamionPedido({
     required this.id,
+    this.numFactura,
     required this.clienteId,
     required this.total,
     required this.estadoPedido,
@@ -87,10 +89,39 @@ class CamionPedido {
     this.fechaEntregado,
   });
 
+  CamionPedido copyWith({
+    int? id,
+    String? numFactura,
+    int? clienteId,
+    double? total,
+    String? estadoPedido,
+    String? clienteNombre,
+    String? clienteDireccion,
+    int? ordenViaje,
+    String? estadoEntrega,
+    String? comentarioEntrega,
+    DateTime? fechaEntregado,
+  }) {
+    return CamionPedido(
+      id: id ?? this.id,
+      numFactura: numFactura ?? this.numFactura,
+      clienteId: clienteId ?? this.clienteId,
+      total: total ?? this.total,
+      estadoPedido: estadoPedido ?? this.estadoPedido,
+      clienteNombre: clienteNombre ?? this.clienteNombre,
+      clienteDireccion: clienteDireccion ?? this.clienteDireccion,
+      ordenViaje: ordenViaje ?? this.ordenViaje,
+      estadoEntrega: estadoEntrega ?? this.estadoEntrega,
+      comentarioEntrega: comentarioEntrega ?? this.comentarioEntrega,
+      fechaEntregado: fechaEntregado ?? this.fechaEntregado,
+    );
+  }
+
   factory CamionPedido.fromJson(Map<String, dynamic> json) {
     final pivot = json['pivot'] as Map<String, dynamic>? ?? {};
     return CamionPedido(
       id: json['id'],
+      numFactura: json['num_factura'],
       clienteId: json['cliente_id'],
       total: double.tryParse(json['total']?.toString() ?? '0') ?? 0,
       estadoPedido: json['estado'] is Map

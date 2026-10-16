@@ -12,6 +12,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('pedidos/{pedido}/estado', [PedidoController::class, 'changeStatus']);
     Route::patch('pedidos/{pedido}/num-factura', [PedidoController::class, 'updateNumFactura']);
     Route::patch('pedidos/{pedido}/informacion', [PedidoController::class, 'updateInformacion']);
+    Route::post('pedidos/{pedido}/facturar-vigente', [PedidoController::class, 'facturarVigente']);
 
     // URLs de Reportes PDF
     Route::get('pedidos-pdf-url', [PedidoController::class, 'getGeneralPdfUrl']);

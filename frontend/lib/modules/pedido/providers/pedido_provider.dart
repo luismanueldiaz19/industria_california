@@ -233,6 +233,30 @@ class PedidoProvider extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>?> facturarVigente(
+    int id, {
+    required String numFactura,
+    DateTime? fechaEntrega,
+    String? notaProduccion,
+    String? comentario,
+  }) async {
+    try {
+      final res = await _service.facturarVigente(
+        id,
+        numFactura: numFactura,
+        fechaEntrega: fechaEntrega,
+        notaProduccion: notaProduccion,
+        comentario: comentario,
+      );
+      await fetchPedidos();
+      return res;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<bool> deletePedido(int id) async {
     try {
       await _service.deletePedido(id);

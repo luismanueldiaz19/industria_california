@@ -47,7 +47,7 @@ class CamionVictualController extends Controller
 
         if ($request->boolean('with_pedidos')) {
             $query->with(['pedidos' => function ($q) {
-                $q->with('cliente:id,nombre')
+                $q->with('cliente:id,nombre,direccion')
                   ->orderByPivot('orden_viaje', 'asc');
             }]);
         }

@@ -24,6 +24,7 @@ class PedidoController extends Controller
             'ruta:id,nombre',
             'vendedor:id,name',
             'facturador:id,name',
+            'ordenProduccion:id,pedido_id,estado',
             'detalles.producto:id,codigo,descripcion,imagen_producto,unidad,medidas,capacidad'
         ]);
 
@@ -95,6 +96,7 @@ class PedidoController extends Controller
                 'ruta:id,nombre',
                 'vendedor:id,name',
                 'facturador:id,name',
+                'ordenProduccion:id,pedido_id,estado',
                 'detalles.producto:id,codigo,descripcion,imagen_producto,unidad,medidas,capacidad'
             ])
         );
@@ -139,10 +141,28 @@ class PedidoController extends Controller
         ]);
 
         $nuevoEstado = $request->estado;
+        $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+
+        if ($estadoActual === 'facturado' && $nuevoEstado !== 'facturado') {
+            return response()->json([
+                'message' => 'Un pedido FACTURADO no puede cambiar a ningún otro estado.',
+                'errors' => ['estado' => ['Un pedido en estado FACTURADO no puede ser modificado a otro estado.']]
+            ], 422);
+        }
         
         if (!Auth::user()->hasRole('admin')) {
             if ($nuevoEstado === 'facturado' || $nuevoEstado === 'cancelado') {
                 return response()->json(['message' => 'No autorizado para facturar o cancelar.'], 403);
+            }
+        }
+
+        if ($nuevoEstado === 'facturado') {
+            $numFacturaActual = $request->num_factura ?? $pedido->num_factura;
+            if (empty(trim((string)$numFacturaActual))) {
+                return response()->json([
+                    'message' => 'El número de factura es obligatorio para marcar el pedido como FACTURADO.',
+                    'errors' => ['num_factura' => ['El número de factura es obligatorio cuando el estado es facturado.']]
+                ], 422);
             }
         }
 
@@ -189,6 +209,24 @@ class PedidoController extends Controller
             'nota_produccion' => 'nullable|string|max:2000',
         ]);
 
+        $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+        if ($estadoActual === 'facturado' && $request->has('estado') && $request->estado !== 'facturado') {
+            return response()->json([
+                'message' => 'Un pedido FACTURADO no puede cambiar a ningún otro estado.',
+                'errors' => ['estado' => ['Un pedido en estado FACTURADO no puede ser modificado a otro estado.']]
+            ], 422);
+        }
+
+        if ($request->estado === 'facturado') {
+            $numFacturaActual = $request->has('num_factura') ? $request->num_factura : $pedido->num_factura;
+            if (empty(trim((string)$numFacturaActual))) {
+                return response()->json([
+                    'message' => 'El número de factura es obligatorio para marcar el pedido como FACTURADO.',
+                    'errors' => ['num_factura' => ['El número de factura es obligatorio cuando el estado es facturado.']]
+                ], 422);
+            }
+        }
+
         $pedidoActualizado = $this->pedidoService->actualizarInformacionPrincipal(
             $pedido, 
             $request->all(), 
@@ -196,6 +234,32 @@ class PedidoController extends Controller
         );
 
         return response()->json($pedidoActualizado);
+    }
+
+    public function facturarVigente(Request $request, Pedido $pedido)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'No autorizado para facturar pedidos.'], 403);
+        }
+
+        $request->validate([
+            'num_factura' => 'required|string|max:100',
+            'fecha_entrega' => 'nullable|date',
+            'nota_produccion' => 'nullable|string|max:2000',
+            'comentario' => 'nullable|string|max:2000',
+        ]);
+
+        try {
+            $resultado = $this->pedidoService->facturarVigenteYEscindir(
+                $pedido,
+                $request->all(),
+                Auth::user()
+            );
+
+            return response()->json($resultado);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 
     public function getGeneralPdfUrl(Request $request)

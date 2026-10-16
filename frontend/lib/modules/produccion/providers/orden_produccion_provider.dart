@@ -76,8 +76,8 @@ class OrdenProduccionProvider extends ChangeNotifier {
         query['vendedor_id'] = vendedorId.toString();
       }
 
-      final response = await _http.get(
-        'industria-california/produccion',
+      final response = await _http.getV2(
+        'produccion',
         params: query,
       );
 
@@ -105,8 +105,8 @@ class OrdenProduccionProvider extends ChangeNotifier {
 
   Future<bool> marcarDetalleListo(int detalleId) async {
     try {
-      final response = await _http.patch(
-        'industria-california/produccion/detalles/$detalleId/listo',
+      final response = await _http.patchV2(
+        'produccion/detalles/$detalleId/listo',
         {},
       );
 
@@ -157,6 +157,41 @@ class OrdenProduccionProvider extends ChangeNotifier {
       _error = _handleError(e);
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<bool> generarOrdenDesdePedido(int pedidoId) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final response = await _http.postV2(
+        'produccion/generar-desde-pedido/$pedidoId',
+        {},
+      );
+
+      if (response != null && response['orden'] != null) {
+        final nueva = OrdenProduccion.fromJson(response['orden']);
+        _ordenes.insert(0, nueva);
+      }
+      return true;
+    } catch (e) {
+      _error = _handleError(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<OrdenProduccion?> getOrdenByPedidoId(int pedidoId) async {
+    try {
+      final response = await _http.getV2('produccion/por-pedido/$pedidoId');
+      if (response == null) return null;
+      return OrdenProduccion.fromJson(response);
+    } catch (e) {
+      return null;
     }
   }
 

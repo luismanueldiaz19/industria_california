@@ -98,6 +98,24 @@ class PedidoService {
     await _http.delete('$_base/$id');
   }
 
+  Future<Map<String, dynamic>> facturarVigente(
+    int id, {
+    required String numFactura,
+    DateTime? fechaEntrega,
+    String? notaProduccion,
+    String? comentario,
+  }) async {
+    final Map<String, dynamic> data = {
+      'num_factura': numFactura,
+      if (fechaEntrega != null)
+        'fecha_entrega': DateFormat('yyyy-MM-dd').format(fechaEntrega),
+      if (notaProduccion != null) 'nota_produccion': notaProduccion,
+      if (comentario != null) 'comentario': comentario,
+    };
+    final response = await _http.post('$_base/$id/facturar-vigente', data);
+    return response as Map<String, dynamic>;
+  }
+
   Future<List<Pedido>> optimizeRoute(int rutaId, double lat, double lng) async {
     final response = await _http.post('$_base/optimize-route', {
       'ruta_id': rutaId,
