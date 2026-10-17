@@ -105,6 +105,9 @@ class PedidoController extends Controller
     public function store(StorePedidoRequest $request)
     {
         $vendedor = Auth::user();
+        if (Auth::user()->hasRole('admin') && $request->filled('vendedor_id')) {
+            $vendedor = \App\Models\User::find($request->vendedor_id) ?? Auth::user();
+        }
         $datos = $request->validated();
         $pedido = $this->pedidoService->crear($datos, $vendedor);
 

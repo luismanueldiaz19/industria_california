@@ -52,7 +52,7 @@ class PedidoService
                     'idempotency_key' => $idempotencyKey,
                 ], $detalles);
 
-                if ($datos['estado'] === 'enviado') {
+                if ($datos['estado'] === 'enviado' || $datos['estado'] === 'facturado') {
                     $this->deducirInventario($pedido->load('detalles'));
                 }
 

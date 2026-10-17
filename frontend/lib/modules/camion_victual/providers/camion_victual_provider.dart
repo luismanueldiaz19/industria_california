@@ -221,4 +221,36 @@ class CamionVictualProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> ponerEnRuta(int camionId) async {
+    _isActualizando = true;
+    notifyListeners();
+    try {
+      final actualizado = await _service.ponerEnRuta(camionId);
+      _actualizarEnLista(actualizado);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isActualizando = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> cerrar(int camionId) async {
+    _isActualizando = true;
+    notifyListeners();
+    try {
+      final actualizado = await _service.cerrar(camionId);
+      _actualizarEnLista(actualizado);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isActualizando = false;
+      notifyListeners();
+    }
+  }
 }

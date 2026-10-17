@@ -20,7 +20,7 @@ class _DespachoAsignacionModalState extends State<DespachoAsignacionModal> {
         top: 16,
       ),
       decoration: const BoxDecoration(
-        color: Color(0xFF2C2F33),
+        color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       child: SafeArea(
@@ -34,9 +34,16 @@ class _DespachoAsignacionModalState extends State<DespachoAsignacionModal> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Asignar Pedidos a Vehículo', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Asignar Pedidos a Vehículo',
+                      style: TextStyle(
+                        color: Color(0xFF0F172A),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                      icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () => Navigator.pop(context),
@@ -48,8 +55,8 @@ class _DespachoAsignacionModalState extends State<DespachoAsignacionModal> {
                   isExpanded: true,
                   iconSize: 20,
                   decoration: _inputDecoration('Seleccionar Vehículo'),
-                  dropdownColor: const Color(0xFF2C2F33),
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(color: Color(0xFF0F172A), fontSize: 12),
                   items: const [DropdownMenuItem(value: '1', child: Text('F-119 - Isuzu NPR'))],
                   onChanged: (val) {},
                 ),
@@ -58,17 +65,28 @@ class _DespachoAsignacionModalState extends State<DespachoAsignacionModal> {
                   isExpanded: true,
                   iconSize: 20,
                   decoration: _inputDecoration('Seleccionar Chofer'),
-                  dropdownColor: const Color(0xFF2C2F33),
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(color: Color(0xFF0F172A), fontSize: 12),
                   items: const [DropdownMenuItem(value: '1', child: Text('Juan Pérez'))],
                   onChanged: (val) {},
                 ),
                 const SizedBox(height: 12),
-                const Text('Pedidos Pendientes', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Pedidos Pendientes',
+                  style: TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Container(
                   height: 120,
-                  decoration: BoxDecoration(color: const Color(0xFF1A1C1E), borderRadius: BorderRadius.circular(6)),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
                   child: ListView(
                     padding: const EdgeInsets.all(4),
                     children: [
@@ -78,10 +96,13 @@ class _DespachoAsignacionModalState extends State<DespachoAsignacionModal> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                         value: true,
                         onChanged: (val) {},
-                        title: const Text('Pedido #1024 - Cliente A', style: TextStyle(color: Colors.white, fontSize: 12)),
+                        title: const Text(
+                          'Pedido #1024 - Cliente A',
+                          style: TextStyle(color: Color(0xFF0F172A), fontSize: 12),
+                        ),
                         activeColor: const Color(0xFFE31E24),
                         checkColor: Colors.white,
-                        side: const BorderSide(color: Colors.white54),
+                        side: const BorderSide(color: Color(0xFF94A3B8)),
                       ),
                     ],
                   ),
@@ -93,6 +114,7 @@ class _DespachoAsignacionModalState extends State<DespachoAsignacionModal> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFE31E24),
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     onPressed: () => Navigator.pop(context),
@@ -113,10 +135,21 @@ class _DespachoAsignacionModalState extends State<DespachoAsignacionModal> {
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+      labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
       filled: true,
-      fillColor: const Color(0xFF1A1C1E),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
+      fillColor: const Color(0xFFF8FAFC),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+      ),
     );
   }
 }

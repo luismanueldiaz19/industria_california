@@ -106,4 +106,14 @@ class CamionVictualService {
     final response = await _http.patch('$_base/$camionId/vaciar', {});
     return CamionVictual.fromJson(response);
   }
+
+  Future<CamionVictual> ponerEnRuta(int camionId) async {
+    final response = await _http.patch('$_base/$camionId/en-ruta', {});
+    return CamionVictual.fromJson(response);
+  }
+
+  Future<CamionVictual> cerrar(int camionId) async {
+    final response = await _http.patch('$_base/$camionId/cerrar', {});
+    return CamionVictual.fromJson(response);
+  }
 }

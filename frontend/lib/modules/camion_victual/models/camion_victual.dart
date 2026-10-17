@@ -142,26 +142,32 @@ class CamionPedido {
 /// Pedido disponible para agregar a un camión (estado: facturado, sin camión activo).
 class PedidoDisponible {
   final int id;
+  final String? numFactura;
   final int clienteId;
   final double total;
   final String? clienteNombre;
+  final String? clienteDireccion;
   final DateTime createdAt;
 
   const PedidoDisponible({
     required this.id,
+    this.numFactura,
     required this.clienteId,
     required this.total,
     this.clienteNombre,
+    this.clienteDireccion,
     required this.createdAt,
   });
 
   factory PedidoDisponible.fromJson(Map<String, dynamic> json) {
     return PedidoDisponible(
       id: json['id'],
+      numFactura: json['num_factura'],
       clienteId: json['cliente_id'],
       total: double.tryParse(json['total']?.toString() ?? '0') ?? 0,
       clienteNombre: json['cliente']?['nombre'],
-      createdAt: DateTime.parse(json['created_at']),
+      clienteDireccion: json['cliente']?['direccion'],
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 }

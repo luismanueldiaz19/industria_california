@@ -179,7 +179,7 @@ class CamionVictualController extends Controller
     public function actualizarEntrega(Request $request, CamionVictual $camionVictual, int $pedidoId): JsonResponse
     {
         $request->validate([
-            'estado_entrega'     => 'required|in:en_curso,entregado,fallido',
+            'estado_entrega'     => 'required|in:pendiente,en_curso,entregado,fallido',
             'comentario_entrega' => 'nullable|string|max:500',
         ]);
 
@@ -261,7 +261,7 @@ class CamionVictualController extends Controller
             ->whereIn('camiones_victuales.estado', ['armando', 'listo', 'en_ruta'])
             ->pluck('camion_victual_pedido.pedido_id');
 
-        $query = \App\Modules\Pedido\Models\Pedido::with('cliente:id,nombre')
+        $query = \App\Modules\Pedido\Models\Pedido::with('cliente:id,nombre,direccion')
             ->where('estado', 'facturado')
             ->whereNotIn('id', $pedidosEnCamionesActivos);
 

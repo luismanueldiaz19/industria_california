@@ -129,7 +129,7 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF2C2F33),
+        color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
@@ -148,7 +148,7 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
               Text(
                 isEditing ? 'Editar Camión' : 'Añadir Camión',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFF0F172A),
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -172,20 +172,29 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
                 builder: (context, choferProvider, child) {
                   return DropdownButtonFormField<int>(
                     initialValue: _selectedChoferId,
-                    dropdownColor: const Color(0xFF3B3E43),
-                    style: const TextStyle(color: Colors.white),
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: Color(0xFF0F172A), fontSize: 13),
                     decoration: InputDecoration(
                       labelText: 'Chofer Asignado',
-                      labelStyle: const TextStyle(color: Colors.white54),
+                      labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
                       filled: true,
-                      fillColor: const Color(0xFF1A1C1E),
+                      fillColor: const Color(0xFFF8FAFC),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
+                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
                       ),
                       prefixIcon: const Icon(
                         Icons.person,
-                        color: Colors.white54,
+                        color: Color(0xFF64748B),
+                        size: 18,
                       ),
                     ),
                     items: choferProvider.choferes.map((chofer) {
@@ -204,21 +213,30 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
               Consumer<UsersProvider>(
                 builder: (context, usersProvider, child) {
                   return DropdownButtonFormField<int>(
-                    value: _selectedVendedorId,
-                    dropdownColor: const Color(0xFF3B3E43),
-                    style: const TextStyle(color: Colors.white),
+                    initialValue: _selectedVendedorId,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: Color(0xFF0F172A), fontSize: 13),
                     decoration: InputDecoration(
                       labelText: 'Vendedor Responsable',
-                      labelStyle: const TextStyle(color: Colors.white54),
+                      labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
                       filled: true,
-                      fillColor: const Color(0xFF1A1C1E),
+                      fillColor: const Color(0xFFF8FAFC),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
+                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
                       ),
                       prefixIcon: const Icon(
                         Icons.storefront,
-                        color: Colors.white54,
+                        color: Color(0xFF64748B),
+                        size: 18,
                       ),
                     ),
                     items: usersProvider.users.where((user) {
@@ -238,19 +256,27 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
 
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _estado,
-                dropdownColor: const Color(0xFF3B3E43),
-                style: const TextStyle(color: Colors.white),
+                initialValue: _estado,
+                dropdownColor: Colors.white,
+                style: const TextStyle(color: Color(0xFF0F172A), fontSize: 13),
                 decoration: InputDecoration(
                   labelText: 'Estado',
-                  labelStyle: const TextStyle(color: Colors.white54),
+                  labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
                   filled: true,
-                  fillColor: const Color(0xFF1A1C1E),
+                  fillColor: const Color(0xFFF8FAFC),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
+                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
                   ),
-                  prefixIcon: const Icon(Icons.info, color: Colors.white54),
+                  prefixIcon: const Icon(Icons.info, color: Color(0xFF64748B), size: 18),
                 ),
                 items: const [
                   DropdownMenuItem(value: 'vacio', child: Text('VACIO')),
@@ -276,29 +302,40 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
                   if (isEditing) ...[
                     Expanded(
                       child: SizedBox(
-                        height: 50,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF232529),
+                        height: 48,
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFEE2E2),
+                            foregroundColor: const Color(0xFFDC2626),
+                            side: const BorderSide(color: Color(0xFFFCA5A5)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
-                              side: const BorderSide(color: Colors.red),
                             ),
                           ),
                           onPressed: _isLoading
                               ? null
                               : () async {
+                                  final provider = context.read<CamionVictualProvider>();
+                                  final navigator = Navigator.of(context);
+                                  final scaffold = ScaffoldMessenger.of(context);
+
                                   final confirm = await showDialog<bool>(
                                     context: context,
                                     builder: (ctx) => AlertDialog(
-                                      backgroundColor: const Color(0xFF2C2F33),
+                                      backgroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                       title: const Text(
                                         'Eliminar Camión',
-                                        style: TextStyle(color: Colors.white),
+                                        style: TextStyle(
+                                          color: Color(0xFF0F172A),
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                       content: const Text(
                                         '¿Estás seguro de eliminar este camión?',
-                                        style: TextStyle(color: Colors.white54),
+                                        style: TextStyle(color: Color(0xFF475569)),
                                       ),
                                       actions: [
                                         TextButton(
@@ -307,17 +344,18 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
                                           child: const Text(
                                             'Cancelar',
                                             style: TextStyle(
-                                              color: Colors.white54,
+                                              color: Color(0xFF64748B),
                                             ),
                                           ),
                                         ),
-                                        TextButton(
+                                        ElevatedButton(
                                           onPressed: () =>
                                               Navigator.pop(ctx, true),
-                                          child: const Text(
-                                            'Eliminar',
-                                            style: TextStyle(color: Colors.red),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFFDC2626),
+                                            foregroundColor: Colors.white,
                                           ),
+                                          child: const Text('Eliminar'),
                                         ),
                                       ],
                                     ),
@@ -326,25 +364,18 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
                                   if (confirm == true) {
                                     setState(() => _isLoading = true);
                                     try {
-                                      await context
-                                          .read<CamionVictualProvider>()
-                                          .delete(widget.camion!.id);
-                                      if (mounted) {
-                                        Navigator.pop(context);
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Camión eliminado'),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
-                                      }
+                                      await provider.delete(widget.camion!.id);
+                                      if (!mounted) return;
+                                      navigator.pop();
+                                      scaffold.showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Camión eliminado'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
                                     } catch (e) {
                                       if (mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
+                                        scaffold.showSnackBar(
                                           SnackBar(
                                             content: Text('Error: $e'),
                                             backgroundColor: Colors.red,
@@ -361,7 +392,6 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
                           child: const Text(
                             'ELIMINAR',
                             style: TextStyle(
-                              color: Colors.red,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -373,10 +403,11 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
                   Expanded(
                     flex: 2,
                     child: SizedBox(
-                      height: 50,
+                      height: 48,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE31E24),
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -396,7 +427,7 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                       ),
@@ -420,17 +451,25 @@ class _CamionVictualFormModalState extends State<CamionVictualFormModal> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: Color(0xFF0F172A), fontSize: 13),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54),
+        labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
         filled: true,
-        fillColor: const Color(0xFF1A1C1E),
+        fillColor: const Color(0xFFF8FAFC),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
         ),
-        prefixIcon: Icon(icon, color: Colors.white54),
+        prefixIcon: Icon(icon, color: const Color(0xFF64748B), size: 18),
       ),
     );
   }
