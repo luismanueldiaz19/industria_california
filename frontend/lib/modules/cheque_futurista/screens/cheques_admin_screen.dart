@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/cheque_futurista_service.dart';
@@ -44,16 +45,12 @@ class _ChequesAdminScreenState extends State<ChequesAdminScreen> {
       final uri = Uri.parse(url);
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudo abrir el PDF')),
-          );
+          CompactSnackBar.showError(context, 'No se pudo abrir el PDF');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error al generar PDF: $e')));
+        CompactSnackBar.showError(context, 'Error al generar PDF: $e');
       }
     }
   }

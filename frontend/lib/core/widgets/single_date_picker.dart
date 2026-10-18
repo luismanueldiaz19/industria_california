@@ -23,6 +23,7 @@ class SingleDatePicker extends StatelessWidget {
   final TextStyle? labelStyle;
   final TextStyle? textStyle;
   final Color? pickerColor;
+  final bool enabled;
 
   const SingleDatePicker({
     super.key,
@@ -46,6 +47,7 @@ class SingleDatePicker extends StatelessWidget {
     this.labelStyle,
     this.textStyle,
     this.pickerColor,
+    this.enabled = true,
   });
 
   Future<void> _pickDate(BuildContext context) async {
@@ -203,12 +205,14 @@ class SingleDatePicker extends StatelessWidget {
         ),
         SizedBox(height: dense ? 4 : 8),
         InkWell(
-          onTap: () => _pickDate(context),
+          onTap: enabled ? () => _pickDate(context) : null,
           borderRadius: BorderRadius.circular(effectiveRadius),
           child: Container(
             padding: effectivePadding,
             decoration: BoxDecoration(
-              color: effectiveFillColor,
+              color: enabled
+                  ? effectiveFillColor
+                  : (isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF3F4F6)),
               borderRadius: BorderRadius.circular(effectiveRadius),
               border: Border.all(
                 color: effectiveBorderColor,
@@ -240,7 +244,13 @@ class SingleDatePicker extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (allowClear && value != null)
+                if (!enabled)
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    size: dense ? 15 : 17,
+                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                  )
+                else if (allowClear && value != null)
                   InkWell(
                     onTap: () => onChanged(null),
                     borderRadius: BorderRadius.circular(12),

@@ -6,6 +6,7 @@ class PedidoUtils {
     'cotizacion',
     'enviado',
     'facturado',
+    'entregado',
     'cancelado',
   ];
 
@@ -19,6 +20,8 @@ class PedidoUtils {
         return const Color(0xFF2196F3);
       case 'facturado':
         return const Color(0xFF4CAF50);
+      case 'entregado':
+        return const Color(0xFF10B981);
       case 'cancelado':
         return const Color(0xFFE53935);
       default:

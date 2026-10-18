@@ -43,6 +43,7 @@ import 'modules/flota/screens/mantenimientos_screen.dart';
 import 'modules/flota/screens/gastos_vehiculos_screen.dart';
 import 'modules/flota/screens/gastos_estadisticas_screen.dart';
 import 'modules/flota/screens/camiones_victuales_admin_screen.dart';
+import 'modules/flota/screens/historial_viajes_screen.dart';
 import 'modules/flota/providers/chofer_provider.dart';
 import 'modules/flota/providers/vehiculo_provider.dart';
 import 'modules/flota/providers/despacho_provider.dart';
@@ -220,6 +221,7 @@ class _MainLayoutState extends State<MainLayout> {
     const CamionesVictualesAdminScreen(), // 24
     const ChequesAdminScreen(), // 25 — Admin Cheques Futuristas
     const ChequeReporteScreen(), // 26 — Reporte Cheques
+    const HistorialViajesScreen(), // 27 — Historial de Viajes y Liquidaciones
   ];
 
   @override

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/themes/app_theme.dart';
 import '../../../led_house/models/ledhouse_cliente.dart';
@@ -116,23 +117,7 @@ class _VendedorClienteFormScreenState extends State<VendedorClienteFormScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_rounded, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Expanded(child: Text('Error: $e')),
-            ],
-          ),
-          backgroundColor: AppTheme.dangerColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: $e');
     }
   }
 
@@ -150,12 +135,7 @@ class _VendedorClienteFormScreenState extends State<VendedorClienteFormScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al obtener ubicación: $e'),
-          backgroundColor: AppTheme.dangerColor,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al obtener ubicación: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

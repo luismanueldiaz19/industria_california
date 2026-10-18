@@ -116,7 +116,12 @@ class PedidoController extends Controller
 
     public function update(StorePedidoRequest $request, Pedido $pedido)
     {
-        if (!in_array($pedido->estado->value, ['borrador', 'cotizacion']) && !Auth::user()->hasRole('admin')) {
+        $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+        if ($estadoActual === 'entregado') {
+            return response()->json(['message' => 'Un pedido ENTREGADO no puede ser modificado ya que finalizó su ciclo de despacho.'], 422);
+        }
+
+        if (!in_array($estadoActual, ['borrador', 'cotizacion']) && !Auth::user()->hasRole('admin')) {
             return response()->json(['message' => 'No puedes editar un pedido que ya no es borrador o cotización.'], 403);
         }
 
@@ -132,6 +137,11 @@ class PedidoController extends Controller
             return response()->json(['message' => 'No autorizado para eliminar pedidos.'], 403);
         }
 
+        $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+        if ($estadoActual === 'entregado') {
+            return response()->json(['message' => 'Un pedido ENTREGADO no puede ser eliminado ya que finalizó su ciclo de despacho.'], 422);
+        }
+
         $pedido->delete();
         return response()->json(['message' => 'Pedido eliminado correctamente.']);
     }
@@ -139,12 +149,19 @@ class PedidoController extends Controller
     public function changeStatus(Request $request, Pedido $pedido)
     {
         $request->validate([
-            'estado' => 'required|in:borrador,enviado,facturado,cancelado,cotizacion',
+            'estado' => 'required|in:borrador,enviado,facturado,cancelado,cotizacion,entregado',
             'num_factura' => 'nullable|string|max:100',
         ]);
 
         $nuevoEstado = $request->estado;
         $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+
+        if ($estadoActual === 'entregado' && $nuevoEstado !== 'entregado') {
+            return response()->json([
+                'message' => 'Un pedido ENTREGADO no puede cambiar a ningún otro estado ya que finalizó su ciclo de despacho.',
+                'errors' => ['estado' => ['Un pedido en estado ENTREGADO no puede ser modificado a otro estado.']]
+            ], 422);
+        }
 
         if ($estadoActual === 'facturado' && $nuevoEstado !== 'facturado') {
             return response()->json([
@@ -185,6 +202,11 @@ class PedidoController extends Controller
             return response()->json(['message' => 'No autorizado para modificar el número de factura.'], 403);
         }
 
+        $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+        if ($estadoActual === 'entregado') {
+            return response()->json(['message' => 'El número de factura de un pedido ENTREGADO no puede ser modificado.'], 422);
+        }
+
         $request->validate([
             'num_factura' => 'nullable|string|max:100',
         ]);
@@ -201,18 +223,25 @@ class PedidoController extends Controller
             return response()->json(['message' => 'No autorizado para editar este pedido.'], 403);
         }
 
+        $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+        if ($estadoActual === 'entregado') {
+            return response()->json([
+                'message' => 'Un pedido ENTREGADO no puede ser modificado ya que finalizó su ciclo de despacho.',
+                'errors' => ['estado' => ['Un pedido en estado ENTREGADO no puede ser modificado.']]
+            ], 422);
+        }
+
         $request->validate([
             'cliente_id' => 'nullable|integer|exists:ledhouse_clientes,id',
             'ruta_id' => 'nullable|integer|exists:rutas,id',
             'vendedor_id' => 'nullable|integer|exists:users,id',
             'num_factura' => 'nullable|string|max:100',
-            'estado' => 'nullable|string|in:borrador,cotizacion,enviado,facturado,cancelado',
+            'estado' => 'nullable|string|in:borrador,cotizacion,enviado,facturado,cancelado,entregado',
             'fecha_entrega' => 'nullable|date',
             'comentario' => 'nullable|string|max:2000',
             'nota_produccion' => 'nullable|string|max:2000',
         ]);
 
-        $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
         if ($estadoActual === 'facturado' && $request->has('estado') && $request->estado !== 'facturado') {
             return response()->json([
                 'message' => 'Un pedido FACTURADO no puede cambiar a ningún otro estado.',
@@ -243,6 +272,11 @@ class PedidoController extends Controller
     {
         if (!Auth::user()->hasRole('admin')) {
             return response()->json(['message' => 'No autorizado para facturar pedidos.'], 403);
+        }
+
+        $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+        if ($estadoActual === 'entregado') {
+            return response()->json(['message' => 'Un pedido ENTREGADO no puede ser facturado nuevamente ya que finalizó su ciclo de despacho.'], 422);
         }
 
         $request->validate([

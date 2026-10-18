@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -38,9 +39,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
 
   Future<void> _generarPdf() async {
     setState(() => _isGeneratingPdf = true);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Generando Factura...')));
+    CompactSnackBar.showInfo(context, 'Generando Factura...');
     try {
       final urlStr = await context.read<PedidoProvider>().getPdfUrl(
         widget.pedido.id,
@@ -51,12 +50,7 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al abrir PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al abrir PDF: $e');
     } finally {
       if (mounted) setState(() => _isGeneratingPdf = false);
     }

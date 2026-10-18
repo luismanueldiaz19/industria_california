@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/services/http_service.dart';
@@ -343,12 +344,7 @@ class _CategoriaFormDialogState extends State<_CategoriaFormDialog> {
         prov.fetchCategorias(soloActivas: false);
         Navigator.pop(context);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(prov.error ?? 'Ocurrió un error al guardar'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CompactSnackBar.showError(context, prov.error ?? 'Ocurrió un error al guardar');
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/themes/app_theme.dart';
 import '../../../../core/widgets/cancel_button.dart';
@@ -139,23 +140,7 @@ class _LedhouseClienteFormScreenState extends State<LedhouseClienteFormScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_rounded, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Expanded(child: Text('Error: $e')),
-            ],
-          ),
-          backgroundColor: AppTheme.dangerColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: $e');
     }
   }
 
@@ -430,23 +415,11 @@ class _LedhouseClienteFormScreenState extends State<LedhouseClienteFormScreen> {
           _longitudController.text = pos.longitude.toString();
         });
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ubicación capturada con éxito'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        CompactSnackBar.showSuccess(context, 'Ubicación capturada con éxito');
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'No se pudo obtener el GPS: $e. Puede ingresar las coordenadas manualmente.',
-          ),
-          backgroundColor: Colors.orange.shade800,
-        ),
-      );
+      CompactSnackBar.showWarning(context, 'No se pudo obtener el GPS: $e. Puede ingresar las coordenadas manualmente.');
     } finally {
       setState(() => _isLoading = false);
     }

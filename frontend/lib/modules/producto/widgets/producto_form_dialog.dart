@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:flutter/services.dart';
 
 import '../models/producto.dart';
@@ -135,9 +136,7 @@ class _ProductoFormDialogState extends State<ProductoFormDialog> {
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: const Color(0xFFE31E24)),
-    );
+    CompactSnackBar.showInfo(context, msg);
   }
 
   @override

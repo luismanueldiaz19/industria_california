@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:industria_california/core/themes/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -16,9 +17,7 @@ class PedidosScreen extends StatefulWidget {
 
 class _PedidosScreenState extends State<PedidosScreen> {
   Future<void> _generarReporteGeneralPdf() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Generando Reporte General...')),
-    );
+    CompactSnackBar.showInfo(context, 'Generando Reporte General...');
     try {
       final urlStr = await context.read<PedidoProvider>().getGeneralPdfUrl();
       final url = Uri.parse(urlStr);
@@ -27,12 +26,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al abrir PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al abrir PDF: $e');
     }
   }
 

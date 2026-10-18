@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/dimension_parser.dart';
@@ -151,17 +152,7 @@ class _ProductosScreenState extends State<ProductosScreen>
   }
 
   void _showSnack(String msg, {required bool isError}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(fontSize: 12.5)),
-        backgroundColor: isError
-            ? const Color(0xFFE31E24)
-            : const Color(0xFF34A853),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    CompactSnackBar.showError(context, msg);
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../../../core/utils/constants.dart';
@@ -40,14 +41,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final success = await authProvider.sendResetCode(_emailController.text);
 
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Código de seguridad enviado a ${_emailController.text} (Para pruebas use: 123456)',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Código de seguridad enviado a ${_emailController.text} (Para pruebas use: 123456)');
       setState(() {
         _isCodeSent = true;
       });
@@ -58,12 +52,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!_formKeyReset.currentState!.validate()) return;
 
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Las contraseñas no coinciden'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Las contraseñas no coinciden');
       return;
     }
 

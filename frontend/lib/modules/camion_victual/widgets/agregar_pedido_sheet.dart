@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../vendedor/widgets/vendedor_mobile_wrapper.dart';
@@ -44,21 +45,9 @@ class _AgregarPedidoSheetState extends State<AgregarPedidoSheet> {
     final ok = await provider.agregarPedido(widget.camionId, pedido.id);
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Pedido #${pedido.id} agregado al camión'),
-          backgroundColor: const Color(0xFF4CAF50),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Pedido #${pedido.id} agregado al camión');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.error ?? 'Error al agregar pedido'),
-          backgroundColor: const Color(0xFFE53935),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      CompactSnackBar.showError(context, provider.error ?? 'Error al agregar pedido');
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -575,30 +576,18 @@ class _LedhouseDetallesScreenState extends State<LedhouseDetallesScreen> {
         Navigator.pop(context); // Close loading
 
         if (response != null && response['message'] != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response['message']),
-              backgroundColor: Colors.green,
-            ),
-          );
+          CompactSnackBar.showSuccess(context, response['message']);
           if (response['errors'] != null &&
               (response['errors'] as List).isNotEmpty) {
             _showErrorsDialog(List<String>.from(response['errors']));
           }
           _fetchData();
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(provider.error ?? "Error desconocido al importar."),
-              backgroundColor: Colors.red,
-            ),
-          );
+          CompactSnackBar.showError(context, provider.error ?? "Error desconocido al importar.");
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      CompactSnackBar.showError(context, 'Error: $e');
     }
   }
 

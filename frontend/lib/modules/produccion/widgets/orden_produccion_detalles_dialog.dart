@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../models/orden_produccion.dart';
 import '../providers/orden_produccion_provider.dart';
@@ -167,12 +168,7 @@ class OrdenProduccionDetallesDialog extends StatelessWidget {
                   final provider = context.read<OrdenProduccionProvider>();
                   final success = await provider.marcarDetalleListo(detalle.id);
                   if (success && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Detalle marcado como listo'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
+                    CompactSnackBar.showSuccess(context, 'Detalle marcado como listo');
                     Navigator.pop(context);
                   }
                 },

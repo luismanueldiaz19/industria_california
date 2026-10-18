@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -83,33 +84,15 @@ class _OrdenProduccionPedidoDialogState
       final provider = context.read<OrdenProduccionProvider>();
       final ok = await provider.generarOrdenDesdePedido(widget.pedido.id);
       if (ok && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Orden de Producción generada exitosamente'),
-            backgroundColor: Color(0xFF059669),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        CompactSnackBar.showSuccess(context, 'Orden de Producción generada exitosamente');
         await _cargarOrden();
         widget.onUpdated();
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              provider.error ?? 'No se pudo generar la orden de producción',
-            ),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        CompactSnackBar.showError(context, provider.error ?? 'No se pudo generar la orden de producción');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        CompactSnackBar.showError(context, 'Error: $e');
       }
     } finally {
       if (mounted) {

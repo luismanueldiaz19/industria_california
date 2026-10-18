@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../providers/vehiculo_provider.dart';
 import '../../providers/mantenimiento_provider.dart';
@@ -49,12 +50,7 @@ class _MantenimientoFormModalState extends State<MantenimientoFormModal> {
   Future<void> _guardar() async {
     if (!_formKey.currentState!.validate()) return;
     if (_vehiculoId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Seleccione un vehículo'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Seleccione un vehículo');
       return;
     }
 
@@ -84,25 +80,13 @@ class _MantenimientoFormModalState extends State<MantenimientoFormModal> {
         context.read<MantenimientoProvider>().loadMantenimientos();
         context.read<VehiculoProvider>().loadVehiculos(); // Refresh stats
         Navigator.pop(context, true); // true indicates success/added
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.mantenimiento == null
+        CompactSnackBar.showSuccess(context, widget.mantenimiento == null
                   ? 'Mantenimiento registrado'
-                  : 'Mantenimiento actualizado',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+                  : 'Mantenimiento actualizado');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error al registrar mantenimiento'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CompactSnackBar.showError(context, 'Error al registrar mantenimiento');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

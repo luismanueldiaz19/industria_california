@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/themes/app_theme.dart';
@@ -66,30 +67,7 @@ class _CuentaCatalogoScreenState extends State<CuentaCatalogoScreen>
   }
 
   void _showToast(String message, {required bool isSuccess}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(message, style: const TextStyle(fontSize: 14)),
-            ),
-          ],
-        ),
-        backgroundColor: isSuccess
-            ? AppTheme.successColor
-            : AppTheme.dangerColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 4),
-      ),
-    );
+    CompactSnackBar.showSuccess(context, message);
   }
 
   void _mostrarFormulario([CuentaCatalogo? cuenta]) {
@@ -780,17 +758,7 @@ class __CuentaCatalogoFormState extends State<_CuentaCatalogoForm> {
     if (success) {
       Navigator.of(context).pop(true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${provider.errorMessage}'),
-          backgroundColor: AppTheme.dangerColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: ${provider.errorMessage}');
     }
   }
 

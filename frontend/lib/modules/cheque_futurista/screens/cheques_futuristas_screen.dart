@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -961,9 +962,7 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
       if (success) {
         Navigator.pop(context); // cerrar bottom sheet
         context.read<ChequeListProvider>().fetchCheques(refresh: true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Documento subido correctamente')),
-        );
+        CompactSnackBar.showSuccess(context, 'Documento subido correctamente');
       }
     } catch (e) {
       if (!context.mounted) return;
@@ -1069,20 +1068,14 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
             screenContext.read<ChequeListProvider>().fetchCheques(
               refresh: true,
             );
-            ScaffoldMessenger.of(screenContext).showSnackBar(
-              const SnackBar(content: Text('Estado actualizado correctamente')),
-            );
+            CompactSnackBar.showSuccess(screenContext, 'Estado actualizado correctamente');
           } else {
-            ScaffoldMessenger.of(screenContext).showSnackBar(
-              const SnackBar(content: Text('No se pudo actualizar el estado')),
-            );
+            CompactSnackBar.showError(screenContext, 'No se pudo actualizar el estado');
           }
         } catch (e) {
           if (!screenContext.mounted) return;
           Navigator.pop(screenContext); // Cerrar loader
-          ScaffoldMessenger.of(
-            screenContext,
-          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+          CompactSnackBar.showError(context, 'Error: $e');
         }
       } else if (newValue == cheque.estado) {
         Navigator.pop(dialogContext); // Cerrar diálogo
@@ -1138,18 +1131,12 @@ class _ChequesFuturistasScreenState extends State<ChequesFuturistasScreen> {
                     context.read<ChequeListProvider>().fetchCheques(
                       refresh: true,
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Cheque borrado correctamente'),
-                      ),
-                    );
+                    CompactSnackBar.showSuccess(context, 'Cheque borrado correctamente');
                   }
                 } catch (e) {
                   if (!context.mounted) return;
                   Navigator.pop(context); // Cerrar loader
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al borrar: $e')),
-                  );
+                  CompactSnackBar.showError(context, 'Error al borrar: $e');
                 }
               },
               child: const Text('Borrar', style: TextStyle(color: Colors.red)),

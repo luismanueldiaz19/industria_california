@@ -5,7 +5,68 @@ enum CompactSnackBarType { success, error, info, warning }
 
 /// Notificación compacta estilo Toast superior para reemplazar los banners
 /// gigantes predeterminados. Diseñado según las guías de compactación UI.
+/// Todos los tiempos, animaciones y dimensiones se controlan centralizadamente desde aquí.
 class CompactSnackBar extends StatelessWidget {
+  // ── Parámetros y Tiempos Centralizados ────────────────────────────────
+  /// Duración por defecto para notificaciones de éxito
+  static Duration successDuration = const Duration(milliseconds: 320);
+
+  /// Duración por defecto para notificaciones de error
+  static Duration errorDuration = const Duration(milliseconds: 320);
+
+  /// Duración por defecto para notificaciones informativas
+  static Duration infoDuration = const Duration(milliseconds: 320);
+
+  /// Duración por defecto para notificaciones de advertencia
+  static Duration warningDuration = const Duration(milliseconds: 320);
+
+  /// Duración de la animación de entrada
+  static Duration animationDuration = const Duration(milliseconds: 320);
+
+  /// Duración de la animación de salida
+  static Duration reverseAnimationDuration = const Duration(milliseconds: 240);
+
+  /// Curva de animación de entrada
+  static Curve animationCurve = Curves.easeOutCubic;
+
+  /// Curva de animación de salida
+  static Curve reverseAnimationCurve = Curves.easeInCubic;
+
+  /// Padding superior respecto a la pantalla
+  static EdgeInsets padding = const EdgeInsets.only(
+    top: 12,
+    left: 16,
+    right: 16,
+  );
+
+  /// Ancho máximo de la píldora compacta
+  static double maxWidth = 420;
+
+  /// Ancho mínimo de la píldora compacta
+  static double minWidth = 260;
+
+  /// Altura mínima
+  static double minHeight = 38;
+
+  /// Radio de bordes
+  static BorderRadius borderRadius = BorderRadius.circular(8);
+
+  /// Colores centralizados
+  static Color successBackgroundColor = const Color(
+    0xFF16A34A,
+  ); // Verde esmeralda moderno
+  static Color errorBackgroundColor = const Color(0xFFDC2626); // Rojo carmesí
+  static Color infoBackgroundColor = const Color(0xFF2563EB); // Azul vibrante
+  static Color warningBackgroundColor = const Color(
+    0xFFD97706,
+  ); // Ámbar / naranja
+
+  /// Iconos centralizados
+  static IconData successIcon = Icons.check_circle_rounded;
+  static IconData errorIcon = Icons.error_outline_rounded;
+  static IconData infoIcon = Icons.info_outline_rounded;
+  static IconData warningIcon = Icons.warning_amber_rounded;
+
   final String message;
   final String? title;
   final IconData icon;
@@ -27,46 +88,46 @@ class CompactSnackBar extends StatelessWidget {
     this.type = CompactSnackBarType.info,
   });
 
-  const CompactSnackBar.success({
+  CompactSnackBar.success({
     super.key,
     required this.message,
     this.title,
     this.onClose,
-  }) : icon = Icons.check_circle_rounded,
-       backgroundColor = const Color(0xFF16A34A), // Verde esmeralda moderno
+  }) : icon = successIcon,
+       backgroundColor = successBackgroundColor,
        iconColor = Colors.white,
        textColor = Colors.white,
        type = CompactSnackBarType.success;
 
-  const CompactSnackBar.error({
+  CompactSnackBar.error({
     super.key,
     required this.message,
     this.title,
     this.onClose,
-  }) : icon = Icons.error_outline_rounded,
-       backgroundColor = const Color(0xFFDC2626), // Rojo carmesí
+  }) : icon = errorIcon,
+       backgroundColor = errorBackgroundColor,
        iconColor = Colors.white,
        textColor = Colors.white,
        type = CompactSnackBarType.error;
 
-  const CompactSnackBar.info({
+  CompactSnackBar.info({
     super.key,
     required this.message,
     this.title,
     this.onClose,
-  }) : icon = Icons.info_outline_rounded,
-       backgroundColor = const Color(0xFF2563EB), // Azul vibrante
+  }) : icon = infoIcon,
+       backgroundColor = infoBackgroundColor,
        iconColor = Colors.white,
        textColor = Colors.white,
        type = CompactSnackBarType.info;
 
-  const CompactSnackBar.warning({
+  CompactSnackBar.warning({
     super.key,
     required this.message,
     this.title,
     this.onClose,
-  }) : icon = Icons.warning_amber_rounded,
-       backgroundColor = const Color(0xFFD97706), // Ámbar / naranja
+  }) : icon = warningIcon,
+       backgroundColor = warningBackgroundColor,
        iconColor = Colors.white,
        textColor = Colors.white,
        type = CompactSnackBarType.warning;
@@ -78,12 +139,13 @@ class CompactSnackBar extends StatelessWidget {
     BuildContext context,
     String message, {
     String? title,
-    Duration duration = const Duration(milliseconds: 2500),
+    Duration? duration,
+    VoidCallback? onClose,
   }) {
     _show(
       context,
-      CompactSnackBar.success(message: message, title: title),
-      duration: duration,
+      CompactSnackBar.success(message: message, title: title, onClose: onClose),
+      duration: duration ?? successDuration,
     );
   }
 
@@ -92,12 +154,13 @@ class CompactSnackBar extends StatelessWidget {
     BuildContext context,
     String message, {
     String? title,
-    Duration duration = const Duration(milliseconds: 3200),
+    Duration? duration,
+    VoidCallback? onClose,
   }) {
     _show(
       context,
-      CompactSnackBar.error(message: message, title: title),
-      duration: duration,
+      CompactSnackBar.error(message: message, title: title, onClose: onClose),
+      duration: duration ?? errorDuration,
     );
   }
 
@@ -106,12 +169,13 @@ class CompactSnackBar extends StatelessWidget {
     BuildContext context,
     String message, {
     String? title,
-    Duration duration = const Duration(milliseconds: 2500),
+    Duration? duration,
+    VoidCallback? onClose,
   }) {
     _show(
       context,
-      CompactSnackBar.info(message: message, title: title),
-      duration: duration,
+      CompactSnackBar.info(message: message, title: title, onClose: onClose),
+      duration: duration ?? infoDuration,
     );
   }
 
@@ -120,20 +184,167 @@ class CompactSnackBar extends StatelessWidget {
     BuildContext context,
     String message, {
     String? title,
-    Duration duration = const Duration(milliseconds: 2800),
+    Duration? duration,
+    VoidCallback? onClose,
   }) {
     _show(
       context,
-      CompactSnackBar.warning(message: message, title: title),
-      duration: duration,
+      CompactSnackBar.warning(message: message, title: title, onClose: onClose),
+      duration: duration ?? warningDuration,
     );
+  }
+
+  /// Muestra un snackbar según el tipo especificado
+  static void show(
+    BuildContext context,
+    String message, {
+    String? title,
+    CompactSnackBarType type = CompactSnackBarType.info,
+    Duration? duration,
+    VoidCallback? onClose,
+  }) {
+    switch (type) {
+      case CompactSnackBarType.success:
+        showSuccess(
+          context,
+          message,
+          title: title,
+          duration: duration,
+          onClose: onClose,
+        );
+        break;
+      case CompactSnackBarType.error:
+        showError(
+          context,
+          message,
+          title: title,
+          duration: duration,
+          onClose: onClose,
+        );
+        break;
+      case CompactSnackBarType.warning:
+        showWarning(
+          context,
+          message,
+          title: title,
+          duration: duration,
+          onClose: onClose,
+        );
+        break;
+      case CompactSnackBarType.info:
+        showInfo(
+          context,
+          message,
+          title: title,
+          duration: duration,
+          onClose: onClose,
+        );
+        break;
+    }
+  }
+
+  /// Infiere automáticamente el tipo según el color de fondo o el mensaje recibido
+  static void showWithColor(
+    BuildContext context,
+    String message, {
+    String? title,
+    Color? backgroundColor,
+    Duration? duration,
+    VoidCallback? onClose,
+  }) {
+    if (backgroundColor != null) {
+      final val = backgroundColor.toARGB32();
+      if (val == Colors.green.toARGB32() ||
+          val == Colors.greenAccent.toARGB32() ||
+          val == 0xFF16A34A ||
+          val == 0xFF4CAF50 ||
+          val == 0xFF2E7D32) {
+        showSuccess(
+          context,
+          message,
+          title: title,
+          duration: duration,
+          onClose: onClose,
+        );
+        return;
+      }
+      if (val == Colors.red.toARGB32() ||
+          val == Colors.redAccent.toARGB32() ||
+          val == 0xFFDC2626 ||
+          val == 0xFFE53935 ||
+          val == 0xFFD32F2F) {
+        showError(
+          context,
+          message,
+          title: title,
+          duration: duration,
+          onClose: onClose,
+        );
+        return;
+      }
+      if (val == Colors.orange.toARGB32() ||
+          val == Colors.orangeAccent.toARGB32() ||
+          val == Colors.amber.toARGB32() ||
+          val == Colors.amberAccent.toARGB32() ||
+          val == 0xFFD97706) {
+        showWarning(
+          context,
+          message,
+          title: title,
+          duration: duration,
+          onClose: onClose,
+        );
+        return;
+      }
+    }
+
+    final lower = message.toLowerCase();
+    if (lower.contains('error') ||
+        lower.contains('falló') ||
+        lower.contains('fallo') ||
+        lower.contains('no se pudo') ||
+        lower.contains('incorrecta') ||
+        lower.contains('no coinciden') ||
+        lower.contains('requerido')) {
+      showError(
+        context,
+        message,
+        title: title,
+        duration: duration,
+        onClose: onClose,
+      );
+    } else if (lower.contains('éxito') ||
+        lower.contains('exito') ||
+        lower.contains('correctamente') ||
+        lower.contains('guardad') ||
+        lower.contains('cread') ||
+        lower.contains('actualizad') ||
+        lower.contains('eliminad') ||
+        lower.contains('asignad') ||
+        lower.contains('enviad')) {
+      showSuccess(
+        context,
+        message,
+        title: title,
+        duration: duration,
+        onClose: onClose,
+      );
+    } else {
+      showInfo(
+        context,
+        message,
+        title: title,
+        duration: duration,
+        onClose: onClose,
+      );
+    }
   }
 
   /// Método genérico para mostrar cualquier widget en el Overlay superior con animación rápida
   static void _show(
     BuildContext context,
     Widget child, {
-    Duration duration = const Duration(milliseconds: 320),
+    required Duration duration,
   }) {
     if (!context.mounted) return;
     final overlay = Overlay.maybeOf(context);
@@ -143,11 +354,11 @@ class CompactSnackBar extends StatelessWidget {
       overlay,
       child,
       displayDuration: duration,
-      animationDuration: const Duration(milliseconds: 320),
-      reverseAnimationDuration: const Duration(milliseconds: 240),
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-      padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
+      animationDuration: animationDuration,
+      reverseAnimationDuration: reverseAnimationDuration,
+      curve: animationCurve,
+      reverseCurve: reverseAnimationCurve,
+      padding: padding,
     );
   }
 
@@ -155,10 +366,10 @@ class CompactSnackBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: 420,
-          minWidth: 260,
-          minHeight: 38,
+        constraints: BoxConstraints(
+          maxWidth: maxWidth,
+          minWidth: minWidth,
+          minHeight: minHeight,
         ),
         child: Material(
           color: Colors.transparent,
@@ -166,7 +377,7 @@ class CompactSnackBar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: backgroundColor,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: borderRadius,
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.18),
                 width: 1,

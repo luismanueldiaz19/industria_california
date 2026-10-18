@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/ruta.dart';
@@ -60,19 +61,9 @@ class _RutasScreenState extends State<RutasScreen> {
                 final provider = context.read<RutaProvider>();
                 final success = await provider.deleteRuta(ruta.id);
                 if (success && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Ruta eliminada'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  CompactSnackBar.showSuccess(context, 'Ruta eliminada');
                 } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: ${provider.error}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  CompactSnackBar.showError(context, 'Error: ${provider.error}');
                 }
               },
               child: const Text(
@@ -403,21 +394,9 @@ class _RutaFormDialogState extends State<_RutaFormDialog> {
 
     if (success) {
       Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.ruta == null ? 'Ruta creada' : 'Ruta actualizada',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+      CompactSnackBar.showSuccess(context, widget.ruta == null ? 'Ruta creada' : 'Ruta actualizada');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${provider.error}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: ${provider.error}');
     }
   }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -121,9 +122,7 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
           _isLoading = false;
           _isFetchingMore = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        CompactSnackBar.showError(context, 'Error: $e');
       }
     }
   }
@@ -135,9 +134,7 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
 
   void _descargarPdf() async {
     final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Generando PDF...')));
+    CompactSnackBar.showInfo(context, 'Generando PDF...');
 
     try {
       final urlStr = await _service.obtenerUrlPdfMisAlertas(
@@ -161,9 +158,7 @@ class _VendedorActividadScreenState extends State<VendedorActividadScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error al generar PDF: $e')));
+        CompactSnackBar.showError(context, 'Error al generar PDF: $e');
       }
     }
   }

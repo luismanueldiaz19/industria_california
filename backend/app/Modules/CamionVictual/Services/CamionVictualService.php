@@ -5,7 +5,12 @@ namespace App\Modules\CamionVictual\Services;
 use App\Models\User;
 use App\Modules\CamionVictual\Enums\EstadoCamion;
 use App\Modules\CamionVictual\Enums\EstadoEntrega;
+use App\Modules\CamionVictual\Enums\EstadoViaje;
+use App\Modules\CamionVictual\Enums\TipoGastoViaje;
 use App\Modules\CamionVictual\Models\CamionVictual;
+use App\Modules\CamionVictual\Models\CamionViaje;
+use App\Modules\CamionVictual\Models\CamionViajePedido;
+use App\Modules\CamionVictual\Models\CamionViajeGasto;
 use App\Modules\Pedido\Models\Pedido;
 use Illuminate\Support\Facades\DB;
 
@@ -102,15 +107,13 @@ class CamionVictualService
             throw new \Exception("Solo se pueden agregar pedidos en estado 'facturado'. Este pedido está en '{$pedido->estado->value}'.");
         }
 
-        // Verificar que el pedido no esté ya en otro camión activo
-        $enOtroCamion = DB::table('camion_victual_pedido')
-            ->join('camiones_victuales', 'camiones_victuales.id', '=', 'camion_victual_pedido.camion_victual_id')
-            ->where('camion_victual_pedido.pedido_id', $pedidoId)
-            ->whereIn('camiones_victuales.estado', ['armando', 'listo', 'en_ruta'])
+        // Verificar que el pedido no esté ya asignado a un camión
+        $yaAsignado = DB::table('camion_victual_pedido')
+            ->where('pedido_id', $pedidoId)
             ->exists();
 
-        if ($enOtroCamion) {
-            throw new \Exception("Este pedido ya está asignado a otro camión activo.");
+        if ($yaAsignado) {
+            throw new \Exception("Este pedido ya está asignado a un camión.");
         }
 
         return DB::transaction(function () use ($camion, $pedido) {
@@ -206,6 +209,23 @@ class CamionVictualService
                 ]);
         }
 
+        // Sincronizar con el viaje activo si existe
+        $viajeActivo = CamionViaje::where('camion_victual_id', $camion->id)
+            ->where('estado', EstadoViaje::EnRuta)
+            ->latest()
+            ->first();
+
+        if ($viajeActivo) {
+            CamionViajePedido::where('viaje_id', $viajeActivo->id)
+                ->where('pedido_id', $pedidoId)
+                ->update([
+                    'estado_entrega'     => $nuevoEstado->value,
+                    'comentario_entrega' => $comentario,
+                    'fecha_entregado'    => $fechaEntregado,
+                    'updated_at'         => now(),
+                ]);
+        }
+
         // Verificar si todos los pedidos están terminados para poder cerrar
         $camionActualizado = $camion->fresh('pedidos');
         $this->verificarCierreAutomatico($camionActualizado);
@@ -215,35 +235,217 @@ class CamionVictualService
 
     /**
      * Logística pone el camión en_ruta (sale a logística).
-     * Solo posible si el camión está en estado 'listo'.
+     * Solo posible si el camión está en estado 'listo' o 'armando'.
+     * Pone automáticamente todos sus pedidos asignados en estado 'en_curso'
+     * y genera automáticamente un nuevo registro de Viaje Histórico (ej: VJ-0001).
      */
     public function ponerEnRuta(CamionVictual $camion): CamionVictual
     {
-        if ($camion->estado !== EstadoCamion::Listo) {
-            throw new \Exception("Solo camiones en estado 'listo' pueden salir a ruta. Estado actual: '{$camion->estado->value}'.");
+        if ($camion->estado !== EstadoCamion::Listo && $camion->estado !== EstadoCamion::Armando) {
+            throw new \Exception("Solo camiones en estado 'listo' o 'armando' pueden salir a ruta. Estado actual: '{$camion->estado->value}'.");
         }
 
-        $camion->update(['estado' => EstadoCamion::EnRuta]);
+        DB::transaction(function () use ($camion) {
+            $camion->update(['estado' => EstadoCamion::EnRuta]);
 
-        return $camion->fresh();
+            // Actualiza todos los pedidos asignados a este camión a 'en_curso' (excepto los ya entregados)
+            DB::table('camion_victual_pedido')
+                ->where('camion_victual_id', $camion->id)
+                ->where('estado_entrega', '!=', EstadoEntrega::Entregado->value)
+                ->update([
+                    'estado_entrega'   => EstadoEntrega::EnCurso->value,
+                    'fecha_entregado'  => null,
+                    'updated_at'       => now(),
+                ]);
+
+            // Generar correlativo amigable VJ-0001
+            $count = CamionViaje::count() + 1;
+            $codigo = 'VJ-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+
+            // Crear el registro del Viaje en ruta
+            $viaje = CamionViaje::create([
+                'codigo'            => $codigo,
+                'camion_victual_id' => $camion->id,
+                'chofer_id'         => $camion->chofer_id,
+                'vendedor_id'       => $camion->vendedor_id,
+                'fecha_salida'      => now(),
+                'total_facturado'   => $camion->monto_total,
+                'total_gastos'      => 0,
+                'cant_ayudantes'    => 0,
+                'estado'            => EstadoViaje::EnRuta,
+            ]);
+
+            // Copiar los pedidos asignados al viaje histórico
+            $pedidos = $camion->pedidos()->get();
+            foreach ($pedidos as $p) {
+                CamionViajePedido::create([
+                    'viaje_id'           => $viaje->id,
+                    'pedido_id'          => $p->id,
+                    'orden_viaje'        => $p->pivot->orden_viaje ?? 0,
+                    'estado_entrega'     => EstadoEntrega::EnCurso,
+                    'fecha_entregado'    => null,
+                    'comentario_entrega' => $p->pivot->comentario_entrega ?? null,
+                    'total_pedido'       => $p->total,
+                ]);
+            }
+        });
+
+        return $this->cargarRelaciones($camion->fresh());
     }
 
     /**
-     * Cerrar el camión manualmente desde logística.
+     * Cerrar el camión manualmente con o sin datos de liquidación.
      */
     public function cerrar(CamionVictual $camion, User $responsable): CamionVictual
     {
-        if ($camion->estado === EstadoCamion::Cerrado) {
-            throw new \Exception("El camión ya está cerrado.");
+        $res = $this->cerrarConLiquidacion($camion, [], $responsable);
+        return $res['camion'];
+    }
+
+    /**
+     * Cierra el viaje liquidando gastos (combustible, dieta, etc.), ayudantes y comentarios.
+     * Guarda el historial de forma permanente y LIBERA el camión dejándolo en VACÍO ($0.00).
+     */
+    public function cerrarConLiquidacion(CamionVictual $camion, array $datos, User $responsable): array
+    {
+        return DB::transaction(function () use ($camion, $datos, $responsable) {
+            // 1. Localizar el viaje activo en ruta o crear uno para archivar
+            $viaje = CamionViaje::where('camion_victual_id', $camion->id)
+                ->where('estado', EstadoViaje::EnRuta)
+                ->latest()
+                ->first();
+
+            if (!$viaje) {
+                $count = CamionViaje::count() + 1;
+                $viaje = CamionViaje::create([
+                    'codigo'            => 'VJ-' . str_pad($count, 4, '0', STR_PAD_LEFT),
+                    'camion_victual_id' => $camion->id,
+                    'chofer_id'         => $camion->chofer_id,
+                    'vendedor_id'       => $camion->vendedor_id,
+                    'fecha_salida'      => $camion->updated_at ?? now(),
+                    'total_facturado'   => $camion->monto_total,
+                    'total_gastos'      => 0,
+                    'cant_ayudantes'    => 0,
+                    'estado'            => EstadoViaje::EnRuta,
+                ]);
+            }
+
+            // 2. Registrar los gastos del viaje (combustible, dieta, peajes, etc.)
+            $totalGastos = 0;
+            if (!empty($datos['gastos']) && is_array($datos['gastos'])) {
+                foreach ($datos['gastos'] as $g) {
+                    $monto = (float) ($g['monto_total'] ?? 0);
+                    if ($monto <= 0 && !empty($g['cantidad']) && !empty($g['precio_unitario'])) {
+                        $monto = (float) $g['cantidad'] * (float) $g['precio_unitario'];
+                    }
+                    $totalGastos += $monto;
+
+                    CamionViajeGasto::create([
+                        'viaje_id'        => $viaje->id,
+                        'tipo_gasto'      => $g['tipo_gasto'] ?? 'otro',
+                        'concepto'        => $g['concepto'] ?? ucfirst($g['tipo_gasto'] ?? 'Gasto de viaje'),
+                        'cantidad'        => $g['cantidad'] ?? 0,
+                        'precio_unitario' => $g['precio_unitario'] ?? 0,
+                        'monto_total'     => $monto,
+                        'comprobante'     => $g['comprobante'] ?? null,
+                        'registrado_por'  => $responsable->id,
+                    ]);
+                }
+            }
+
+            // 3. Sincronizar estados finales de los pedidos en el viaje
+            $pedidosCamion = DB::table('camion_victual_pedido')
+                ->where('camion_victual_id', $camion->id)
+                ->get();
+
+            foreach ($pedidosCamion as $pc) {
+                CamionViajePedido::updateOrCreate(
+                    ['viaje_id' => $viaje->id, 'pedido_id' => $pc->pedido_id],
+                    [
+                        'orden_viaje'        => $pc->orden_viaje,
+                        'estado_entrega'     => $pc->estado_entrega,
+                        'fecha_entregado'    => $pc->fecha_entregado,
+                        'comentario_entrega' => $pc->comentario_entrega,
+                    ]
+                );
+            }
+
+            // 4. Completar y cerrar el viaje histórico
+            $viaje->update([
+                'cant_ayudantes'    => (int) ($datos['cant_ayudantes'] ?? 0),
+                'nombres_ayudantes' => $datos['nombres_ayudantes'] ?? null,
+                'comentarios'       => $datos['comentarios'] ?? null,
+                'total_gastos'      => $totalGastos,
+                'fecha_cierre'      => now(),
+                'cerrado_por'       => $responsable->id,
+                'estado'            => EstadoViaje::Completado,
+            ]);
+
+            // 5. LIBERAR EL CAMIÓN: desvincular pedidos y volverlo a estado VACÍO con $0.00
+            $camion->pedidos()->detach();
+            $camion->update([
+                'estado'       => EstadoCamion::Vacio,
+                'monto_total'  => 0.00,
+                'fecha_cierre' => now(),
+                'cerrado_por'  => $responsable->id,
+            ]);
+
+            return [
+                'camion' => $this->cargarRelaciones($camion->fresh()),
+                'viaje'  => $viaje->fresh(['gastos', 'pedidos.pedido.cliente', 'chofer.user', 'vendedor', 'cerradoPor']),
+            ];
+        });
+    }
+
+    /**
+     * Obtener listado de viajes históricos con filtros.
+     */
+    public function getHistorialViajes(array $filtros = []): array
+    {
+        $query = CamionViaje::with([
+            'chofer.user:id,name',
+            'vendedor:id,name',
+            'cerradoPor:id,name',
+            'gastos',
+            'pedidos.pedido.cliente:id,nombre',
+        ])->orderBy('id', 'desc');
+
+        if (!empty($filtros['chofer_id'])) {
+            $query->where('chofer_id', $filtros['chofer_id']);
         }
 
-        $camion->update([
-            'estado'       => EstadoCamion::Cerrado,
-            'fecha_cierre' => now(),
-            'cerrado_por'  => $responsable->id,
-        ]);
+        if (!empty($filtros['estado'])) {
+            $query->where('estado', $filtros['estado']);
+        }
 
-        return $camion->fresh();
+        if (!empty($filtros['fecha_inicio']) && !empty($filtros['fecha_fin'])) {
+            $query->whereBetween('fecha_salida', [$filtros['fecha_inicio'], $filtros['fecha_fin']]);
+        }
+
+        $perPage = (int) ($filtros['per_page'] ?? 30);
+        $paginator = $query->paginate($perPage);
+
+        return [
+            'data'         => $paginator->items(),
+            'total'        => $paginator->total(),
+            'current_page' => $paginator->currentPage(),
+            'last_page'    => $paginator->lastPage(),
+        ];
+    }
+
+    /**
+     * Obtener el detalle completo de un viaje específico.
+     */
+    public function getDetalleViaje(int $viajeId): CamionViaje
+    {
+        return CamionViaje::with([
+            'chofer.user:id,name',
+            'vendedor:id,name',
+            'cerradoPor:id,name',
+            'gastos',
+            'pedidos.pedido.cliente:id,nombre,direccion',
+            'pedidos.pedido.detalles.producto',
+        ])->findOrFail($viajeId);
     }
 
     // ─── Helpers privados ─────────────────────────────────────────

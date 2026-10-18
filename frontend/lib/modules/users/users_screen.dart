@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'providers/users_provider.dart';
 import 'widgets/register_user_dialog.dart';
@@ -295,14 +296,9 @@ class _UsersScreenState extends State<UsersScreen> {
                                                             );
                                                     if (success &&
                                                         context.mounted) {
-                                                      ScaffoldMessenger.of(
+                                                      CompactSnackBar.showSuccess(
                                                         context,
-                                                      ).showSnackBar(
-                                                        const SnackBar(
-                                                          content: Text(
-                                                            'Usuario eliminado',
-                                                          ),
-                                                        ),
+                                                        'Usuario eliminado',
                                                       );
                                                     }
                                                   },

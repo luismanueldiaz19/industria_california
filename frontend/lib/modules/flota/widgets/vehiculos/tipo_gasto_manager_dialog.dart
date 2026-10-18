@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../providers/gasto_vehiculo_provider.dart';
 import '../../models/tipo_gasto.dart';
@@ -39,12 +40,7 @@ class _TipoGastoManagerDialogState extends State<TipoGastoManagerDialog> {
       });
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(provider.error ?? 'Error al guardar'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CompactSnackBar.showError(context, provider.error ?? 'Error al guardar');
       }
     }
   }

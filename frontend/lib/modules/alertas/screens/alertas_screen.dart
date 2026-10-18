@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
@@ -236,12 +237,7 @@ class _AlertasScreenState extends State<AlertasScreen> {
   Future<void> _generarPdf() async {
     try {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Generando reporte PDF...'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        CompactSnackBar.showInfo(context, 'Generando reporte PDF...');
       }
 
       Map<String, String> params = {};
@@ -270,32 +266,17 @@ class _AlertasScreenState extends State<AlertasScreen> {
         final url = Uri.parse(urlStr);
         if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('No se pudo abrir el PDF'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            CompactSnackBar.showError(context, 'No se pudo abrir el PDF');
           }
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudo generar la URL del reporte'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          CompactSnackBar.showError(context, 'No se pudo generar la URL del reporte');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al generar PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CompactSnackBar.showError(context, 'Error al generar PDF: $e');
       }
     }
   }

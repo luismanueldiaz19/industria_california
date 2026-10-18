@@ -10,6 +10,7 @@ import '../../../pedido/widgets/pedido_detalle_dialog.dart';
 import '../camiones/camion_victual_form_modal.dart';
 import 'despacho_agregar_pedidos_modal.dart';
 import 'despacho_cambiar_chofer_dialog.dart';
+import 'despacho_liquidacion_dialog.dart';
 
 class DespachoCamionDetallePanel extends StatefulWidget {
   final CamionVictual camion;
@@ -46,6 +47,7 @@ class _DespachoCamionDetallePanelState
   void didUpdateWidget(covariant DespachoCamionDetallePanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.camion.id != widget.camion.id ||
+        oldWidget.camion.estado != widget.camion.estado ||
         oldWidget.camion.pedidos != widget.camion.pedidos) {
       _sincronizarPedidos();
     }
@@ -107,7 +109,7 @@ class _DespachoCamionDetallePanelState
           ),
         ),
         content: Text(
-          '¿Desea despachar el "${widget.camion.nombre}" con chofer ${widget.camion.choferNombre ?? "sin asignar"} en ruta?',
+          '¿Desea despachar el "${widget.camion.nombre}" con chofer ${widget.camion.choferNombre ?? "sin asignar"} en ruta? Todos los pedidos asignados pasarán al estado "En curso".',
           style: const TextStyle(color: Color(0xFF475569), fontSize: 13),
         ),
         actions: [
@@ -141,7 +143,7 @@ class _DespachoCamionDetallePanelState
     if (ok) {
       CompactSnackBar.showSuccess(
         context,
-        'Camión puesto EN RUTA exitosamente',
+        'Camión puesto EN RUTA y pedidos pasados a EN CURSO exitosamente',
       );
       widget.onCamionUpdated();
     } else {
@@ -150,56 +152,13 @@ class _DespachoCamionDetallePanelState
   }
 
   Future<void> _cerrarCamion() async {
-    final confirmar = await showDialog<bool>(
+    final ok = await showDialog<bool>(
       context: context,
-      builder: (c) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text(
-          'Cerrar Camión',
-          style: TextStyle(
-            color: Color(0xFF0F172A),
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        content: const Text(
-          '¿Desea dar por finalizado y cerrar este viaje/camión?',
-          style: TextStyle(color: Color(0xFF475569), fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(color: Color(0xFF64748B)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text(
-              'Cerrar Camión',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (c) => DespachoLiquidacionDialog(camion: widget.camion),
     );
-
-    if (confirmar != true || !mounted) return;
-
-    final provider = context.read<CamionVictualProvider>();
-    final ok = await provider.cerrar(widget.camion.id);
-    if (!mounted) return;
-    if (ok) {
-      CompactSnackBar.showSuccess(context, 'Camión CERRADO');
+    if (ok == true && mounted) {
       widget.onCamionUpdated();
-    } else {
-      CompactSnackBar.showError(context, provider.error ?? 'Error');
     }
   }
 
@@ -463,11 +422,16 @@ class _DespachoCamionDetallePanelState
             ),
           ),
 
-        if (camion.estado == 'en_ruta' || camion.estado == 'listo')
+        if (camion.estado == 'en_ruta' ||
+            camion.estado == 'listo' ||
+            (camion.estado == 'cerrado' && camion.pedidos.isNotEmpty))
           ElevatedButton.icon(
             onPressed: _cerrarCamion,
-            icon: const Icon(Icons.flag, size: 14),
-            label: const Text('Cerrar Camión', style: TextStyle(fontSize: 11)),
+            icon: const Icon(Icons.receipt_long, size: 14),
+            label: const Text(
+              'Liquidar Viaje',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEA580C),
               foregroundColor: Colors.white,
@@ -487,6 +451,7 @@ class _DespachoCamionDetallePanelState
       icon: const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 18),
       color: Colors.white,
       onSelected: (val) {
+        if (val == 'liquidar') _cerrarCamion();
         if (val == 'vaciar') _vaciarCamion();
         if (val == 'editar') {
           showModalBottomSheet(
@@ -497,8 +462,22 @@ class _DespachoCamionDetallePanelState
           ).then((_) => widget.onCamionUpdated());
         }
       },
-      itemBuilder: (_) => const [
-        PopupMenuItem(
+      itemBuilder: (_) => [
+        if (camion.pedidos.isNotEmpty)
+          const PopupMenuItem(
+            value: 'liquidar',
+            child: Row(
+              children: [
+                Icon(Icons.receipt_long, color: Color(0xFFEA580C), size: 16),
+                SizedBox(width: 8),
+                Text(
+                  'Liquidar Viaje',
+                  style: TextStyle(color: Color(0xFFEA580C), fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        const PopupMenuItem(
           value: 'editar',
           child: Row(
             children: [
@@ -511,7 +490,7 @@ class _DespachoCamionDetallePanelState
             ],
           ),
         ),
-        PopupMenuItem(
+        const PopupMenuItem(
           value: 'vaciar',
           child: Row(
             children: [
@@ -560,9 +539,7 @@ class _DespachoCamionDetallePanelState
                 ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  border: Border(
-                    bottom: BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
+                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -606,12 +583,12 @@ class _DespachoCamionDetallePanelState
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: estadoColor.withValues(
-                                        alpha: 0.1,
-                                      ),
+                                      color: estadoColor.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: estadoColor.withValues(alpha: 0.3),
+                                        color: estadoColor.withValues(
+                                          alpha: 0.3,
+                                        ),
                                       ),
                                     ),
                                     child: Text(
@@ -688,9 +665,7 @@ class _DespachoCamionDetallePanelState
                       decoration: BoxDecoration(
                         color: const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFFE2E8F0),
-                        ),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
                       child: Row(
                         children: [
@@ -784,9 +759,7 @@ class _DespachoCamionDetallePanelState
                 ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  border: Border(
-                    bottom: BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
+                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
                 ),
                 child: constraints.maxWidth < 620
                     ? Column(
@@ -1067,9 +1040,7 @@ class _DespachoCamionDetallePanelState
                 ),
                 decoration: const BoxDecoration(
                   color: Color(0xFFF1F5F9),
-                  border: Border(
-                    bottom: BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
+                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
                 ),
                 child: Row(
                   children: [
@@ -1096,39 +1067,45 @@ class _DespachoCamionDetallePanelState
                     ),
                     const SizedBox(width: 8),
 
-                    // Cargar Pedidos Facturados
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) =>
-                              DespachoAgregarPedidosModal(camion: camion),
-                        ).then((_) => widget.onCamionUpdated());
-                      },
-                      icon: const Icon(Icons.playlist_add, size: 14),
-                      label: Text(
-                        constraints.maxWidth < 420
-                            ? 'Cargar'
-                            : 'Cargar Facturados',
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 6,
+                    // Cargar Pedidos Facturados (solo si el camión está armando o listo)
+                    if (camion.estado != 'cerrado' &&
+                        camion.estado != 'en_ruta')
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) =>
+                                DespachoAgregarPedidosModal(camion: camion),
+                          ).then((_) => widget.onCamionUpdated());
+                        },
+                        icon: const Icon(Icons.playlist_add, size: 14),
+                        label: Text(
+                          constraints.maxWidth < 420
+                              ? 'Cargar'
+                              : 'Cargar Facturados',
+                          style: const TextStyle(fontSize: 11),
                         ),
-                        visualDensity: VisualDensity.compact,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 6,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
+                    if (camion.estado != 'cerrado' &&
+                        camion.estado != 'en_ruta')
+                      const SizedBox(width: 8),
 
                     // Reordenar Ruta Button
-                    if (camion.pedidos.length > 1)
+                    if (camion.pedidos.length > 1 &&
+                        camion.estado != 'cerrado' &&
+                        camion.estado != 'en_ruta')
                       OutlinedButton.icon(
                         onPressed: () {
                           if (_isReordering) {
@@ -1174,6 +1151,124 @@ class _DespachoCamionDetallePanelState
                   ],
                 ),
               ),
+
+              // ── Banner Informativo de Liquidación (cuando está en ruta o cerrado con pedidos) ──
+              if ((camion.estado == 'en_ruta' || camion.estado == 'cerrado') &&
+                  camion.pedidos.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: camion.estado == 'cerrado'
+                        ? const Color(0xFFFEF2F2)
+                        : (pedidosEntregados == camion.pedidos.length &&
+                                  camion.pedidos.isNotEmpty
+                              ? const Color(0xFFF0FDF4)
+                              : const Color(0xFFFFF7ED)),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: camion.estado == 'cerrado'
+                          ? const Color(0xFFFECACA)
+                          : (pedidosEntregados == camion.pedidos.length &&
+                                    camion.pedidos.isNotEmpty
+                                ? const Color(0xFF86EFAC)
+                                : const Color(0xFFFDBA74)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        camion.estado == 'cerrado'
+                            ? Icons.assignment_late_outlined
+                            : (pedidosEntregados == camion.pedidos.length &&
+                                      camion.pedidos.isNotEmpty
+                                  ? Icons.check_circle_outline
+                                  : Icons.local_shipping_outlined),
+                        color: camion.estado == 'cerrado'
+                            ? const Color(0xFFDC2626)
+                            : (pedidosEntregados == camion.pedidos.length &&
+                                      camion.pedidos.isNotEmpty
+                                  ? const Color(0xFF16A34A)
+                                  : const Color(0xFFEA580C)),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              camion.estado == 'cerrado'
+                                  ? 'Camión cerrado pendiente de liquidar (${camion.pedidos.length} pedidos)'
+                                  : (pedidosEntregados ==
+                                                camion.pedidos.length &&
+                                            camion.pedidos.isNotEmpty
+                                        ? '¡Todos los pedidos han sido entregados!'
+                                        : 'Viaje en ruta ($pedidosEntregados/${camion.pedidos.length} entregados)'),
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: camion.estado == 'cerrado'
+                                    ? const Color(0xFFB91C1C)
+                                    : (pedidosEntregados ==
+                                                  camion.pedidos.length &&
+                                              camion.pedidos.isNotEmpty
+                                          ? const Color(0xFF15803D)
+                                          : const Color(0xFF9A3412)),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              camion.estado == 'cerrado'
+                                  ? 'Haz clic en "Liquidar Viaje" para asentar los gastos y liberar el camión a VACÍO.'
+                                  : 'Haz clic en "Liquidar Viaje" para registrar los gastos (combustible, viáticos), ayudantes y liberar el camión.',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: camion.estado == 'cerrado'
+                                    ? const Color(0xFF991B1B)
+                                    : (pedidosEntregados ==
+                                                  camion.pedidos.length &&
+                                              camion.pedidos.isNotEmpty
+                                          ? const Color(0xFF166534)
+                                          : const Color(0xFF7C2D12)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(
+                        onPressed: _cerrarCamion,
+                        icon: const Icon(Icons.receipt_long, size: 14),
+                        label: const Text(
+                          'Liquidar Viaje',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEA580C),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               // ── Lista / Tabla Interactiva de Pedidos ─────────────────────
               Expanded(
@@ -1425,7 +1520,9 @@ class _DespachoCamionDetallePanelState
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                                 border: Border.all(
-                                                  color: const Color(0xFFBFDBFE),
+                                                  color: const Color(
+                                                    0xFFBFDBFE,
+                                                  ),
                                                 ),
                                               ),
                                               child: Text(

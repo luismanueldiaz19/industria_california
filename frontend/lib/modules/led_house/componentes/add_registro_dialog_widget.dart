@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -70,23 +71,11 @@ class _AddRegistroDialogWidgetState extends State<AddRegistroDialogWidget> {
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_codigoSeleccionado == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Por favor, selecciona una cuenta del catálogo válida.',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Por favor, selecciona una cuenta del catálogo válida.');
       return;
     }
     if (_selectedMonth == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor, selecciona un mes.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Por favor, selecciona un mes.');
       return;
     }
 
@@ -126,19 +115,9 @@ class _AddRegistroDialogWidgetState extends State<AddRegistroDialogWidget> {
 
     if (success) {
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registro guardado exitosamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Registro guardado exitosamente');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${provider.error}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: ${provider.error}');
     }
   }
 

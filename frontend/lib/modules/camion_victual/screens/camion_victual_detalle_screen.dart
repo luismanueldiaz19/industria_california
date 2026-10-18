@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../vendedor/widgets/vendedor_mobile_wrapper.dart';
@@ -99,10 +100,9 @@ class _CamionVictualDetalleScreenState
         builder: (_) => PedidoDetalleDialog(pedido: pedidoReal),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo cargar el detalle del pedido'),
-        ),
+      CompactSnackBar.showError(
+        context,
+        'No se pudo cargar el detalle del pedido',
       );
     }
   }
@@ -124,9 +124,7 @@ class _CamionVictualDetalleScreenState
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error al generar PDF: $e')));
+        CompactSnackBar.showError(context, 'Error al generar PDF: $e');
       }
     }
   }
@@ -221,26 +219,13 @@ class _CamionVictualDetalleScreenState
     if (confirmar != true || !mounted) return;
 
     final prov = context.read<CamionVictualProvider>();
-    final messenger = ScaffoldMessenger.of(context);
     final ok = await prov.quitarPedido(widget.camionId, pedido.id);
     if (!mounted) return;
     if (ok) {
       _sincronizarLocal();
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Pedido quitado del camión'),
-          backgroundColor: Color(0xFF4CAF50),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Pedido quitado del camión');
     } else {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(prov.error ?? 'Error'),
-          backgroundColor: const Color(0xFFE53935),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      CompactSnackBar.showError(context, prov.error ?? 'Error');
     }
   }
 
@@ -253,13 +238,7 @@ class _CamionVictualDetalleScreenState
     setState(() => _modoReorden = false);
     if (ok && mounted) {
       _sincronizarLocal();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Orden guardado correctamente'),
-          backgroundColor: Color(0xFF4CAF50),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Orden guardado correctamente');
     }
   }
 
@@ -460,18 +439,15 @@ class _CamionVictualDetalleScreenState
                     try {
                       await prov.update(camion.id, {'estado': 'listo'});
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Camión marcado como Listo'),
-                          ),
+                        CompactSnackBar.showInfo(
+                          context,
+                          'Camión marcado como Listo',
                         );
                         _refrescar();
                       }
                     } catch (e) {
                       if (mounted) {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                        CompactSnackBar.showError(context, 'Error: $e');
                       }
                     }
                   },

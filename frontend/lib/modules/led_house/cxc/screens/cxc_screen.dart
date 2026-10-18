@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import '../../../../models/company.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -430,15 +431,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                       .toList();
                                   if (cxcsCliente.isEmpty) {
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'El cliente no tiene deudas pendientes',
-                                          ),
-                                        ),
-                                      );
+                                      CompactSnackBar.showInfo(context, 'El cliente no tiene deudas pendientes');
                                     }
                                     return;
                                   }
@@ -488,19 +481,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                     );
                                     if (!await launchUrl(url)) {
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'No se pudo abrir WhatsApp',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
+                                        CompactSnackBar.showError(context, 'No se pudo abrir WhatsApp');
                                       }
                                     }
                                   }
@@ -615,22 +596,12 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
               final url = Uri.parse(response['url']);
               if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('No se pudo abrir el PDF en el navegador'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  CompactSnackBar.showError(context, 'No se pudo abrir el PDF en el navegador');
                 }
               }
             } catch (e) {
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error al obtener URL del PDF: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                CompactSnackBar.showError(context, 'Error al obtener URL del PDF: $e');
               }
             }
           },
@@ -1712,15 +1683,7 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
       );
       if (!await launchUrl(url)) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'No se pudo abrir WhatsApp',
-                style: TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
+          CompactSnackBar.showError(context, 'No se pudo abrir WhatsApp');
         }
       }
     }

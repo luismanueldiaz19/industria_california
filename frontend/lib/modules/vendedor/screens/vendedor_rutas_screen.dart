@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:industria_california/core/widgets/general_header.dart';
 import 'package:industria_california/modules/vendedor/widgets/vendedor_mobile_wrapper.dart';
 import 'package:provider/provider.dart';
@@ -222,17 +223,10 @@ class _VendedorRutasScreenState extends State<VendedorRutasScreen> {
           final ok = await context.read<RutaProvider>().createRuta(data);
           if (!mounted) return;
           if (ok) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Ruta creada correctamente'),
-                backgroundColor: Color(0xFF4CAF50),
-              ),
-            );
+            CompactSnackBar.showSuccess(context, 'Ruta creada correctamente');
           } else {
             final err = context.read<RutaProvider>().error ?? 'Error';
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(err), backgroundColor: Colors.red),
-            );
+            CompactSnackBar.showError(context, err);
           }
         },
       ),

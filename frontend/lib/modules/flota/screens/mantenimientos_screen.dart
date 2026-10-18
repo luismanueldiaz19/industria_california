@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/app_date_picker_dark.dart';
@@ -54,21 +55,11 @@ class _MantenimientosScreenState extends State<MantenimientosScreen> {
               try {
                 await provider.deleteMantenimiento(mant.vehiculoId, mant.id);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Eliminado'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  CompactSnackBar.showSuccess(context, 'Eliminado');
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Error al eliminar'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  CompactSnackBar.showError(context, 'Error al eliminar');
                 }
               }
             },

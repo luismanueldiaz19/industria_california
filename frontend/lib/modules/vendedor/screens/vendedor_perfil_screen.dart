@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/widgets/general_header.dart';
@@ -79,12 +80,7 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
 
     if (_newPasswordCtrl.text.isNotEmpty &&
         _newPasswordCtrl.text != _confirmPasswordCtrl.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Las contraseñas no coinciden'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Las contraseñas no coinciden');
       return;
     }
 
@@ -107,12 +103,7 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
           newPhotoUrl: res['user']['profile_photo_url'],
         );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Perfil actualizado correctamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        CompactSnackBar.showSuccess(context, 'Perfil actualizado correctamente');
 
         // Limpiar campos de contraseña
         _currentPasswordCtrl.clear();
@@ -121,9 +112,7 @@ class _VendedorPerfilScreenState extends State<VendedorPerfilScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
+        CompactSnackBar.showError(context, 'Error: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

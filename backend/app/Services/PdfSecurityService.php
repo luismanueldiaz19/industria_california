@@ -13,6 +13,7 @@ use App\Models\InventarioMovimiento;
 use App\Models\Pedido;
 use App\Models\User;
 use App\Modules\Vehiculo\Models\VehiculoMantenimiento;
+use App\Modules\CamionVictual\Models\CamionVictual;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
@@ -513,6 +514,33 @@ class PdfSecurityService
                     'search' => $search
                 ]);
                 $filename = 'Produccion_Agrupada_' . ucfirst($tipo) . '_' . date('Ymd_His') . '.pdf';
+                break;
+
+            case 'camion_conduce':
+                $camionId = $params['id'] ?? null;
+                if (!$camionId) {
+                    abort(404, 'ID de camión no especificado.');
+                }
+
+                $camion = CamionVictual::with([
+                    'chofer.user:id,name',
+                    'vendedor:id,name',
+                    'pedidos' => function ($q) {
+                        $q->with([
+                            'cliente:id,nombre,direccion',
+                            'detalles.producto',
+                        ])->orderByPivot('orden_viaje', 'asc');
+                    },
+                ])->find($camionId);
+
+                if (!$camion) {
+                    abort(404, 'Camión no encontrado.');
+                }
+
+                $pdf = Pdf::loadView('pdf.camion_conduce', [
+                    'camion' => $camion,
+                ]);
+                $filename = "Conduce_Camion_{$camion->id}_" . date('Ymd_His') . ".pdf";
                 break;
 
             default:

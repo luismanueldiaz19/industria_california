@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/role_provider.dart';
@@ -52,22 +53,10 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
       if (success) {
         if (!mounted) return;
         Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Usuario registrado exitosamente.'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        CompactSnackBar.showSuccess(context, 'Usuario registrado exitosamente.');
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              authProvider.errorMessage ?? 'Error al registrar el usuario.',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CompactSnackBar.showError(context, authProvider.errorMessage ?? 'Error al registrar el usuario.');
       }
     }
   }

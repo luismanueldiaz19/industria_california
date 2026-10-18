@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -374,25 +375,14 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
             ? AppTheme.successColor
             : (repetidos > 0 ? Colors.orange.shade800 : AppTheme.successColor);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'Importación exitosa'),
-            backgroundColor: snackColor,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        CompactSnackBar.showSuccess(context, response['message'] ?? 'Importación exitosa');
 
         Provider.of<CxcProvider>(context, listen: false).fetchCxcs();
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isImporting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al importar: $e'),
-          backgroundColor: AppTheme.dangerColor,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al importar: $e');
     }
   }
 
@@ -504,11 +494,7 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
             tooltip: 'Generar PDF',
             onPressed: () async {
               try {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Generando PDF, por favor espera...'),
-                  ),
-                );
+                CompactSnackBar.showInfo(context, 'Generando PDF, por favor espera...');
                 final res = await HttpService().get(
                   'ledhouse/cxc/reporte-pdf-url/$_clienteId',
                 );
@@ -518,22 +504,12 @@ class _CxcClienteDetailScreenState extends State<CxcClienteDetailScreen> {
                   mode: LaunchMode.externalApplication,
                 )) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('No se pudo abrir el PDF'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    CompactSnackBar.showError(context, 'No se pudo abrir el PDF');
                   }
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error al generar PDF: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  CompactSnackBar.showError(context, 'Error al generar PDF: $e');
                 }
               }
             },

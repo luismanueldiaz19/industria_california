@@ -3,10 +3,10 @@ import '../models/camion_victual.dart';
 
 class CamionVictualService {
   final HttpService _http = HttpService();
-  static const String _base = 'industria-california/camiones-victuales';
+  static const String _base = 'camiones-victuales';
 
   Future<String> getConducePdfUrl(int id) async {
-    final response = await _http.get('$_base/$id/pdf-url');
+    final response = await _http.getV2('$_base/$id/pdf-url');
     return response['url'] as String;
   }
 
@@ -22,41 +22,41 @@ class CamionVictualService {
       if (estado != null) 'estado': estado,
       if (withPedidos) 'with_pedidos': '1',
     };
-    final response = await _http.get(_base, params: params);
+    final response = await _http.getV2(_base, params: params);
     final List data = response is List ? response : [];
     return data.map((e) => CamionVictual.fromJson(e)).toList();
   }
 
   Future<CamionVictual> createCamion(Map<String, dynamic> data) async {
-    final response = await _http.post(_base, data);
+    final response = await _http.postV2(_base, data);
     return CamionVictual.fromJson(response);
   }
 
   Future<CamionVictual> updateCamion(int id, Map<String, dynamic> data) async {
-    final response = await _http.put('$_base/$id', data);
+    final response = await _http.putV2('$_base/$id', data);
     return CamionVictual.fromJson(response);
   }
 
   Future<void> deleteCamion(int id) async {
-    await _http.delete('$_base/$id');
+    await _http.deleteV2('$_base/$id');
   }
 
   /// Ver detalle de un camión con sus pedidos ordenados.
   Future<CamionVictual> getCamion(int id) async {
-    final response = await _http.get('$_base/$id');
+    final response = await _http.getV2('$_base/$id');
     return CamionVictual.fromJson(response);
   }
 
   /// Obtiene el monto mínimo configurado globalmente en el sistema.
   Future<double> getMontoMinimo() async {
-    final response = await _http.get('$_base/monto-minimo');
+    final response = await _http.getV2('$_base/monto-minimo');
     return double.tryParse(response['monto_minimo']?.toString() ?? '0') ?? 0;
   }
 
   /// Pedidos en estado 'facturado' disponibles para agregar (sin camión activo).
   Future<List<PedidoDisponible>> getPedidosDisponibles({String? search}) async {
     final params = {if (search != null && search.isNotEmpty) 'search': search};
-    final response = await _http.get(
+    final response = await _http.getV2(
       '$_base/pedidos-disponibles',
       params: params,
     );
@@ -66,7 +66,7 @@ class CamionVictualService {
 
   /// Agrega un pedido al camión (orden_viaje se asigna automáticamente al final).
   Future<CamionVictual> agregarPedido(int camionId, int pedidoId) async {
-    final response = await _http.post('$_base/$camionId/pedidos', {
+    final response = await _http.postV2('$_base/$camionId/pedidos', {
       'pedido_id': pedidoId,
     });
     return CamionVictual.fromJson(response);
@@ -74,7 +74,7 @@ class CamionVictualService {
 
   /// Quita un pedido del camión.
   Future<CamionVictual> quitarPedido(int camionId, int pedidoId) async {
-    final response = await _http.delete('$_base/$camionId/pedidos/$pedidoId');
+    final response = await _http.deleteV2('$_base/$camionId/pedidos/$pedidoId');
     return CamionVictual.fromJson(response);
   }
 
@@ -84,7 +84,7 @@ class CamionVictualService {
     int camionId,
     List<Map<String, int>> orden,
   ) async {
-    final response = await _http.patch('$_base/$camionId/reordenar', {
+    final response = await _http.patchV2('$_base/$camionId/reordenar', {
       'orden': orden,
     });
     return CamionVictual.fromJson(response);
@@ -95,7 +95,7 @@ class CamionVictualService {
     int pedidoId,
     String estadoEntrega,
   ) async {
-    final response = await _http.patch(
+    final response = await _http.patchV2(
       '$_base/$camionId/pedidos/$pedidoId/entrega',
       {'estado_entrega': estadoEntrega},
     );
@@ -103,17 +103,57 @@ class CamionVictualService {
   }
 
   Future<CamionVictual> vaciarCamion(int camionId) async {
-    final response = await _http.patch('$_base/$camionId/vaciar', {});
+    final response = await _http.patchV2('$_base/$camionId/vaciar', {});
     return CamionVictual.fromJson(response);
   }
 
   Future<CamionVictual> ponerEnRuta(int camionId) async {
-    final response = await _http.patch('$_base/$camionId/en-ruta', {});
+    final response = await _http.patchV2('$_base/$camionId/en-ruta', {});
     return CamionVictual.fromJson(response);
   }
 
   Future<CamionVictual> cerrar(int camionId) async {
-    final response = await _http.patch('$_base/$camionId/cerrar', {});
+    final response = await _http.patchV2('$_base/$camionId/cerrar', {});
     return CamionVictual.fromJson(response);
+  }
+
+  /// Cierra el camión con liquidación de viaje (gastos, ayudantes, comentarios)
+  /// y retorna el camión liberado junto con el objeto del viaje cerrado.
+  Future<Map<String, dynamic>> cerrarConLiquidacion(
+    int camionId,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await _http.postV2(
+      '$_base/$camionId/cerrar-liquidacion',
+      data,
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  /// Obtiene el historial de viajes liquidados con filtros y paginación.
+  Future<Map<String, dynamic>> getHistorialViajes({
+    int? choferId,
+    String? estado,
+    String? fechaInicio,
+    String? fechaFin,
+    int? page,
+    int? perPage,
+  }) async {
+    final params = {
+      if (choferId != null) 'chofer_id': choferId.toString(),
+      if (estado != null && estado.isNotEmpty) 'estado': estado,
+      if (fechaInicio != null) 'fecha_inicio': fechaInicio,
+      if (fechaFin != null) 'fecha_fin': fechaFin,
+      if (page != null) 'page': page.toString(),
+      if (perPage != null) 'per_page': perPage.toString(),
+    };
+    final response = await _http.getV2('$_base/viajes/historial', params: params);
+    return response as Map<String, dynamic>;
+  }
+
+  /// Obtiene los detalles completos de un viaje histórico.
+  Future<Map<String, dynamic>> getDetalleViaje(int viajeId) async {
+    final response = await _http.getV2('$_base/viajes/$viajeId');
+    return response as Map<String, dynamic>;
   }
 }

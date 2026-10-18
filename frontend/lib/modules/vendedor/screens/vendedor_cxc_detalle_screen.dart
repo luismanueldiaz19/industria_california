@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
@@ -83,38 +84,20 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
 
     if (!isConsulta) {
       if (_montoController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('El monto es obligatorio para este tipo de alerta'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        CompactSnackBar.showError(context, 'El monto es obligatorio para este tipo de alerta');
         return;
       }
     }
 
     if (_notaController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('La nota o descripción es obligatoria'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showError(context, 'La nota o descripción es obligatoria');
       return;
     }
 
     final int cxcId =
         int.tryParse(widget.cxcData['id']?.toString() ?? '0') ?? 0;
     if (cxcId <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: ID del documento no válido'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: ID del documento no válido');
       return;
     }
 
@@ -143,29 +126,10 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
       setState(() {
         _formaPago = null;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Alerta enviada a contabilidad'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Alerta enviada a contabilidad');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: $e');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -212,26 +176,14 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
 
   Future<void> _procesarSubida(Uint8List bytes, String fileName) async {
     if (bytes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El archivo está vacío'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showError(context, 'El archivo está vacío');
       return;
     }
 
     final int cxcId =
         int.tryParse(widget.cxcData['id']?.toString() ?? '0') ?? 0;
     if (cxcId <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: ID del documento no válido'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: ID del documento no válido');
       return;
     }
 
@@ -249,29 +201,10 @@ class _VendedorCxcDetalleScreenState extends State<VendedorCxcDetalleScreen> {
       await _cargarEvidencias();
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.attach_file, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Evidencia subida correctamente'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Evidencia subida correctamente');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: $e');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/themes/app_theme.dart';
 import '../models/cxc_alerta_model.dart';
@@ -142,12 +143,7 @@ class _AlertaEvidenciaVisorDialogState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al abrir en navegador: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CompactSnackBar.showError(context, 'Error al abrir en navegador: $e');
       }
     }
   }

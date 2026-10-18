@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/formatters.dart';
 import '../../pedido/models/pedido.dart';
@@ -61,22 +62,12 @@ class _RutaDetalleScreenState extends State<RutaDetalleScreen> {
           _pedidos = optimizados;
           _isOptimizing = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ruta optimizada correctamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        CompactSnackBar.showSuccess(context, 'Ruta optimizada correctamente');
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isOptimizing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al optimizar: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CompactSnackBar.showError(context, 'Error al optimizar: $e');
       }
     }
   }

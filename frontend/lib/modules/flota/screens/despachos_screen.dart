@@ -7,6 +7,7 @@ import '../providers/chofer_provider.dart';
 import '../widgets/camiones/camion_victual_form_modal.dart';
 import '../widgets/despachos/despacho_camion_card.dart';
 import '../widgets/despachos/despacho_camion_detalle_panel.dart';
+import '../widgets/despachos/historial_viajes_modal.dart';
 
 class DespachosScreen extends StatefulWidget {
   const DespachosScreen({super.key});
@@ -70,7 +71,11 @@ class _DespachosScreenState extends State<DespachosScreen> {
                 color: const Color(0xFFE31E24).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Icon(Icons.route_outlined, color: Color(0xFFE31E24), size: 18),
+              child: const Icon(
+                Icons.route_outlined,
+                color: Color(0xFFE31E24),
+                size: 18,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -104,6 +109,31 @@ class _DespachosScreenState extends State<DespachosScreen> {
         shape: const Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
         elevation: 0,
         actions: [
+          // Historial de Viajes
+          OutlinedButton.icon(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => const HistorialViajesModal(),
+              );
+            },
+            icon: const Icon(Icons.history, size: 16),
+            label: const Text(
+              'Historial Viajes',
+              style: TextStyle(fontSize: 11),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF0F172A),
+              side: const BorderSide(color: Color(0xFFCBD5E1)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              visualDensity: VisualDensity.compact,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
           // Nuevo Camión Virtual
           ElevatedButton.icon(
             onPressed: () {
@@ -121,7 +151,9 @@ class _DespachosScreenState extends State<DespachosScreen> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               visualDensity: VisualDensity.compact,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -148,7 +180,11 @@ class _DespachosScreenState extends State<DespachosScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 40),
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.redAccent,
+                    size: 40,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     'Error: ${provider.error}',
@@ -175,8 +211,10 @@ class _DespachosScreenState extends State<DespachosScreen> {
             if (_searchQuery.isNotEmpty) {
               final q = _searchQuery.toLowerCase();
               final matchesNombre = c.nombre.toLowerCase().contains(q);
-              final matchesChofer = c.choferNombre?.toLowerCase().contains(q) ?? false;
-              final matchesVendedor = c.vendedorNombre?.toLowerCase().contains(q) ?? false;
+              final matchesChofer =
+                  c.choferNombre?.toLowerCase().contains(q) ?? false;
+              final matchesVendedor =
+                  c.vendedorNombre?.toLowerCase().contains(q) ?? false;
               if (!matchesNombre && !matchesChofer && !matchesVendedor) {
                 return false;
               }
@@ -220,7 +258,10 @@ class _DespachosScreenState extends State<DespachosScreen> {
                               camionSeleccionado,
                             ),
                           ),
-                          const VerticalDivider(width: 1, color: Color(0xFFE2E8F0)),
+                          const VerticalDivider(
+                            width: 1,
+                            color: Color(0xFFE2E8F0),
+                          ),
                           // Panel Derecho: Detalle y Llenado del Camión
                           Expanded(
                             child: camionSeleccionado != null
@@ -233,40 +274,49 @@ class _DespachosScreenState extends State<DespachosScreen> {
                         ],
                       )
                     : (camionSeleccionado != null && _selectedCamionId != null
-                        ? Column(
-                            children: [
-                              Container(
-                                color: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                child: Row(
-                                  children: [
-                                    TextButton.icon(
-                                      onPressed: () => setState(() => _selectedCamionId = null),
-                                      icon: const Icon(Icons.arrow_back, size: 16),
-                                      label: const Text('Volver a la lista de camiones'),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: const Color(0xFF0F172A),
+                          ? Column(
+                              children: [
+                                Container(
+                                  color: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      TextButton.icon(
+                                        onPressed: () => setState(
+                                          () => _selectedCamionId = null,
+                                        ),
+                                        icon: const Icon(
+                                          Icons.arrow_back,
+                                          size: 16,
+                                        ),
+                                        label: const Text(
+                                          'Volver a la lista de camiones',
+                                        ),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: const Color(
+                                            0xFF0F172A,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Expanded(
-                                child: DespachoCamionDetallePanel(
-                                  camion: camionSeleccionado,
-                                  onCamionUpdated: _cargarDatos,
+                                Expanded(
+                                  child: DespachoCamionDetallePanel(
+                                    camion: camionSeleccionado,
+                                    onCamionUpdated: _cargarDatos,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          )
-                        : _buildListaCamiones(
-                            provider.camiones,
-                            camionesFiltrados,
-                            null,
-                          )),
+                              ],
+                            )
+                          : _buildListaCamiones(
+                              provider.camiones,
+                              camionesFiltrados,
+                              null,
+                            )),
               ),
             ],
           );
@@ -334,7 +384,12 @@ class _DespachosScreenState extends State<DespachosScreen> {
     );
   }
 
-  Widget _buildStatChip(String label, String value, IconData icon, Color color) {
+  Widget _buildStatChip(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -386,11 +441,21 @@ class _DespachosScreenState extends State<DespachosScreen> {
                 style: const TextStyle(color: Color(0xFF0F172A), fontSize: 12),
                 decoration: InputDecoration(
                   hintText: 'Buscar camión, chofer o vendedor...',
-                  hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B), size: 16),
+                  hintStyle: const TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 11,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: Color(0xFF64748B),
+                    size: 16,
+                  ),
                   filled: true,
                   fillColor: const Color(0xFFF8FAFC),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
                     borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -410,13 +475,22 @@ class _DespachosScreenState extends State<DespachosScreen> {
                     initialValue: _filtroChoferId,
                     isExpanded: true,
                     dropdownColor: Colors.white,
-                    style: const TextStyle(color: Color(0xFF0F172A), fontSize: 11),
+                    style: const TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontSize: 11,
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Filtrar por Conductor',
-                      labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                      labelStyle: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 11,
+                      ),
                       filled: true,
                       fillColor: const Color(0xFFF8FAFC),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(6),
                         borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -488,7 +562,10 @@ class _DespachosScreenState extends State<DespachosScreen> {
                       SizedBox(height: 10),
                       Text(
                         'No hay camiones con estos filtros',
-                        style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                        style: TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -496,7 +573,8 @@ class _DespachosScreenState extends State<DespachosScreen> {
               : ListView.separated(
                   padding: const EdgeInsets.all(10),
                   itemCount: camionesFiltrados.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 8),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 8),
                   itemBuilder: (context, idx) {
                     final camion = camionesFiltrados[idx];
                     final isSelected = camion.id == camionSeleccionado?.id;
@@ -528,7 +606,9 @@ class _DespachosScreenState extends State<DespachosScreen> {
           color: isSelected ? const Color(0xFFE31E24) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFE31E24) : const Color(0xFFCBD5E1),
+            color: isSelected
+                ? const Color(0xFFE31E24)
+                : const Color(0xFFCBD5E1),
           ),
         ),
         child: Text(
@@ -548,11 +628,7 @@ class _DespachosScreenState extends State<DespachosScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: const [
-          Icon(
-            Icons.touch_app_outlined,
-            size: 56,
-            color: Color(0xFFCBD5E1),
-          ),
+          Icon(Icons.touch_app_outlined, size: 56, color: Color(0xFFCBD5E1)),
           SizedBox(height: 12),
           Text(
             'Selecciona un Camión Virtual a la izquierda para gestionarlo',

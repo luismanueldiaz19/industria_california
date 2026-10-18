@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/themes/app_theme.dart';
 import '../../models/ledhouse_proveedor.dart';
@@ -162,26 +163,7 @@ class _LedhouseProveedoresScreenState extends State<LedhouseProveedoresScreen> {
   }
 
   void _showToast(String message, {bool isSuccess = true}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isSuccess ? Icons.check_circle : Icons.error,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: isSuccess
-            ? AppTheme.successColor
-            : AppTheme.dangerColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    CompactSnackBar.showSuccess(context, message);
   }
 
   String _normalizeText(String text) {

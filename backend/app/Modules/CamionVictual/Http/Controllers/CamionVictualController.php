@@ -223,6 +223,60 @@ class CamionVictualController extends Controller
     }
 
     /**
+     * Cierra el camión con liquidación de viaje (gastos, ayudantes, comentarios).
+     * Libera el camión dejándolo en VACÍO ($0.00) y archiva el viaje en el historial.
+     */
+    public function cerrarConLiquidacion(Request $request, CamionVictual $camionVictual): JsonResponse
+    {
+        $datos = $request->validate([
+            'cant_ayudantes'           => 'nullable|integer|min:0',
+            'nombres_ayudantes'        => 'nullable|string|max:500',
+            'comentarios'              => 'nullable|string|max:1000',
+            'gastos'                   => 'nullable|array',
+            'gastos.*.tipo_gasto'      => 'required|string',
+            'gastos.*.concepto'        => 'nullable|string|max:255',
+            'gastos.*.cantidad'        => 'nullable|numeric|min:0',
+            'gastos.*.precio_unitario' => 'nullable|numeric|min:0',
+            'gastos.*.monto_total'     => 'nullable|numeric|min:0',
+            'gastos.*.comprobante'     => 'nullable|string|max:100',
+        ]);
+
+        try {
+            $resultado = $this->service->cerrarConLiquidacion($camionVictual, $datos, Auth::user());
+            return response()->json($resultado);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Listado histórico de viajes con filtros y paginación.
+     */
+    public function historialViajes(Request $request): JsonResponse
+    {
+        try {
+            $filtros = $request->only(['chofer_id', 'estado', 'fecha_inicio', 'fecha_fin', 'per_page', 'page']);
+            $resultado = $this->service->getHistorialViajes($filtros);
+            return response()->json($resultado);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Detalle completo de un viaje específico con sus pedidos y gastos.
+     */
+    public function detalleViaje(int $viajeId): JsonResponse
+    {
+        try {
+            $viaje = $this->service->getDetalleViaje($viajeId);
+            return response()->json($viaje);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        }
+    }
+
+    /**
      * Vacia el camión (remueve todos los pedidos y lo pone en vacío).
      */
     public function vaciar(CamionVictual $camionVictual): JsonResponse
@@ -256,14 +310,13 @@ class CamionVictualController extends Controller
             ? $request->input('vendedor_id')
             : Auth::id();
 
-        $pedidosEnCamionesActivos = \DB::table('camion_victual_pedido')
-            ->join('camiones_victuales', 'camiones_victuales.id', '=', 'camion_victual_pedido.camion_victual_id')
-            ->whereIn('camiones_victuales.estado', ['armando', 'listo', 'en_ruta'])
-            ->pluck('camion_victual_pedido.pedido_id');
+        // Excluir cualquier pedido que ya esté asignado en algún camión
+        $pedidosEnCamiones = \DB::table('camion_victual_pedido')
+            ->pluck('pedido_id');
 
         $query = \App\Modules\Pedido\Models\Pedido::with('cliente:id,nombre,direccion')
             ->where('estado', 'facturado')
-            ->whereNotIn('id', $pedidosEnCamionesActivos);
+            ->whereNotIn('id', $pedidosEnCamiones);
 
         if ($vendedorId) {
             $query->where('vendedor_id', $vendedorId);

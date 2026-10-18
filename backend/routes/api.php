@@ -19,7 +19,6 @@ use App\Http\Controllers\Api\LedhouseProveedorController;
 // Módulo Logística/Ventas
 use App\Http\Controllers\Api\RutaController;
 use App\Modules\Pedido\Http\Controllers\PedidoController;
-use App\Modules\CamionVictual\Http\Controllers\CamionVictualController;
 use App\Modules\Vehiculo\Http\Controllers\VehiculoController;
 use App\Modules\Vehiculo\Http\Controllers\TipoGastoController;
 use App\Http\Controllers\Api\ChoferController;
@@ -199,19 +198,7 @@ Route::prefix('v1')->group(function () {
                 require base_path('app/Modules/Produccion/routes/api.php');
 
                 // ── MÓDULO CAMIONES VICTUALES ─────────────────────────
-                Route::get('camiones-victuales/monto-minimo', [CamionVictualController::class, 'montoMinimo']);
-                Route::get('camiones-victuales/pedidos-disponibles', [CamionVictualController::class, 'pedidosDisponibles']);
-                Route::post('camiones-victuales/{camionVictual}/pedidos', [CamionVictualController::class, 'agregarPedido']);
-                Route::delete('camiones-victuales/{camionVictual}/pedidos/{pedidoId}', [CamionVictualController::class, 'quitarPedido']);
-                Route::patch('camiones-victuales/{camionVictual}/reordenar', [CamionVictualController::class, 'reordenar']);
-                Route::patch('camiones-victuales/{camionVictual}/pedidos/{pedidoId}/entrega', [CamionVictualController::class, 'actualizarEntrega']);
-                Route::patch('camiones-victuales/{camionVictual}/en-ruta', [CamionVictualController::class, 'ponerEnRuta']);
-                Route::patch('camiones-victuales/{camionVictual}/cerrar', [CamionVictualController::class, 'cerrar']);
-                Route::patch('camiones-victuales/{camionVictual}/vaciar', [CamionVictualController::class, 'vaciar']);
-                Route::get('camiones-victuales/{id}/pdf-url', [CamionVictualController::class, 'getConducePdfUrl']);
-                Route::apiResource('camiones-victuales', CamionVictualController::class)->parameters([
-                    'camiones-victuales' => 'camionVictual'
-                ]);
+                require base_path('app/Modules/CamionVictual/routes/api.php');
 
                 // ── MÓDULO VEHÍCULOS ──────────────────────────────────────
                 Route::get('vehiculos/resumen', [VehiculoController::class, 'resumen']);
@@ -266,6 +253,7 @@ Route::prefix('v2')->middleware('auth:sanctum')->group(function () {
     require base_path('app/Modules/Alerta/routes/api.php');
     require base_path('app/Modules/Pedido/routes/api.php');
     require base_path('app/Modules/Produccion/routes/api.php');
+    require base_path('app/Modules/CamionVictual/routes/api.php');
 });
 
 

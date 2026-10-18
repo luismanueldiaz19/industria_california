@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/themes/app_theme.dart';
@@ -112,9 +113,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        CompactSnackBar.showError(context, 'Error: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -168,9 +167,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
 
   Future<void> _openPdf() async {
     final token = Provider.of<AuthProvider>(context, listen: false).token ?? '';
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Abriendo PDF...')));
+    CompactSnackBar.showInfo(context, 'Abriendo PDF...');
     try {
       final urlStr = await _service.obtenerUrlPdfMisCxc(
         token: token,
@@ -185,9 +182,7 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error al abrir PDF: $e')));
+        CompactSnackBar.showError(context, 'Error al abrir PDF: $e');
       }
     }
   }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
+import '../../../../../core/widgets/compact_snack_bar.dart';
 import '../../../../../models/company.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -219,18 +221,9 @@ class CxcClienteDataTable extends StatelessWidget {
                                           );
                                           if (!await launchUrl(url)) {
                                             if (context.mounted) {
-                                              ScaffoldMessenger.of(
+                                              CompactSnackBar.showError(
                                                 context,
-                                              ).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                    'No se pudo abrir WhatsApp',
-                                                    style: TextStyle(
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                  backgroundColor: Colors.red,
-                                                ),
+                                                'No se pudo abrir WhatsApp',
                                               );
                                             }
                                           }

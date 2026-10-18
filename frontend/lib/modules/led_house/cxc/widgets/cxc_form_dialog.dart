@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -130,23 +131,7 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedClienteId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_rounded, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              const Expanded(child: Text('Debe seleccionar un cliente')),
-            ],
-          ),
-          backgroundColor: AppTheme.dangerColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Debe seleccionar un cliente');
       return;
     }
 
@@ -180,23 +165,7 @@ class _CxcFormDialogState extends State<CxcFormDialog> {
     if (success) {
       Navigator.of(context).pop(true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_rounded, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Expanded(child: Text('Error: ${provider.error}')),
-            ],
-          ),
-          backgroundColor: AppTheme.dangerColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: ${provider.error}');
     }
   }
 

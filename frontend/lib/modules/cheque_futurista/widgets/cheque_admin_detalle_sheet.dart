@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -59,13 +60,7 @@ class _ChequeAdminDetalleSheetState extends State<ChequeAdminDetalleSheet> {
 
   void _snack(String msg, {bool error = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: error ? Colors.red.shade700 : Colors.green.shade700,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    CompactSnackBar.showSuccess(context, msg);
   }
 
   Future<bool> _confirm({
@@ -181,15 +176,7 @@ class _ChequeAdminDetalleSheetState extends State<ChequeAdminDetalleSheet> {
     try {
       await context.read<ChequeAdminProvider>().eliminarCheque(cheque);
       if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      Navigator.pop(context);
-      messenger.showSnackBar(
-        SnackBar(
-          content: const Text('Cheque eliminado'),
-          backgroundColor: Colors.green.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      final messenger = CompactSnackBar.showSuccess(context, 'Cheque eliminado');
     } catch (e) {
       _snack(e.toString(), error: true);
       if (mounted) setState(() => _busy = false);

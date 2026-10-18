@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import '../../models/vehiculo_mantenimiento.dart';
 import '../../services/vehiculo_service.dart';
 import 'package:intl/intl.dart';
@@ -56,9 +57,7 @@ class _VehiculoMantenimientosTabState extends State<VehiculoMantenimientosTab> {
     } catch (e) {
       debugPrint('Error fetching mantenimientos: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        CompactSnackBar.showError(context, 'Error: $e');
       }
     } finally {
       if (mounted) {

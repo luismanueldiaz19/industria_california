@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/themes/app_theme.dart';
@@ -56,19 +57,9 @@ class _CxcSoporteDialogState extends State<CxcSoporteDialog> {
 
     if (success) {
       _notaController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nota guardada'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Nota guardada');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${provider.error}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: ${provider.error}');
     }
   }
 

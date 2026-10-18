@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/utils/formatters.dart';
@@ -83,17 +84,10 @@ class _ChequesAdminTableState extends State<ChequesAdminTable> {
     try {
       await context.read<ChequeAdminProvider>().cambiarEstado(cheque, e.value);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Estado cambiado a ${e.label}'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Estado cambiado a ${e.label}');
     } catch (err) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red),
-      );
+      CompactSnackBar.showError(context, 'Error: $err');
     }
   }
 

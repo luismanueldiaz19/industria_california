@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/cheque_form_provider.dart';
@@ -82,9 +83,7 @@ class _ChequeFormStep2PreviewScreenState
           _isSending = false;
           _isUploadingFiles = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
+        CompactSnackBar.showError(context, 'Error: $e');
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../providers/pedido_form_provider.dart';
 import '../../widgets/pedido_cliente_selector.dart';
@@ -370,23 +371,11 @@ class _VendedorPedidoInfoScreenState extends State<VendedorPedidoInfoScreen> {
         _longitudCtrl.text = pos.longitude.toString();
 
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ubicación capturada para este pedido'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        CompactSnackBar.showSuccess(context, 'Ubicación capturada para este pedido');
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'No se pudo obtener GPS: $e. Puede ingresar las coordenadas manualmente.',
-          ),
-          backgroundColor: Colors.orange.shade800,
-        ),
-      );
+      CompactSnackBar.showWarning(context, 'No se pudo obtener GPS: $e. Puede ingresar las coordenadas manualmente.');
     } finally {
       if (mounted) {
         setState(() => _isCapturingGps = false);

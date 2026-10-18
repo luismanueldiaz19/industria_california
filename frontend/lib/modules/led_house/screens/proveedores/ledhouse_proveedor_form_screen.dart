@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/themes/app_theme.dart';
 import '../../models/ledhouse_proveedor.dart';
@@ -113,23 +114,7 @@ class _LedhouseProveedorFormScreenState
     if (success) {
       Navigator.of(context).pop();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: const [
-              Icon(Icons.error, color: Colors.white),
-              SizedBox(width: 12),
-              Expanded(child: Text('Error al guardar el proveedor')),
-            ],
-          ),
-          backgroundColor: AppTheme.dangerColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al guardar el proveedor');
     }
   }
 

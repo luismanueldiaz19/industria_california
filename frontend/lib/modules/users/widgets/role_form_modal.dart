@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../models/role.dart';
 import '../providers/role_provider.dart';
@@ -55,22 +56,13 @@ class _RoleFormModalState extends State<RoleFormModal> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.role == null
+        CompactSnackBar.showSuccess(context, widget.role == null
                   ? 'Rol creado correctamente'
-                  : 'Rol actualizado correctamente',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+                  : 'Rol actualizado correctamente');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
+        CompactSnackBar.showError(context, 'Error: $e');
       }
     } finally {
       if (mounted) {

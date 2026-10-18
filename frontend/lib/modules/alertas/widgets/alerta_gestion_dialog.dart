@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/themes/app_theme.dart';
@@ -133,13 +134,7 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al abrir archivo: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        CompactSnackBar.showError(context, 'Error al abrir archivo: $e');
       }
     }
   }
@@ -170,22 +165,10 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
       if (!mounted) return;
       Navigator.pop(context);
       widget.onUpdated();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Alerta procesada y guardada correctamente'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Alerta procesada y guardada correctamente');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: $e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -211,22 +194,10 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
       if (!mounted) return;
       Navigator.pop(context);
       widget.onUpdated();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Alerta marcada como procesada'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Alerta marcada como procesada');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error: $e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -245,18 +216,10 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
       if (!mounted) return;
       Navigator.pop(context);
       widget.onUpdated();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Concepto actualizado'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Concepto actualizado');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      CompactSnackBar.showError(context, 'Error: $e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -305,21 +268,10 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
       if (!mounted) return;
       Navigator.pop(context);
       widget.onUpdated();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Alerta eliminada exitosamente'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Alerta eliminada exitosamente');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al eliminar: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al eliminar: $e');
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/cart_item.dart';
@@ -681,32 +682,18 @@ class _VendedorPedidoRevisionScreenState
       if (!mounted) return;
 
       if (ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _estadoSeleccionado == 'enviado'
+        CompactSnackBar.showSuccess(context, _estadoSeleccionado == 'enviado'
                   ? 'Pedido enviado a logística'
                   : (_estadoSeleccionado == 'cotizacion'
                       ? 'Cotización guardada exitosamente'
-                      : 'Borrador guardado exitosamente'),
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+                      : 'Borrador guardado exitosamente'));
         Navigator.of(context).pop(true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(pedidoProvider.error ?? 'Error desconocido'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CompactSnackBar.showError(context, pedidoProvider.error ?? 'Error desconocido');
       }
     } catch (e) {
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      CompactSnackBar.showError(context, 'Error: $e');
     }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -55,9 +56,7 @@ class _ReporteVendedoresScreenState extends State<ReporteVendedoresScreen> {
   }
 
   Future<void> _generarPdf() async {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Generando PDF...')));
+    CompactSnackBar.showInfo(context, 'Generando PDF...');
     try {
       final urlStr = await context
           .read<ReporteVendedoresProvider>()
@@ -68,9 +67,7 @@ class _ReporteVendedoresScreenState extends State<ReporteVendedoresScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      CompactSnackBar.showError(context, 'Error: $e');
     }
   }
 

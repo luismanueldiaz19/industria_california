@@ -79,7 +79,10 @@ class PedidoService
     public function actualizar(Pedido $pedido, array $datos): Pedido
     {
         return DB::transaction(function () use ($pedido, $datos) {
-            $originalEstado = $pedido->estado;
+            $originalEstado = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+            if ($originalEstado === 'entregado') {
+                throw new \InvalidArgumentException('Un pedido ENTREGADO no puede ser modificado ya que finalizó su ciclo de despacho.');
+            }
 
             $pedido->detalles()->delete(); // Clear old ones to easily sync
 
@@ -107,7 +110,7 @@ class PedidoService
 
             $pedido->update($updateData);
 
-            if (in_array($originalEstado->value, ['borrador', 'cotizacion']) && $datos['estado'] === 'enviado') {
+            if (in_array($originalEstado, ['borrador', 'cotizacion']) && $datos['estado'] === 'enviado') {
                 $this->deducirInventario($pedido->load('detalles'));
             }
 
@@ -119,6 +122,10 @@ class PedidoService
     {
         return DB::transaction(function () use ($pedido, $nuevoEstado, $usuario, $numFactura) {
             $estadoAnterior = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+
+            if ($estadoAnterior === 'entregado' && $nuevoEstado !== 'entregado') {
+                throw new \InvalidArgumentException('Un pedido ENTREGADO no puede cambiar a ningún otro estado ya que finalizó su ciclo de despacho.');
+            }
 
             if ($estadoAnterior === 'facturado' && $nuevoEstado !== 'facturado') {
                 throw new \InvalidArgumentException('Un pedido FACTURADO no puede cambiar a ningún otro estado.');
@@ -151,7 +158,10 @@ class PedidoService
     public function actualizarInformacionPrincipal(Pedido $pedido, array $datos, User $usuario): Pedido
     {
         return DB::transaction(function () use ($pedido, $datos, $usuario) {
-            $estadoAnterior = $pedido->estado;
+            $estadoAnterior = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+            if ($estadoAnterior === 'entregado') {
+                throw new \InvalidArgumentException('Un pedido ENTREGADO no puede ser modificado ya que finalizó su ciclo de despacho.');
+            }
 
             if (array_key_exists('cliente_id', $datos) && !empty($datos['cliente_id'])) {
                 $pedido->cliente_id = $datos['cliente_id'];
@@ -217,7 +227,7 @@ class PedidoService
     {
         return DB::transaction(function () use ($pedido, $datos, $usuario) {
             $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
-            if (in_array(strtolower($estadoActual), ['facturado', 'cancelado'], true)) {
+            if (in_array(strtolower($estadoActual), ['facturado', 'cancelado', 'entregado'], true)) {
                 throw new \InvalidArgumentException("El pedido #{$pedido->id} ya se encuentra en estado '{$estadoActual}' y no puede ser facturado nuevamente.");
             }
 

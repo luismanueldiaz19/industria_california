@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../models/chofer.dart';
 import '../../providers/chofer_provider.dart';
@@ -212,16 +213,9 @@ class _ChoferFormWidgetState extends State<ChoferFormWidget> {
       } else {
         Navigator.pop(context, true);
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.chofer == null
+      CompactSnackBar.showSuccess(context, widget.chofer == null
                 ? 'Chofer creado correctamente'
-                : 'Chofer actualizado correctamente',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+                : 'Chofer actualizado correctamente');
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -229,9 +223,7 @@ class _ChoferFormWidgetState extends State<ChoferFormWidget> {
           .toString()
           .replaceFirst('Exception: ', '')
           .replaceFirst('HttpException: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(cleanMsg), backgroundColor: Colors.red),
-      );
+      CompactSnackBar.showError(context, cleanMsg);
     }
   }
 

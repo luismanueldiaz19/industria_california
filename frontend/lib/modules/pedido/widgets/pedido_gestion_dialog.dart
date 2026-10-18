@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -73,6 +74,10 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
 
   late final List<String> _estadosDisponibles;
 
+  bool get _esEntregado =>
+      widget.pedido.estado.toLowerCase() == 'entregado' ||
+      _estadoSeleccionado.toLowerCase() == 'entregado';
+
   @override
   void initState() {
     super.initState();
@@ -93,12 +98,16 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
     _estadoSeleccionado = estadoOriginal;
 
     // Reglas de transición solicitadas:
+    // 0. Entregado: ya pasó por despacho y finalizó su ciclo, totalmente bloqueado.
     // 1. Facturado no puede cambiar a ningún otro.
     // 2. Enviado puede ponerse en borrador, facturado o cancelado.
     // 3. Cotización puede ponerse en borrador, facturar o cancelar.
     // 4. Cancelado queda cerrado.
     // 5. Borrador puede pasar a cotización, enviado, facturado o cancelado.
     switch (estadoOriginal) {
+      case 'entregado':
+        _estadosDisponibles = const ['entregado'];
+        break;
       case 'facturado':
         _estadosDisponibles = const ['facturado'];
         break;
@@ -159,20 +168,22 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
   }
 
   Future<void> _guardarCambios() async {
-    final messenger = ScaffoldMessenger.of(context);
+    if (_esEntregado) {
+      CompactSnackBar.showWarning(
+        context,
+        '⚠️ Este pedido ya fue ENTREGADO y no admite modificaciones.',
+      );
+      return;
+    }
+
     final esFacturado = _estadoSeleccionado.toLowerCase() == 'facturado';
 
     if (esFacturado && _numFacturaCtrl.text.trim().isEmpty) {
       _numFacturaFocusNode.requestFocus();
       _formKey.currentState?.validate();
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            '⚠️ Debes ingresar el número de factura para guardar el pedido como FACTURADO.',
-          ),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 2),
-        ),
+      CompactSnackBar.showWarning(
+        context,
+        '⚠️ Debes ingresar el número de factura para guardar el pedido como FACTURADO.',
       );
       return;
     }
@@ -206,35 +217,21 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
         if (!mounted) return;
         nav.pop();
         widget.onUpdated();
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Pedido actualizado exitosamente'),
-            backgroundColor: Colors.green,
-            duration: Duration(milliseconds: 300),
-          ),
-        );
+        CompactSnackBar.showSuccess(context, 'Pedido actualizado exitosamente');
       } else {
         final err = provider.error ?? 'Error al actualizar el pedido';
         throw Exception(err);
       }
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Error al guardar: $e'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 1),
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al guardar: $e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
   Future<void> _generarPdf() async {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Generando Factura...')));
+    CompactSnackBar.showInfo(context, 'Generando Factura...');
     try {
       final urlStr = await context.read<PedidoProvider>().getPdfUrl(
         widget.pedido.id,
@@ -245,16 +242,19 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al abrir PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al abrir PDF: $e');
     }
   }
 
   void _confirmDelete() {
+    if (_esEntregado) {
+      CompactSnackBar.showWarning(
+        context,
+        '⚠️ No se puede eliminar un pedido que ya fue ENTREGADO.',
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (ctx) {
@@ -297,18 +297,11 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                 if (success && mounted) {
                   Navigator.pop(context);
                   widget.onUpdated();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Pedido eliminado'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  CompactSnackBar.showSuccess(context, 'Pedido eliminado');
                 } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: ${provider.error}'),
-                      backgroundColor: Colors.red,
-                    ),
+                  CompactSnackBar.showError(
+                    context,
+                    'Error: ${provider.error}',
                   );
                 }
               },
@@ -324,13 +317,9 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
     required double totalFaltante,
   }) {
     if (totalVigente <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No hay artículos disponibles en stock para facturar (\$0.00). Todos los ítems están en producción.',
-          ),
-          backgroundColor: Colors.orange,
-        ),
+      CompactSnackBar.showWarning(
+        context,
+        'No hay artículos disponibles en stock para facturar (\$0.00). Todos los ítems están en producción.',
       );
       return;
     }
@@ -540,9 +529,6 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               : () async {
                                   if (!formKey.currentState!.validate()) return;
 
-                                  final messenger = ScaffoldMessenger.of(
-                                    context,
-                                  );
                                   final nav = Navigator.of(context);
                                   final dialogNav = Navigator.of(ctx);
                                   final pedidoProv = context
@@ -572,26 +558,16 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                     widget.onUpdated();
                                     final remanente = res['pedido_remanente'];
                                     final remanenteId = remanente?['id'];
-                                    messenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Pedido #${widget.pedido.id} facturado por ${_currencyFmt.format(totalVigente)}.'
-                                          '${remanenteId != null ? " Creado Pedido Remanente #$remanenteId para producción." : ""}',
-                                        ),
-                                        backgroundColor: Colors.green,
-                                        duration: const Duration(seconds: 4),
-                                      ),
+                                    CompactSnackBar.showSuccess(
+                                      context,
+                                      'Pedido #${widget.pedido.id} facturado por ${_currencyFmt.format(totalVigente)}.'
+                                      '${remanenteId != null ? " Creado Pedido Remanente #$remanenteId para producción." : ""}',
                                     );
                                   } else {
                                     final err =
                                         pedidoProv.error ??
                                         'Error al procesar la facturación';
-                                    messenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(err),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
+                                    CompactSnackBar.showError(context, err);
                                   }
                                 },
                         ),
@@ -930,6 +906,42 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                         ),
                       ),
 
+                      if (_esEntregado) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFA7F3D0)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(
+                                Icons.verified_rounded,
+                                color: Color(0xFF059669),
+                                size: 18,
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Este pedido ya fue ENTREGADO en despacho y su ciclo comercial finalizó. La información está protegida en modo solo lectura y no puede ser modificada ni eliminada.',
+                                  style: TextStyle(
+                                    color: Color(0xFF065F46),
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
                       if (tieneFaltantes) ...[
                         const SizedBox(height: 10),
                         Container(
@@ -966,18 +978,24 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                       ],
                       const SizedBox(height: 18),
 
-                      // ── SECCIÓN 1: INFORMACIÓN PRINCIPAL (EDITABLE) ──
+                      // ── SECCIÓN 1: INFORMACIÓN PRINCIPAL ──
                       Row(
                         children: [
                           Icon(
-                            Icons.edit_note_rounded,
-                            color: AppTheme.primaryBlue,
+                            _esEntregado
+                                ? Icons.lock_outline_rounded
+                                : Icons.edit_note_rounded,
+                            color: _esEntregado
+                                ? const Color(0xFF059669)
+                                : AppTheme.primaryBlue,
                             size: 18,
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Información Principal (Editable)',
-                            style: TextStyle(
+                          Text(
+                            _esEntregado
+                                ? 'Información del Pedido (Solo Lectura - Entregado)'
+                                : 'Información Principal (Editable)',
+                            style: const TextStyle(
                               color: _textPrimary,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
@@ -995,11 +1013,13 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                           // Estado
                           Expanded(
                             child: DropDownWidget<String>(
-                              label: _estadosDisponibles.length <= 1
-                                  ? 'Estado del Pedido (Bloqueado):'
-                                  : 'Estado del Pedido:',
+                              label: _esEntregado
+                                  ? 'Estado del Pedido (Entregado / Cerrado):'
+                                  : (_estadosDisponibles.length <= 1
+                                      ? 'Estado del Pedido (Bloqueado):'
+                                      : 'Estado del Pedido:'),
                               value: _estadoSeleccionado,
-                              icon: _estadosDisponibles.length <= 1
+                              icon: (_esEntregado || _estadosDisponibles.length <= 1)
                                   ? Icons.lock_outline_rounded
                                   : Icons.tune_rounded,
                               iconColor: estadoColor,
@@ -1032,7 +1052,8 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                   ),
                                 );
                               }).toList(),
-                              onChanged: _estadosDisponibles.length <= 1
+                              onChanged: (_esEntregado ||
+                                      _estadosDisponibles.length <= 1)
                                   ? null
                                   : (val) {
                                       if (val != null) {
@@ -1061,13 +1082,13 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                             child: InputField(
                               controller: _numFacturaCtrl,
                               focusNode: _numFacturaFocusNode,
-                              label:
-                                  _estadoSeleccionado.toLowerCase() ==
-                                      'facturado'
-                                  ? 'No. Factura: *'
-                                  : 'No. Factura:',
-                              hint:
-                                  _estadoSeleccionado.toLowerCase() ==
+                              label: _esEntregado
+                                  ? 'No. Factura (Bloqueado):'
+                                  : (_estadoSeleccionado.toLowerCase() ==
+                                          'facturado'
+                                      ? 'No. Factura: *'
+                                      : 'No. Factura:'),
+                              hint: _estadoSeleccionado.toLowerCase() ==
                                       'facturado'
                                   ? 'Ej. B0100000045 (obligatorio)'
                                   : 'Ej. B0100000045 (opcional)',
@@ -1075,10 +1096,22 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               iconColor: const Color(0xFF3B82F6),
                               isDark: false,
                               dense: true,
-                              optional:
+                              readOnly: _esEntregado,
+                              suffixIcon: _esEntregado
+                                  ? const Padding(
+                                      padding: EdgeInsets.only(right: 10),
+                                      child: Icon(
+                                        Icons.lock_outline_rounded,
+                                        size: 15,
+                                        color: _textMuted,
+                                      ),
+                                    )
+                                  : null,
+                              optional: _esEntregado ||
                                   _estadoSeleccionado.toLowerCase() !=
-                                  'facturado',
+                                      'facturado',
                               validator: (val) {
+                                if (_esEntregado) return null;
                                 if (_estadoSeleccionado.toLowerCase() ==
                                     'facturado') {
                                   if (val == null || val.trim().isEmpty) {
@@ -1125,12 +1158,16 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               builder: (context, rutaProv, _) {
                                 final rutas = rutaProv.rutas;
                                 return DropDownWidget<int?>(
-                                  label: 'Ruta de Entrega:',
+                                  label: _esEntregado
+                                      ? 'Ruta de Entrega (Bloqueado):'
+                                      : 'Ruta de Entrega:',
                                   value: _rutaId,
                                   hint:
                                       widget.pedido.rutaNombre ??
                                       'Sin ruta asignada',
-                                  icon: Icons.local_shipping_rounded,
+                                  icon: _esEntregado
+                                      ? Icons.lock_outline_rounded
+                                      : Icons.local_shipping_rounded,
                                   iconColor: Colors.blueAccent,
                                   isDark: false,
                                   dense: true,
@@ -1160,9 +1197,11 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                       );
                                     }),
                                   ],
-                                  onChanged: (val) {
-                                    setState(() => _rutaId = val);
-                                  },
+                                  onChanged: _esEntregado
+                                      ? null
+                                      : (val) {
+                                          setState(() => _rutaId = val);
+                                        },
                                 );
                               },
                             ),
@@ -1181,12 +1220,16 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               builder: (context, userProv, _) {
                                 final users = userProv.users;
                                 return DropDownWidget<int>(
-                                  label: 'Vendedor Asignado:',
+                                  label: _esEntregado
+                                      ? 'Vendedor Asignado (Bloqueado):'
+                                      : 'Vendedor Asignado:',
                                   value: _vendedorId,
                                   hint:
                                       widget.pedido.vendedorNombre ??
                                       'Seleccionar vendedor',
-                                  icon: Icons.badge_rounded,
+                                  icon: _esEntregado
+                                      ? Icons.lock_outline_rounded
+                                      : Icons.badge_rounded,
                                   iconColor: Colors.teal.shade700,
                                   isDark: false,
                                   dense: true,
@@ -1205,11 +1248,13 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                       ),
                                     );
                                   }).toList(),
-                                  onChanged: (val) {
-                                    if (val != null) {
-                                      setState(() => _vendedorId = val);
-                                    }
-                                  },
+                                  onChanged: _esEntregado
+                                      ? null
+                                      : (val) {
+                                          if (val != null) {
+                                            setState(() => _vendedorId = val);
+                                          }
+                                        },
                                 );
                               },
                             ),
@@ -1218,17 +1263,24 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                           // Fecha de Entrega
                           Expanded(
                             child: SingleDatePicker(
-                              label: 'Fecha de Entrega Estimada:',
+                              label: _esEntregado
+                                  ? 'Fecha de Entrega (Bloqueado):'
+                                  : 'Fecha de Entrega Estimada:',
                               value: _fechaEntrega,
                               hint: 'Sin fecha de entrega',
-                              icon: Icons.calendar_today_rounded,
+                              icon: _esEntregado
+                                  ? Icons.lock_outline_rounded
+                                  : Icons.calendar_today_rounded,
                               iconColor: const Color(0xFFD97706),
                               isDark: false,
                               dense: true,
                               optional: true,
-                              onChanged: (picked) {
-                                setState(() => _fechaEntrega = picked);
-                              },
+                              enabled: !_esEntregado,
+                              onChanged: _esEntregado
+                                  ? (_) {}
+                                  : (picked) {
+                                      setState(() => _fechaEntrega = picked);
+                                    },
                             ),
                           ),
                         ],
@@ -1238,13 +1290,16 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                       // Comentarios
                       InputField(
                         controller: _comentarioCtrl,
-                        label: 'Comentarios / Observaciones del Pedido:',
+                        label: _esEntregado
+                            ? 'Comentarios / Observaciones (Solo Lectura):'
+                            : 'Comentarios / Observaciones del Pedido:',
                         hint: 'Detalles u observaciones del cliente...',
                         icon: Icons.comment_outlined,
                         iconColor: _textSecondary,
                         isDark: false,
                         dense: true,
                         maxLines: 2,
+                        readOnly: _esEntregado,
                         optional: true,
                       ),
                       const SizedBox(height: 10),
@@ -1252,13 +1307,16 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                       // Nota de Producción
                       InputField(
                         controller: _notaProduccionCtrl,
-                        label: 'Nota para Producción:',
+                        label: _esEntregado
+                            ? 'Nota para Producción (Solo Lectura):'
+                            : 'Nota para Producción:',
                         hint: 'Instrucciones para planta o despacho...',
                         icon: Icons.precision_manufacturing_outlined,
                         iconColor: const Color(0xFFEA580C),
                         isDark: false,
                         dense: true,
                         maxLines: 2,
+                        readOnly: _esEntregado,
                         optional: true,
                       ),
                       const SizedBox(height: 20),
@@ -1660,7 +1718,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                   final isCompact = constraints.maxWidth < 620;
 
                   final operationalActions = <Widget>[
-                    if (isAdmin)
+                    if (isAdmin && !_esEntregado)
                       CustomButton(
                         text: 'ELIMINAR',
                         icon: Icons.delete_outline,
@@ -1698,7 +1756,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                           );
                         },
                       ),
-                    if (puedeFacturarVigente)
+                    if (puedeFacturarVigente && !_esEntregado)
                       CustomButton(
                         text: 'FACTURAR VIGENTE',
                         icon: Icons.receipt_long_rounded,
@@ -1721,34 +1779,48 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                   ];
 
                   final confirmActions = <Widget>[
-                    CancelButton(
-                      text: 'CANCELAR',
-                      onPressed: _isSaving
-                          ? null
-                          : () => Navigator.pop(context),
-                      isDark: false,
-                      height: 32,
-                      borderRadius: 6,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
+                    if (_esEntregado)
+                      CancelButton(
+                        text: 'CERRAR',
+                        onPressed: () => Navigator.pop(context),
+                        isDark: false,
+                        height: 32,
+                        borderRadius: 6,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 6,
+                        ),
+                      )
+                    else ...[
+                      CancelButton(
+                        text: 'CANCELAR',
+                        onPressed: _isSaving
+                            ? null
+                            : () => Navigator.pop(context),
+                        isDark: false,
+                        height: 32,
+                        borderRadius: 6,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    CustomButton(
-                      text: _isSaving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS',
-                      color: const Color(0xFFE31E24),
-                      textColor: Colors.white,
-                      isLoading: _isSaving,
-                      height: 32,
-                      fontSize: 10.5,
-                      borderRadius: 6,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
+                      const SizedBox(width: 8),
+                      CustomButton(
+                        text: _isSaving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS',
+                        color: const Color(0xFFE31E24),
+                        textColor: Colors.white,
+                        isLoading: _isSaving,
+                        height: 32,
+                        fontSize: 10.5,
+                        borderRadius: 6,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        onPressed: _isSaving ? null : _guardarCambios,
                       ),
-                      onPressed: _isSaving ? null : _guardarCambios,
-                    ),
+                    ],
                   ];
 
                   if (isCompact && operationalActions.isNotEmpty) {

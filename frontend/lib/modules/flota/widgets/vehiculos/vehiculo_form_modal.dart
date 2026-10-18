@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../models/vehiculo.dart';
 import '../../providers/vehiculo_provider.dart';
@@ -124,27 +125,13 @@ class _VehiculoFormModalState extends State<VehiculoFormModal> {
       }
       if (!mounted) return;
       Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isEditing
+      CompactSnackBar.showSuccess(context, isEditing
                 ? 'Vehículo actualizado con éxito'
-                : 'Vehículo registrado con éxito',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+                : 'Vehículo registrado con éxito');
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Error al ${isEditing ? "actualizar" : "guardar"} el vehículo: $e',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al ${isEditing ? "actualizar" : "guardar"} el vehículo: $e');
     }
   }
 

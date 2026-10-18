@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/http_service.dart';
@@ -46,9 +47,7 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
   Future<void> _downloadMatrizPdf() async {
     try {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Generando PDF, por favor espera...')),
-        );
+        CompactSnackBar.showInfo(context, 'Generando PDF, por favor espera...');
       }
 
       Map<String, String> params = {'year': widget.selectedYear.toString()};
@@ -67,19 +66,12 @@ class _ReportePorCuentasWidgetState extends State<ReportePorCuentasWidget> {
 
       if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudo abrir el PDF.')),
-          );
+          CompactSnackBar.showError(context, 'No se pudo abrir el PDF.');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al generar PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CompactSnackBar.showError(context, 'Error al generar PDF: $e');
       }
     }
   }

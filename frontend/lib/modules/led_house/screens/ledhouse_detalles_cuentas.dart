@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/themes/app_theme.dart';
@@ -45,12 +46,7 @@ class _LedhouseDetallesCuentasState extends State<LedhouseDetallesCuentas> {
     final provider = Provider.of<LedhouseProvider>(context, listen: false);
 
     if (provider.registros.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No hay registros para generar el reporte.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      CompactSnackBar.showWarning(context, 'No hay registros para generar el reporte.');
       return;
     }
 
@@ -101,12 +97,7 @@ class _LedhouseDetallesCuentasState extends State<LedhouseDetallesCuentas> {
     });
 
     if (filteredRegistros.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No hay registros filtrados para generar el reporte.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      CompactSnackBar.showWarning(context, 'No hay registros filtrados para generar el reporte.');
       return;
     }
 
@@ -116,12 +107,7 @@ class _LedhouseDetallesCuentasState extends State<LedhouseDetallesCuentas> {
 
     try {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Generando reporte PDF, por favor espera...'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        CompactSnackBar.showInfo(context, 'Generando reporte PDF, por favor espera...');
       }
 
       final res = await HttpService().get(
@@ -131,19 +117,12 @@ class _LedhouseDetallesCuentasState extends State<LedhouseDetallesCuentas> {
 
       if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudo abrir el PDF.')),
-          );
+          CompactSnackBar.showError(context, 'No se pudo abrir el PDF.');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al generar PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CompactSnackBar.showError(context, 'Error al generar PDF: $e');
       }
     }
   }
@@ -683,20 +662,10 @@ class _LedhouseDetallesCuentasState extends State<LedhouseDetallesCuentas> {
       onConfirm: () async {
         final success = await provider.deleteRegistro(id);
         if (success && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Registro eliminado'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          CompactSnackBar.showSuccess(context, 'Registro eliminado');
           provider.fetchEstadoResultados();
         } else if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${provider.error}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          CompactSnackBar.showError(context, 'Error: ${provider.error}');
         }
       },
     );

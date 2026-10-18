@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/categoria.dart';
@@ -76,19 +77,9 @@ class _CategoriaProductosScreenState extends State<CategoriaProductosScreen> {
 
       if (mounted) {
         if (result) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Productos importados exitosamente'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          CompactSnackBar.showSuccess(context, 'Productos importados exitosamente');
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${prov.error ?? 'Ocurrió un error'}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          CompactSnackBar.showError(context, 'Error: ${prov.error ?? 'Ocurrió un error'}');
         }
       }
     }

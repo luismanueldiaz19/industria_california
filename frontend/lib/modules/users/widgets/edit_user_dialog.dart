@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../providers/users_provider.dart';
 import '../providers/role_provider.dart';
@@ -65,22 +66,10 @@ class _EditUserDialogState extends State<EditUserDialog> {
       if (success) {
         if (!mounted) return;
         Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Usuario actualizado exitosamente.'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        CompactSnackBar.showSuccess(context, 'Usuario actualizado exitosamente.');
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              usersProvider.errorMessage ?? 'Error al actualizar el usuario.',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CompactSnackBar.showError(context, usersProvider.errorMessage ?? 'Error al actualizar el usuario.');
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'providers/role_provider.dart';
 import 'widgets/role_form_modal.dart';
@@ -258,27 +259,16 @@ class _RolesScreenState extends State<RolesScreen> {
                                                   .read<RoleProvider>()
                                                   .deleteRole(role.id);
                                               if (context.mounted) {
-                                                ScaffoldMessenger.of(
+                                                CompactSnackBar.showSuccess(
                                                   context,
-                                                ).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'Rol eliminado',
-                                                    ),
-                                                    backgroundColor:
-                                                        Colors.green,
-                                                  ),
+                                                  'Rol eliminado',
                                                 );
                                               }
                                             } catch (e) {
                                               if (context.mounted) {
-                                                ScaffoldMessenger.of(
+                                                CompactSnackBar.showError(
                                                   context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text('Error: $e'),
-                                                    backgroundColor: Colors.red,
-                                                  ),
+                                                  'Error: $e',
                                                 );
                                               }
                                             }

@@ -57,8 +57,8 @@ class _CustomSidebarState extends State<CustomSidebar> {
     } else if (index == 15 || index == 17 || index == 24) {
       // 15: Vehículos, 17: Mantenimientos, 24: Camiones Victuales
       _expandedSection = '6. VEHÍCULOS';
-    } else if (index == 14 || index == 16) {
-      // 14: Choferes, 16: Despachos
+    } else if (index == 14 || index == 16 || index == 27) {
+      // 14: Choferes, 16: Despachos, 27: Historial de Viajes
       _expandedSection = '7. CHOFERES Y DESPACHOS';
     } else if (index == 18 || index == 19) {
       // 18: Gastos y Combustible, 19: Estadísticas
@@ -352,7 +352,7 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                   'Choferes',
                                   accentColor,
                                 ),
-                                if (!authProvider.isEncargadoVehiculos)
+                                if (!authProvider.isEncargadoVehiculos) ...[
                                   _buildMenuItem(
                                     16,
                                     Icons.route_outlined,
@@ -360,6 +360,14 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                     'Despachos',
                                     accentColor,
                                   ),
+                                  _buildMenuItem(
+                                    27,
+                                    Icons.history_outlined,
+                                    Icons.history_rounded,
+                                    'Historial de Viajes',
+                                    accentColor,
+                                  ),
+                                ],
                               ],
                             ),
 

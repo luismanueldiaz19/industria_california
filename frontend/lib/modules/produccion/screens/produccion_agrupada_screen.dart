@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/produccion_agrupada_provider.dart';
@@ -105,12 +106,7 @@ class _ProduccionAgrupadaScreenState extends State<ProduccionAgrupadaScreen> {
                   rowData['cliente_id'],
                 );
                 if (success && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Producción marcada como lista'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  CompactSnackBar.showSuccess(context, 'Producción marcada como lista');
                 }
               },
               icon: const Icon(Icons.check, size: 16),
@@ -216,16 +212,12 @@ class _ProduccionAgrupadaScreenState extends State<ProduccionAgrupadaScreen> {
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
                 } else {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No se pudo abrir el PDF.')),
-                    );
+                    CompactSnackBar.showError(context, 'No se pudo abrir el PDF.');
                   }
                 }
               } else {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Error al generar el PDF.')),
-                  );
+                  CompactSnackBar.showError(context, 'Error al generar el PDF.');
                 }
               }
             },

@@ -9,6 +9,7 @@ use App\Modules\Pedido\Models\Pedido;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Modules\CamionVictual\Enums\EstadoViaje;
 
 class CamionVictual extends Model
 {
@@ -61,6 +62,18 @@ class CamionVictual extends Model
             ->withPivot(['orden_viaje', 'estado_entrega', 'comentario_entrega', 'fecha_entregado'])
             ->withTimestamps()
             ->orderByPivot('orden_viaje', 'asc');
+    }
+
+    public function viajes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CamionViaje::class, 'camion_victual_id')->orderBy('id', 'desc');
+    }
+
+    public function viajeActivo(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(CamionViaje::class, 'camion_victual_id')
+            ->where('estado', EstadoViaje::EnRuta)
+            ->latestOfMany();
     }
 
     // ─── Helpers ─────────────────────────────────────────────────

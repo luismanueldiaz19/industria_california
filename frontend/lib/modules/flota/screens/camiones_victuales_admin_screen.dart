@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:industria_california/core/utils/formatters.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../camion_victual/providers/camion_victual_provider.dart';
 import '../widgets/camiones/camion_victual_form_modal.dart';
-import '../widgets/camiones/camion_victual_pedidos_modal.dart';
 
 class CamionesVictualesAdminScreen extends StatefulWidget {
   const CamionesVictualesAdminScreen({super.key});
@@ -28,9 +28,7 @@ class _CamionesVictualesAdminScreenState
   }
 
   Future<void> _imprimirCamion(int camionId) async {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Generando PDF...')));
+    CompactSnackBar.showInfo(context, 'Generando PDF...');
     try {
       final urlStr = await context
           .read<CamionVictualProvider>()
@@ -41,12 +39,7 @@ class _CamionesVictualesAdminScreenState
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al abrir PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al abrir PDF: $e');
     }
   }
 
@@ -181,11 +174,11 @@ class _CamionesVictualesAdminScreenState
 
                             return GestureDetector(
                               onTap: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) =>
-                                      CamionVictualPedidosModal(camion: camion),
-                                );
+                                // showDialog(
+                                //   context: context,
+                                //   builder: (context) =>
+                                //       CamionVictualPedidosModal(camion: camion),
+                                // );
                               },
                               child: Container(
                                 decoration: BoxDecoration(

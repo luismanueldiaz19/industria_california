@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../../core/utils/app_date_picker.dart';
 import '../../pedido/models/pedido.dart';
@@ -188,9 +189,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
   }
 
   Future<void> _generarPdf(Pedido pedido) async {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Generando Factura...')));
+    CompactSnackBar.showInfo(context, 'Generando Factura...');
     try {
       final urlStr = await context.read<PedidoProvider>().getPdfUrl(pedido.id);
       final url = Uri.parse(urlStr);
@@ -199,19 +198,12 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al abrir PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al abrir PDF: $e');
     }
   }
 
   Future<void> _generarReporteGeneralPdf() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Generando Reporte General...')),
-    );
+    CompactSnackBar.showInfo(context, 'Generando Reporte General...');
     try {
       final urlStr = await context.read<PedidoProvider>().getGeneralPdfUrl();
       final url = Uri.parse(urlStr);
@@ -220,12 +212,7 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al abrir PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, 'Error al abrir PDF: $e');
     }
   }
 
@@ -860,11 +847,6 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
     );
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok ? 'Pedido enviado correctamente' : 'Error al enviar'),
-        backgroundColor: ok ? const Color(0xFF4CAF50) : Colors.red,
-      ),
-    );
+    CompactSnackBar.showSuccess(context, ok ? 'Pedido enviado correctamente' : 'Error al enviar');
   }
 }

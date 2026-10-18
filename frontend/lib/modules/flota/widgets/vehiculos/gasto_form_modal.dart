@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -106,9 +107,7 @@ class _GastoFormModalState extends State<GastoFormModal> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedVehiculoId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debe seleccionar un vehículo')),
-      );
+      CompactSnackBar.showError(context, 'Debe seleccionar un vehículo');
       return;
     }
 
@@ -142,19 +141,9 @@ class _GastoFormModalState extends State<GastoFormModal> {
 
     if (success && mounted) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Guardado exitosamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      CompactSnackBar.showSuccess(context, 'Guardado exitosamente');
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.error ?? 'Error al guardar'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CompactSnackBar.showError(context, provider.error ?? 'Error al guardar');
     }
   }
 

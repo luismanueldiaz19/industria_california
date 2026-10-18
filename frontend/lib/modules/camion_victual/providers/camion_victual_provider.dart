@@ -37,6 +37,7 @@ class CamionVictualProvider extends ChangeNotifier {
         _service.getMontoMinimo(),
       ]);
       _camiones = results[0] as List<CamionVictual>;
+
       _montoMinimo = results[1] as double;
     } catch (e) {
       _error = e.toString();
@@ -244,6 +245,29 @@ class CamionVictualProvider extends ChangeNotifier {
     try {
       final actualizado = await _service.cerrar(camionId);
       _actualizarEnLista(actualizado);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isActualizando = false;
+      notifyListeners();
+    }
+  }
+
+  /// Cierra el camión con liquidación de viaje y actualiza el camión liberado.
+  Future<bool> cerrarConLiquidacion(
+    int camionId,
+    Map<String, dynamic> data,
+  ) async {
+    _isActualizando = true;
+    notifyListeners();
+    try {
+      final res = await _service.cerrarConLiquidacion(camionId, data);
+      if (res['camion'] != null) {
+        final camionActualizado = CamionVictual.fromJson(res['camion']);
+        _actualizarEnLista(camionActualizado);
+      }
       return true;
     } catch (e) {
       _error = e.toString();
