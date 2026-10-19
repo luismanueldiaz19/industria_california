@@ -53,14 +53,17 @@ class CamionVictual {
           ? (json['estado']['value'] ?? json['estado'].toString())
           : (json['estado'] ?? 'armando'),
       montoTotal: double.tryParse(json['monto_total']?.toString() ?? '0') ?? 0,
-      minimoSalida: double.tryParse(json['minimo_salida']?.toString() ?? '500000') ?? 500000,
+      minimoSalida:
+          double.tryParse(json['minimo_salida']?.toString() ?? '500000') ??
+          500000,
       fechaCierre: json['fecha_cierre'] != null
           ? DateTime.tryParse(json['fecha_cierre'])
           : null,
       choferNombre: json['chofer']?['user']?['name'],
       vendedorNombre: json['vendedor']?['name'],
       notas: json['notas'],
-      vehiculoId: int.tryParse(json['vehiculo_id']?.toString() ?? '') ??
+      vehiculoId:
+          int.tryParse(json['vehiculo_id']?.toString() ?? '') ??
           int.tryParse(json['vehiculo']?['id']?.toString() ?? ''),
       vehiculoFicha: json['vehiculo']?['ficha'],
       vehiculoPlaca: json['vehiculo']?['placa'],
@@ -153,8 +156,9 @@ class CamionPedido {
           : (json['estado'] ?? ''),
       clienteNombre: json['cliente']?['nombre'],
       clienteDireccion: json['cliente']?['direccion'],
-      clienteTelefono: json['cliente']?['telefono'],
-      clienteRnc: json['cliente']?['rnc'],
+      clienteTelefono:
+          json['cliente']?['whatsapp'] ?? json['cliente']?['telefono'],
+      clienteRnc: json['cliente']?['documento'] ?? json['cliente']?['rnc'],
       ordenViaje: pivot['orden_viaje'] ?? 0,
       estadoEntrega: pivot['estado_entrega'] ?? 'pendiente',
       comentarioEntrega: pivot['comentario_entrega'],
@@ -193,7 +197,9 @@ class PedidoDisponible {
       total: double.tryParse(json['total']?.toString() ?? '0') ?? 0,
       clienteNombre: json['cliente']?['nombre'],
       clienteDireccion: json['cliente']?['direccion'],
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt:
+          DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+          DateTime.now(),
     );
   }
 }

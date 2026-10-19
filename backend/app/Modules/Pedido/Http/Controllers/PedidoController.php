@@ -338,7 +338,7 @@ class PedidoController extends Controller
     public function generatePdf($id)
     {
         $pedido = Pedido::with([
-            'cliente:id,nombre,direccion,telefono,rnc', 
+            'cliente:id,nombre,direccion,whatsapp,documento', 
             'ruta:id,nombre', 
             'vendedor:id,name', 
             'detalles.producto:id,codigo,descripcion,unidad,medidas,capacidad'

@@ -32,6 +32,27 @@ class Cliente extends Model
         'longitud'       => 'decimal:8',
     ];
 
+    protected $appends = [
+        'telefono',
+        'rnc',
+    ];
+
+    /**
+     * Accesor para compatibilidad con código que use 'telefono'
+     */
+    public function getTelefonoAttribute(): ?string
+    {
+        return $this->attributes['whatsapp'] ?? null;
+    }
+
+    /**
+     * Accesor para compatibilidad con código que use 'rnc'
+     */
+    public function getRncAttribute(): ?string
+    {
+        return $this->attributes['documento'] ?? null;
+    }
+
     /**
      * Relación con Cuentas por Cobrar
      */
