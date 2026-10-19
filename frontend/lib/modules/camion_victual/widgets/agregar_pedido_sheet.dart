@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../vendedor/widgets/vendedor_mobile_wrapper.dart';
 import '../models/camion_victual.dart';
 import '../providers/camion_victual_provider.dart';
 
@@ -45,9 +44,15 @@ class _AgregarPedidoSheetState extends State<AgregarPedidoSheet> {
     final ok = await provider.agregarPedido(widget.camionId, pedido.id);
     if (!mounted) return;
     if (ok) {
-      CompactSnackBar.showSuccess(context, 'Pedido #${pedido.id} agregado al camión');
+      CompactSnackBar.showSuccess(
+        context,
+        'Pedido #${pedido.id} agregado al camión',
+      );
     } else {
-      CompactSnackBar.showError(context, provider.error ?? 'Error al agregar pedido');
+      CompactSnackBar.showError(
+        context,
+        provider.error ?? 'Error al agregar pedido',
+      );
     }
   }
 
@@ -123,7 +128,7 @@ class _AgregarPedidoSheetState extends State<AgregarPedidoSheet> {
           SizedBox(
             height: 340,
             child: Consumer<CamionVictualProvider>(
-              builder: (_, provider, __) {
+              builder: (_, provider, child) {
                 if (provider.isLoadingPedidos) {
                   return const Center(
                     child: CircularProgressIndicator(color: Color(0xFF1976D2)),

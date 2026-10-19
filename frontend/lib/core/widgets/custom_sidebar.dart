@@ -5,6 +5,7 @@ import '../utils/constants.dart';
 import '../../modules/auth/screens/login_screen.dart';
 import '../../modules/flota/widgets/vehiculos/vehiculo_form_modal.dart';
 import '../../modules/flota/widgets/choferes/chofer_form_modal.dart';
+import '../../modules/flota/widgets/vehiculos/gasto_form_modal.dart';
 
 class CustomSidebar extends StatefulWidget {
   final int selectedIndex;
@@ -61,8 +62,8 @@ class _CustomSidebarState extends State<CustomSidebar> {
       // 14: Choferes, 16: Despachos, 27: Historial de Viajes
       _expandedSection = '7. CHOFERES Y DESPACHOS';
     } else if (index == 18 || index == 19) {
-      // 18: Gastos y Combustible, 19: Estadísticas
-      _expandedSection = '8. GASTOS Y COMBUSTIBLE';
+      // 18: Gastos, 19: Estadísticas
+      _expandedSection = '8. GASTOS';
     }
     // if (widget.selectedIndex >= 38 && widget.selectedIndex <= 42) {
     //   _expandedSection = '9. CONFIGURACIÓN';
@@ -372,14 +373,27 @@ class _CustomSidebarState extends State<CustomSidebar> {
                             ),
 
                             _buildExpansionSection(
-                              '8. GASTOS Y COMBUSTIBLE',
+                              '8. GASTOS',
                               Icons.receipt_long_outlined,
                               [
+                                if (!authProvider.isEncargadoVehiculos)
+                                  _buildActionItem(
+                                    Icons.add_circle_outline,
+                                    'Registrar Gasto',
+                                    accentColor,
+                                    () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) =>
+                                            const GastoFormModal(),
+                                      );
+                                    },
+                                  ),
                                 _buildMenuItem(
                                   18,
                                   Icons.receipt_long_outlined,
                                   Icons.receipt_long_rounded,
-                                  'Gastos y Combustible',
+                                  'Gastos',
                                   accentColor,
                                 ),
                                 _buildMenuItem(

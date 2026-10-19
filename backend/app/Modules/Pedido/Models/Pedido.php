@@ -39,6 +39,29 @@ class Pedido extends Model
         'fecha_entrega' => 'date',
     ];
 
+    protected static function booted(): void
+    {
+        static::updating(function (Pedido $pedido) {
+            $estadoOriginal = is_object($pedido->getOriginal('estado'))
+                ? $pedido->getOriginal('estado')->value
+                : (string) $pedido->getOriginal('estado');
+
+            if ($estadoOriginal === 'entregado') {
+                throw new \Exception('Un pedido ENTREGADO no puede ser modificado. Ningún campo de su tabla puede ser actualizado.');
+            }
+        });
+
+        static::deleting(function (Pedido $pedido) {
+            $estado = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+            if ($estado === 'facturado' || !empty(trim((string) $pedido->num_factura))) {
+                throw new \Exception('Un pedido FACTURADO no puede ser eliminado del sistema.');
+            }
+            if ($estado === 'entregado') {
+                throw new \Exception('Un pedido ENTREGADO no puede ser eliminado ya que finalizó su ciclo de despacho.');
+            }
+        });
+    }
+
     public function cliente()
     {
         return $this->belongsTo(LedhouseCliente::class, 'cliente_id');

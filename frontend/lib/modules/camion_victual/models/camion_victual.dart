@@ -13,6 +13,11 @@ class CamionVictual {
   final String? choferNombre;
   final String? vendedorNombre;
   final String? notas;
+  final int? vehiculoId;
+  final String? vehiculoFicha;
+  final String? vehiculoPlaca;
+  final String? vehiculoMarca;
+  final String? vehiculoModelo;
   final List<CamionPedido> pedidos;
 
   const CamionVictual({
@@ -28,6 +33,11 @@ class CamionVictual {
     this.choferNombre,
     this.vendedorNombre,
     this.notas,
+    this.vehiculoId,
+    this.vehiculoFicha,
+    this.vehiculoPlaca,
+    this.vehiculoMarca,
+    this.vehiculoModelo,
     this.pedidos = const [],
   });
 
@@ -50,6 +60,12 @@ class CamionVictual {
       choferNombre: json['chofer']?['user']?['name'],
       vendedorNombre: json['vendedor']?['name'],
       notas: json['notas'],
+      vehiculoId: int.tryParse(json['vehiculo_id']?.toString() ?? '') ??
+          int.tryParse(json['vehiculo']?['id']?.toString() ?? ''),
+      vehiculoFicha: json['vehiculo']?['ficha'],
+      vehiculoPlaca: json['vehiculo']?['placa'],
+      vehiculoMarca: json['vehiculo']?['marca'],
+      vehiculoModelo: json['vehiculo']?['modelo'],
       pedidos: pedidosRaw.map((p) => CamionPedido.fromJson(p)).toList(),
     );
   }
@@ -69,6 +85,8 @@ class CamionPedido {
   final String estadoPedido;
   final String? clienteNombre;
   final String? clienteDireccion;
+  final String? clienteTelefono;
+  final String? clienteRnc;
   // Pivot fields
   final int ordenViaje;
   final String estadoEntrega; // pendiente | en_curso | entregado | fallido
@@ -83,6 +101,8 @@ class CamionPedido {
     required this.estadoPedido,
     this.clienteNombre,
     this.clienteDireccion,
+    this.clienteTelefono,
+    this.clienteRnc,
     required this.ordenViaje,
     required this.estadoEntrega,
     this.comentarioEntrega,
@@ -97,6 +117,8 @@ class CamionPedido {
     String? estadoPedido,
     String? clienteNombre,
     String? clienteDireccion,
+    String? clienteTelefono,
+    String? clienteRnc,
     int? ordenViaje,
     String? estadoEntrega,
     String? comentarioEntrega,
@@ -110,6 +132,8 @@ class CamionPedido {
       estadoPedido: estadoPedido ?? this.estadoPedido,
       clienteNombre: clienteNombre ?? this.clienteNombre,
       clienteDireccion: clienteDireccion ?? this.clienteDireccion,
+      clienteTelefono: clienteTelefono ?? this.clienteTelefono,
+      clienteRnc: clienteRnc ?? this.clienteRnc,
       ordenViaje: ordenViaje ?? this.ordenViaje,
       estadoEntrega: estadoEntrega ?? this.estadoEntrega,
       comentarioEntrega: comentarioEntrega ?? this.comentarioEntrega,
@@ -129,6 +153,8 @@ class CamionPedido {
           : (json['estado'] ?? ''),
       clienteNombre: json['cliente']?['nombre'],
       clienteDireccion: json['cliente']?['direccion'],
+      clienteTelefono: json['cliente']?['telefono'],
+      clienteRnc: json['cliente']?['rnc'],
       ordenViaje: pivot['orden_viaje'] ?? 0,
       estadoEntrega: pivot['estado_entrega'] ?? 'pendiente',
       comentarioEntrega: pivot['comentario_entrega'],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/widgets/compact_snack_bar.dart';
+import '../../../../core/widgets/zoom_dialog.dart';
 import '../../../camion_victual/models/camion_victual.dart';
 import '../../../camion_victual/providers/camion_victual_provider.dart';
 
@@ -92,6 +93,56 @@ class _DespachoLiquidacionDialogState extends State<DespachoLiquidacionDialog> {
   double get _margenNeto => widget.camion.montoTotal - _totalGastos;
 
   Future<void> _finalizarLiquidacion() async {
+    final pedidos = widget.camion.pedidos;
+    final int pendientesEnCurso = pedidos
+        .where((p) =>
+            p.estadoEntrega == 'en_curso' || p.estadoEntrega == 'pendiente')
+        .length;
+    final int fallidos =
+        pedidos.where((p) => p.estadoEntrega == 'fallido').length;
+    final int yaEntregados =
+        pedidos.where((p) => p.estadoEntrega == 'entregado').length;
+
+    bool marcarRestantesEntregados = false;
+
+    if (pendientesEnCurso > 0) {
+      final respuesta = await ZoomDialog.confirm(
+        context: context,
+        title: '¿Marcar pedidos como Entregados?',
+        content:
+            'Hay $pendientesEnCurso pedido(s) que aún figuran en curso.\n\n'
+            '¿Desea marcarlos automáticamente como "Entregados" al liquidar el viaje?\n\n'
+            '• Se guardarán como entregados: ${yaEntregados + pendientesEnCurso} pedido(s)\n'
+            '${fallidos > 0 ? "• Se liberarán: $fallidos pedido(s) fallidos para despachar en otra ocasión\n" : ""}',
+        icon: Icons.assignment_turned_in_rounded,
+        iconColor: const Color(0xFF16A34A),
+        confirmText: 'Entregar y Liquidar',
+        confirmIcon: Icons.check_circle_rounded,
+        cancelText: 'Cancelar',
+      );
+
+      if (respuesta != true) return;
+      marcarRestantesEntregados = true;
+    } else {
+      final respuesta = await ZoomDialog.confirm(
+        context: context,
+        title: 'Finalizar y Liquidar Viaje',
+        content:
+            '¿Desea cerrar definitivamente este viaje?\n\n'
+            '• $yaEntregados pedido(s) entregados\n'
+            '${fallidos > 0 ? "• $fallidos pedido(s) fallidos (serán liberados para reprogramar)\n" : ""}'
+            '• El camión quedará libre para nuevos viajes.',
+        icon: Icons.receipt_long_rounded,
+        iconColor: const Color(0xFFEA580C),
+        confirmText: 'Confirmar y Liquidar',
+        confirmIcon: Icons.check_circle_rounded,
+        cancelText: 'Cancelar',
+      );
+
+      if (respuesta != true) return;
+    }
+
+    if (!mounted) return;
     setState(() => _isSaving = true);
 
     final List<Map<String, dynamic>> gastosData = [];
@@ -119,6 +170,7 @@ class _DespachoLiquidacionDialogState extends State<DespachoLiquidacionDialog> {
       'comentarios': _comentariosCtrl.text.trim().isEmpty
           ? null
           : _comentariosCtrl.text.trim(),
+      'marcar_restantes_entregados': marcarRestantesEntregados,
       'gastos': gastosData,
     };
 
@@ -241,13 +293,27 @@ class _DespachoLiquidacionDialogState extends State<DespachoLiquidacionDialog> {
                                     color: Color(0xFF0F172A),
                                   ),
                                 ),
-                                Text(
-                                  '${widget.camion.pedidos.length} pedidos entregados/en viaje',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Color(0xFF94A3B8),
-                                  ),
-                                ),
+                                () {
+                                  final int ent = widget.camion.pedidos
+                                      .where((p) => p.estadoEntrega == 'entregado')
+                                      .length;
+                                  final int enc = widget.camion.pedidos
+                                      .where((p) =>
+                                          p.estadoEntrega == 'en_curso' ||
+                                          p.estadoEntrega == 'pendiente')
+                                      .length;
+                                  final int fal = widget.camion.pedidos
+                                      .where((p) => p.estadoEntrega == 'fallido')
+                                      .length;
+                                  return Text(
+                                    '$ent entregados · $enc en curso${fal > 0 ? " · $fal fallidos" : ""}',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Color(0xFF64748B),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  );
+                                }(),
                               ],
                             ),
                           ),
@@ -328,6 +394,80 @@ class _DespachoLiquidacionDialogState extends State<DespachoLiquidacionDialog> {
                         ],
                       ),
                     ),
+                    // Avisos sobre pedidos en curso o fallidos
+                    () {
+                      final int enc = widget.camion.pedidos
+                          .where((p) =>
+                              p.estadoEntrega == 'en_curso' ||
+                              p.estadoEntrega == 'pendiente')
+                          .length;
+                      final int fal = widget.camion.pedidos
+                          .where((p) => p.estadoEntrega == 'fallido')
+                          .length;
+
+                      if (enc == 0 && fal == 0) return const SizedBox.shrink();
+
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Column(
+                          children: [
+                            if (enc > 0)
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 7),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                      color: const Color(0xFFBFDBFE)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.info_outline,
+                                        size: 14, color: Color(0xFF2563EB)),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        '$enc pedido(s) aún en curso. Al liquidar se preguntará si desea auto-marcarlos como entregados.',
+                                        style: const TextStyle(
+                                            fontSize: 10.5,
+                                            color: Color(0xFF1E40AF)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (fal > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 7),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                      color: const Color(0xFFFDE68A)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.replay_outlined,
+                                        size: 14, color: Color(0xFFD97706)),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        '$fal pedido(s) marcado(s) como fallido(s) quedarán liberados para entregarse en otro viaje.',
+                                        style: const TextStyle(
+                                            fontSize: 10.5,
+                                            color: Color(0xFF92400E)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }(),
                     const SizedBox(height: 16),
 
                     // Sección 1: Personal y Ayudantes

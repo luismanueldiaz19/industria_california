@@ -151,26 +151,42 @@ class VehiculoService
     // ─── Gastos ───────────────────────────────────────────────────
 
     /**
-     * Registrar un nuevo gasto para un vehículo.
+     * Registrar un nuevo gasto (general o asociado a vehículo).
      * Calcula automáticamente el monto_total si no se provee.
      */
-    public function registrarGasto(Vehiculo $vehiculo, array $datos, User $responsable): VehiculoGasto
+    public function registrarGastoGeneral(array $datos, User $responsable): VehiculoGasto
     {
         $cantidad       = (float) ($datos['cantidad'] ?? 1);
         $precioUnitario = (float) ($datos['precio_unitario'] ?? 0);
-        $montoTotal     = $datos['monto_total'] ?? ($cantidad * $precioUnitario);
+        $montoTotal     = isset($datos['monto_total']) && (float) $datos['monto_total'] > 0
+            ? (float) $datos['monto_total']
+            : ($cantidad * $precioUnitario);
 
-        return $vehiculo->gastos()->create([
+        $comprobante = $datos['comprobante'] ?? (isset($datos['comprobantes']) && is_array($datos['comprobantes']) && !empty($datos['comprobantes']) ? reset($datos['comprobantes']) : null);
+        $comprobantes = $datos['comprobantes'] ?? ($comprobante ? [$comprobante] : null);
+
+        return VehiculoGasto::create([
+            'vehiculo_id'     => $datos['vehiculo_id'] ?? null,
             'fecha_gasto'     => $datos['fecha_gasto'] ?? today(),
             'tipo_gasto'      => $datos['tipo_gasto'] ?? null,
             'concepto'        => $datos['concepto'],
             'cantidad'        => $cantidad,
-            'unidad_medida'   => $datos['unidad_medida'] ?? null,
+            'unidad_medida'   => $datos['unidad_medida'] ?? 'UNIDAD',
             'precio_unitario' => $precioUnitario,
             'monto_total'     => $montoTotal,
-            'comprobantes'    => $datos['comprobantes'] ?? null,
+            'comprobante'     => $comprobante,
+            'comprobantes'    => $comprobantes,
             'registrado_por'  => $responsable->id,
         ]);
+    }
+
+    /**
+     * Registrar un nuevo gasto para un vehículo específico.
+     */
+    public function registrarGasto(Vehiculo $vehiculo, array $datos, User $responsable): VehiculoGasto
+    {
+        $datos['vehiculo_id'] = $vehiculo->id;
+        return $this->registrarGastoGeneral($datos, $responsable);
     }
 
     /**
@@ -183,6 +199,12 @@ class VehiculoService
             $cantidad       = (float) ($datos['cantidad'] ?? $gasto->cantidad);
             $precioUnitario = (float) ($datos['precio_unitario'] ?? $gasto->precio_unitario);
             $datos['monto_total'] = $datos['monto_total'] ?? ($cantidad * $precioUnitario);
+        }
+
+        if (array_key_exists('comprobante', $datos) && !array_key_exists('comprobantes', $datos)) {
+            $datos['comprobantes'] = $datos['comprobante'] ? [$datos['comprobante']] : null;
+        } elseif (array_key_exists('comprobantes', $datos) && !array_key_exists('comprobante', $datos)) {
+            $datos['comprobante'] = !empty($datos['comprobantes']) && is_array($datos['comprobantes']) ? reset($datos['comprobantes']) : null;
         }
 
         $gasto->update($datos);

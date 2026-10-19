@@ -14,8 +14,10 @@ class GastoVehiculoProvider with ChangeNotifier {
   List<TipoGasto> tiposGasto = [];
 
   // Filtros
+  String searchQuery = '';
   String? filtroVehiculoFicha; // null means 'Todos'
   String filtroTipoGasto = 'Todos';
+  String filtroOrigen = 'Todos'; // 'Todos', 'Viajes', 'Flota / Planta'
   DateFilterOption quickDateFilter = DateFilterOption.todos;
   DateTimeRange? filtroRangoFecha;
   bool sortByDateDesc = true;
@@ -26,49 +28,92 @@ class GastoVehiculoProvider with ChangeNotifier {
 
   List<VehiculoGasto> get gastosFiltrados {
     var lista = gastos.where((g) {
-      bool passVehiculo =
-          filtroVehiculoFicha == null ||
-          g.vehiculo?['ficha'] == filtroVehiculoFicha;
+      // 1. Filtro Búsqueda de Texto
+      if (searchQuery.isNotEmpty) {
+        final q = searchQuery.toLowerCase();
+        final matchConcepto = g.concepto.toLowerCase().contains(q);
+        final matchTipo = (g.tipoGasto ?? '').toLowerCase().contains(q);
+        final matchVehiculo =
+            (g.vehiculo?['ficha']?.toString() ?? '').toLowerCase().contains(q) ||
+            (g.vehiculo?['placa']?.toString() ?? '').toLowerCase().contains(q);
+        final matchViaje =
+            (g.viaje?['codigo']?.toString() ?? '').toLowerCase().contains(q);
+        final matchRegistrador =
+            (g.registrador?['name']?.toString() ?? '').toLowerCase().contains(q);
+        final matchId = g.id.toString().contains(q);
+        final matchMonto = g.montoTotal.toString().contains(q);
+        final matchComprobantes = (g.comprobante ?? '').toLowerCase().contains(q) ||
+            (g.comprobantes != null &&
+                g.comprobantes!.any((c) => c.toString().toLowerCase().contains(q)));
+
+        if (!matchConcepto &&
+            !matchTipo &&
+            !matchVehiculo &&
+            !matchViaje &&
+            !matchRegistrador &&
+            !matchId &&
+            !matchMonto &&
+            !matchComprobantes) {
+          return false;
+        }
+      }
+
+      // 2. Filtro Origen (Viaje vs Flota general)
+      if (filtroOrigen == 'Viajes' && g.viajeId == null) {
+        return false;
+      }
+      if (filtroOrigen == 'Flota / Planta' && g.viajeId != null) {
+        return false;
+      }
+
+      // 3. Filtro Vehículo
+      bool passVehiculo = true;
+      if (filtroVehiculoFicha != null) {
+        if (filtroVehiculoFicha == 'GENERAL / PLANTA' ||
+            filtroVehiculoFicha == 'PLANTA / GENERAL' ||
+            filtroVehiculoFicha == 'S/N') {
+          passVehiculo = (g.vehiculo == null || g.vehiculo?['ficha'] == null);
+        } else {
+          passVehiculo = g.vehiculo?['ficha'] == filtroVehiculoFicha;
+        }
+      }
+      if (!passVehiculo) return false;
+
+      // 4. Filtro Tipo
       bool passTipo =
           filtroTipoGasto == 'Todos' ||
           g.tipoGasto?.toLowerCase() == filtroTipoGasto.toLowerCase();
+      if (!passTipo) return false;
 
-      bool passFecha = true;
+      // 5. Filtro Rápido de Fecha
       if (quickDateFilter != DateFilterOption.todos) {
-        if (g.fechaGasto == null) {
-          passFecha = false;
-        } else {
-          passFecha = QuickDateFilter.isDateInFilter(
-            g.fechaGasto!,
-            quickDateFilter,
-          );
+        if (g.fechaGasto == null) return false;
+        if (!QuickDateFilter.isDateInFilter(g.fechaGasto!, quickDateFilter)) {
+          return false;
         }
       }
 
-      bool passRango = true;
+      // 6. Filtro Rango de Fecha Personalizado
       if (filtroRangoFecha != null) {
-        if (g.fechaGasto == null) {
-          passRango = false;
-        } else {
-          final fr = g.fechaGasto!;
-          final dateSolo = DateTime(fr.year, fr.month, fr.day);
-          final start = DateTime(
-            filtroRangoFecha!.start.year,
-            filtroRangoFecha!.start.month,
-            filtroRangoFecha!.start.day,
-          );
-          final end = DateTime(
-            filtroRangoFecha!.end.year,
-            filtroRangoFecha!.end.month,
-            filtroRangoFecha!.end.day,
-          );
-          passRango =
-              (dateSolo.isAtSameMomentAs(start) || dateSolo.isAfter(start)) &&
-              (dateSolo.isAtSameMomentAs(end) || dateSolo.isBefore(end));
+        if (g.fechaGasto == null) return false;
+        final fr = g.fechaGasto!;
+        final dateSolo = DateTime(fr.year, fr.month, fr.day);
+        final start = DateTime(
+          filtroRangoFecha!.start.year,
+          filtroRangoFecha!.start.month,
+          filtroRangoFecha!.start.day,
+        );
+        final end = DateTime(
+          filtroRangoFecha!.end.year,
+          filtroRangoFecha!.end.month,
+          filtroRangoFecha!.end.day,
+        );
+        if (dateSolo.isBefore(start) || dateSolo.isAfter(end)) {
+          return false;
         }
       }
 
-      return passVehiculo && passTipo && passFecha && passRango;
+      return true;
     }).toList();
 
     lista.sort((a, b) {
@@ -92,12 +137,50 @@ class GastoVehiculoProvider with ChangeNotifier {
   }
 
   List<String> get vehiculosUnicos {
-    final fichas = gastos
-        .map((e) => e.vehiculo?['ficha']?.toString() ?? 'S/N')
-        .toSet()
-        .toList();
-    fichas.sort();
-    return fichas;
+    final fichas = <String>{};
+    bool hasGeneral = false;
+    for (final g in gastos) {
+      final ficha = g.vehiculo?['ficha']?.toString();
+      if (ficha != null && ficha.isNotEmpty && ficha != 'S/N') {
+        fichas.add(ficha);
+      } else {
+        hasGeneral = true;
+      }
+    }
+    final lista = fichas.toList()..sort();
+    if (hasGeneral) {
+      lista.insert(0, 'GENERAL / PLANTA');
+    }
+    return lista;
+  }
+
+  void setSearchQuery(String q) {
+    searchQuery = q.trim();
+    currentPage = 1;
+    notifyListeners();
+  }
+
+  void clearSearchQuery() {
+    searchQuery = '';
+    currentPage = 1;
+    notifyListeners();
+  }
+
+  void setFiltroOrigen(String origen) {
+    filtroOrigen = origen;
+    currentPage = 1;
+    notifyListeners();
+  }
+
+  void resetFiltros() {
+    searchQuery = '';
+    filtroVehiculoFicha = null;
+    filtroTipoGasto = 'Todos';
+    filtroOrigen = 'Todos';
+    quickDateFilter = DateFilterOption.todos;
+    filtroRangoFecha = null;
+    currentPage = 1;
+    notifyListeners();
   }
 
   void setFiltroVehiculo(String? ficha) {
@@ -271,7 +354,7 @@ class GastoVehiculoProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> createGasto(int vehiculoId, Map<String, dynamic> data) async {
+  Future<bool> createGasto(int? vehiculoId, Map<String, dynamic> data) async {
     isLoading = true;
     error = null;
     notifyListeners();
@@ -290,7 +373,7 @@ class GastoVehiculoProvider with ChangeNotifier {
   }
 
   Future<bool> updateGasto(
-    int vehiculoId,
+    int? vehiculoId,
     int gastoId,
     Map<String, dynamic> data,
   ) async {
@@ -311,7 +394,7 @@ class GastoVehiculoProvider with ChangeNotifier {
     }
   }
 
-  Future<void> deleteGasto(int vehiculoId, int gastoId) async {
+  Future<void> deleteGasto(int? vehiculoId, int gastoId) async {
     try {
       await _service.deleteGasto(vehiculoId, gastoId);
       await loadGastos();

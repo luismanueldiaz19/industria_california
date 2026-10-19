@@ -12,6 +12,7 @@ class VehiculoGasto extends Model
 
     protected $fillable = [
         'vehiculo_id',
+        'viaje_id',
         'tipo_gasto',
         'fecha_gasto',
         'concepto',
@@ -19,6 +20,7 @@ class VehiculoGasto extends Model
         'unidad_medida',
         'precio_unitario',
         'monto_total',
+        'comprobante',
         'comprobantes',
         'registrado_por',
     ];
@@ -38,8 +40,30 @@ class VehiculoGasto extends Model
         return $this->belongsTo(Vehiculo::class, 'vehiculo_id');
     }
 
+    public function viaje(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\CamionVictual\Models\CamionViaje::class, 'viaje_id');
+    }
+
     public function registrador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'registrado_por');
+    }
+
+    // ─── Mutators (Uppercase siempre) ──────────────────────────────
+
+    public function setConceptoAttribute($value): void
+    {
+        $this->attributes['concepto'] = $value ? mb_strtoupper(trim($value), 'UTF-8') : $value;
+    }
+
+    public function setTipoGastoAttribute($value): void
+    {
+        $this->attributes['tipo_gasto'] = $value ? mb_strtoupper(trim($value), 'UTF-8') : $value;
+    }
+
+    public function setUnidadMedidaAttribute($value): void
+    {
+        $this->attributes['unidad_medida'] = $value ? mb_strtoupper(trim($value), 'UTF-8') : $value;
     }
 }

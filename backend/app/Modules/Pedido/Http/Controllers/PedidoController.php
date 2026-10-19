@@ -138,12 +138,26 @@ class PedidoController extends Controller
         }
 
         $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
-        if ($estadoActual === 'entregado') {
-            return response()->json(['message' => 'Un pedido ENTREGADO no puede ser eliminado ya que finalizó su ciclo de despacho.'], 422);
+        if ($estadoActual === 'facturado' || !empty(trim((string) $pedido->num_factura))) {
+            return response()->json([
+                'message' => 'Un pedido FACTURADO no puede ser eliminado del sistema.',
+                'errors' => ['pedido' => ['Un pedido en estado FACTURADO no puede ser eliminado.']]
+            ], 422);
         }
 
-        $pedido->delete();
-        return response()->json(['message' => 'Pedido eliminado correctamente.']);
+        if ($estadoActual === 'entregado') {
+            return response()->json([
+                'message' => 'Un pedido ENTREGADO no puede ser eliminado ya que finalizó su ciclo de despacho.',
+                'errors' => ['pedido' => ['Un pedido en estado ENTREGADO no puede ser eliminado.']]
+            ], 422);
+        }
+
+        try {
+            $pedido->delete();
+            return response()->json(['message' => 'Pedido eliminado correctamente.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 
     public function changeStatus(Request $request, Pedido $pedido)
@@ -156,10 +170,10 @@ class PedidoController extends Controller
         $nuevoEstado = $request->estado;
         $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
 
-        if ($estadoActual === 'entregado' && $nuevoEstado !== 'entregado') {
+        if ($estadoActual === 'entregado') {
             return response()->json([
-                'message' => 'Un pedido ENTREGADO no puede cambiar a ningún otro estado ya que finalizó su ciclo de despacho.',
-                'errors' => ['estado' => ['Un pedido en estado ENTREGADO no puede ser modificado a otro estado.']]
+                'message' => 'Un pedido ENTREGADO no puede ser modificado ya que finalizó su ciclo de despacho.',
+                'errors' => ['estado' => ['Un pedido en estado ENTREGADO no puede ser modificado.']]
             ], 422);
         }
 
@@ -345,6 +359,17 @@ class PedidoController extends Controller
             'pedido_ids.*' => 'exists:pedidos,id',
             'ruta_id' => 'required|exists:rutas,id',
         ]);
+
+        $tieneEntregados = Pedido::whereIn('id', $request->pedido_ids)
+            ->where('estado', 'entregado')
+            ->exists();
+
+        if ($tieneEntregados) {
+            return response()->json([
+                'message' => 'No se puede modificar la ruta a pedidos que ya han sido ENTREGADOS.',
+                'errors' => ['ruta' => ['Uno o más pedidos seleccionados ya están en estado ENTREGADO.']]
+            ], 422);
+        }
 
         Pedido::whereIn('id', $request->pedido_ids)->update(['ruta_id' => $request->ruta_id]);
 

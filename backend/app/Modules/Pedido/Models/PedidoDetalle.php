@@ -29,6 +29,29 @@ class PedidoDetalle extends Model
         'subtotal' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (PedidoDetalle $detalle) {
+            $pedido = $detalle->pedido ?? Pedido::find($detalle->pedido_id);
+            if ($pedido) {
+                $estado = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+                if ($estado === 'entregado') {
+                    throw new \Exception('No se pueden modificar los artículos de un pedido ENTREGADO.');
+                }
+            }
+        });
+
+        static::deleting(function (PedidoDetalle $detalle) {
+            $pedido = $detalle->pedido ?? Pedido::find($detalle->pedido_id);
+            if ($pedido) {
+                $estado = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+                if ($estado === 'entregado') {
+                    throw new \Exception('No se pueden eliminar los artículos de un pedido ENTREGADO.');
+                }
+            }
+        });
+    }
+
     public function pedido()
     {
         return $this->belongsTo(Pedido::class, 'pedido_id');

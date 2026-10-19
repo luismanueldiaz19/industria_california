@@ -455,7 +455,8 @@ class _PedidosTableState extends State<PedidosTable> {
   }
 
   Widget _buildBadgeProduccion(BuildContext context, Pedido pedido) {
-    final estadoOp = (pedido.ordenProduccionEstado ?? 'pendiente').toLowerCase();
+    final estadoOp = (pedido.ordenProduccionEstado ?? 'pendiente')
+        .toLowerCase();
     Color color;
     String texto;
     IconData icono;
@@ -481,7 +482,8 @@ class _PedidosTableState extends State<PedidosTable> {
     }
 
     return Tooltip(
-      message: 'Orden de Producción #OP-${pedido.ordenProduccionId} ($texto). Clic para abrir.',
+      message:
+          'Orden de Producción #OP-${pedido.ordenProduccionId} ($texto). Clic para abrir.',
       child: InkWell(
         onTap: () {
           OrdenProduccionPedidoDialog.show(
@@ -498,10 +500,7 @@ class _PedidosTableState extends State<PedidosTable> {
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(
-              color: color.withValues(alpha: 0.5),
-              width: 0.8,
-            ),
+            border: Border.all(color: color.withValues(alpha: 0.5), width: 0.8),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -526,7 +525,8 @@ class _PedidosTableState extends State<PedidosTable> {
 
   Widget _buildBadgeFaltanteSinOp(BuildContext context, Pedido pedido) {
     return Tooltip(
-      message: 'Tiene faltantes de inventario sin Orden de Producción. Clic para generar.',
+      message:
+          'Tiene faltantes de inventario sin Orden de Producción. Clic para generar.',
       child: InkWell(
         onTap: () {
           OrdenProduccionPedidoDialog.show(
@@ -551,7 +551,11 @@ class _PedidosTableState extends State<PedidosTable> {
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.warning_amber_rounded, size: 9, color: Colors.redAccent),
+              Icon(
+                Icons.warning_amber_rounded,
+                size: 9,
+                color: Colors.redAccent,
+              ),
               SizedBox(width: 3),
               Text(
                 'SIN OP',

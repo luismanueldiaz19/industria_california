@@ -157,27 +157,35 @@ class VehiculoService {
   }
 
   Future<VehiculoGasto> createGasto(
-    int vehiculoId,
+    int? vehiculoId,
     Map<String, dynamic> data,
   ) async {
-    final response = await _http.post('$_base/$vehiculoId/gastos', data);
+    final payload = Map<String, dynamic>.from(data);
+    if (vehiculoId != null) {
+      payload['vehiculo_id'] = vehiculoId;
+    }
+    final response = await _http.post('$_base/gastos', payload);
     return VehiculoGasto.fromJson(response);
   }
 
   Future<VehiculoGasto> updateGasto(
-    int vehiculoId,
+    int? vehiculoId,
     int gastoId,
     Map<String, dynamic> data,
   ) async {
+    final payload = Map<String, dynamic>.from(data);
+    if (vehiculoId != null) {
+      payload['vehiculo_id'] = vehiculoId;
+    }
     final response = await _http.patch(
-      '$_base/$vehiculoId/gastos/$gastoId',
-      data,
+      '$_base/gastos/$gastoId',
+      payload,
     );
     return VehiculoGasto.fromJson(response);
   }
 
-  Future<void> deleteGasto(int vehiculoId, int gastoId) async {
-    await _http.delete('$_base/$vehiculoId/gastos/$gastoId');
+  Future<void> deleteGasto(int? vehiculoId, int gastoId) async {
+    await _http.delete('$_base/gastos/$gastoId');
   }
 
   // Tipos de Gastos

@@ -8,6 +8,19 @@ import '../../providers/gasto_vehiculo_provider.dart';
 import '../../providers/vehiculo_provider.dart';
 import 'tipo_gasto_manager_dialog.dart';
 
+class _UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return TextEditingValue(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+    );
+  }
+}
+
 class GastoFormModal extends StatefulWidget {
   final VehiculoGasto? gasto;
   final int? initialVehiculoId;
@@ -38,6 +51,7 @@ class _GastoFormModalState extends State<GastoFormModal> {
   DateTime _selectedDate = DateTime.now();
 
   final _conceptoController = TextEditingController();
+  final _comprobanteController = TextEditingController();
   final _cantidadController = TextEditingController();
   final _precioUnitarioController = TextEditingController();
 
@@ -48,6 +62,7 @@ class _GastoFormModalState extends State<GastoFormModal> {
     // Load vehicles
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<VehiculoProvider>().loadVehiculos();
+      context.read<GastoVehiculoProvider>().loadTiposGasto();
     });
 
     _selectedVehiculoId = widget.initialVehiculoId;
@@ -59,7 +74,10 @@ class _GastoFormModalState extends State<GastoFormModal> {
       if (g.fechaGasto != null) {
         _selectedDate = g.fechaGasto!;
       }
-      _conceptoController.text = g.concepto;
+      _conceptoController.text = g.concepto.toUpperCase();
+      if (g.comprobante != null && g.comprobante!.isNotEmpty) {
+        _comprobanteController.text = g.comprobante!.toUpperCase();
+      }
       _cantidadController.text = g.cantidad.toString();
       _precioUnitarioController.text = g.precioUnitario.toString();
       if (g.unidadMedida != null &&
@@ -72,6 +90,7 @@ class _GastoFormModalState extends State<GastoFormModal> {
   @override
   void dispose() {
     _conceptoController.dispose();
+    _comprobanteController.dispose();
     _cantidadController.dispose();
     _precioUnitarioController.dispose();
     super.dispose();
@@ -106,21 +125,21 @@ class _GastoFormModalState extends State<GastoFormModal> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedVehiculoId == null) {
-      CompactSnackBar.showError(context, 'Debe seleccionar un vehículo');
-      return;
-    }
 
     setState(() => _isLoading = true);
 
+    final String compText = _comprobanteController.text.trim().toUpperCase();
     final data = {
-      'tipo_gasto': _selectedTipoGasto,
+      if (_selectedVehiculoId != null) 'vehiculo_id': _selectedVehiculoId,
+      'tipo_gasto': _selectedTipoGasto.toUpperCase(),
       'fecha_gasto': DateFormat('yyyy-MM-dd').format(_selectedDate),
-      'concepto': _conceptoController.text,
+      'concepto': _conceptoController.text.trim().toUpperCase(),
+      'comprobante': compText.isNotEmpty ? compText : null,
+      'comprobantes': compText.isNotEmpty ? [compText] : null,
       'cantidad': _cantidadController.text.isNotEmpty
           ? _cantidadController.text
           : '1',
-      'unidad_medida': _selectedUnidadMedida,
+      'unidad_medida': _selectedUnidadMedida.toUpperCase(),
       'precio_unitario': _precioUnitarioController.text,
     };
 
@@ -128,10 +147,10 @@ class _GastoFormModalState extends State<GastoFormModal> {
     bool success;
 
     if (widget.gasto == null) {
-      success = await provider.createGasto(_selectedVehiculoId!, data);
+      success = await provider.createGasto(_selectedVehiculoId, data);
     } else {
       success = await provider.updateGasto(
-        _selectedVehiculoId!,
+        _selectedVehiculoId,
         widget.gasto!.id,
         data,
       );
@@ -196,20 +215,33 @@ class _GastoFormModalState extends State<GastoFormModal> {
                     }
 
                     // ignore: deprecated_member_use
-                    return DropdownButtonFormField<int>(
+                    return DropdownButtonFormField<int?>(
                       value: _selectedVehiculoId,
                       isExpanded: true,
                       iconSize: 20,
                       menuMaxHeight: 300,
-                      decoration: _inputDecoration('Vehículo'),
+                      decoration: _inputDecoration('Asignación / Vehículo (Opcional)'),
                       dropdownColor: const Color(0xFF2C2F33),
                       style: const TextStyle(color: Colors.white, fontSize: 12),
-                      items: vehiculoProvider.vehiculos.map((v) {
-                        return DropdownMenuItem<int>(
-                          value: v.id,
-                          child: Text('${v.ficha} - ${v.marca} ${v.modelo}'),
-                        );
-                      }).toList(),
+                      items: [
+                        const DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text(
+                            '🏢 GENERAL / PLANTA (Sin Vehículo)',
+                            style: TextStyle(
+                              color: Colors.amberAccent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        ...vehiculoProvider.vehiculos.map((v) {
+                          return DropdownMenuItem<int?>(
+                            value: v.id,
+                            child: Text('🚚 ${v.ficha} - ${v.marca} ${v.modelo}'),
+                          );
+                        }),
+                      ],
                       onChanged: widget.initialVehiculoId != null
                           ? null // Locked if coming from specific vehicle view
                           : (val) => setState(() => _selectedVehiculoId = val),
@@ -297,10 +329,12 @@ class _GastoFormModalState extends State<GastoFormModal> {
 
                 TextFormField(
                   controller: _conceptoController,
+                  textCapitalization: TextCapitalization.characters,
+                  inputFormatters: [_UpperCaseTextFormatter()],
                   style: const TextStyle(color: Colors.white, fontSize: 12),
-                  decoration: _inputDecoration('Concepto (Ej. Gasolina)'),
+                  decoration: _inputDecoration('Concepto (Ej. COMPRA DE TALADRINA)'),
                   validator: (val) =>
-                      (val == null || val.isEmpty) ? 'Requerido' : null,
+                      (val == null || val.trim().isEmpty) ? 'Requerido' : null,
                 ),
                 const SizedBox(height: 8),
 
@@ -325,8 +359,9 @@ class _GastoFormModalState extends State<GastoFormModal> {
                           );
                         }).toList(),
                         onChanged: (val) {
-                          if (val != null)
+                          if (val != null) {
                             setState(() => _selectedUnidadMedida = val);
+                          }
                         },
                       ),
                     ),
@@ -365,6 +400,15 @@ class _GastoFormModalState extends State<GastoFormModal> {
                   decoration: _inputDecoration('Precio Unitario'),
                   validator: (val) =>
                       (val == null || val.isEmpty) ? 'Requerido' : null,
+                ),
+                const SizedBox(height: 8),
+
+                TextFormField(
+                  controller: _comprobanteController,
+                  textCapitalization: TextCapitalization.characters,
+                  inputFormatters: [_UpperCaseTextFormatter()],
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  decoration: _inputDecoration('Comprobante / NCF (Opcional, Ej. B0100000123)'),
                 ),
                 const SizedBox(height: 16),
 

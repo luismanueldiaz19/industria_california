@@ -5,6 +5,7 @@ import '../../../models/company.dart';
 import '../../../main.dart';
 import 'login_screen.dart';
 import '../../vendedor/screens/vendedor_main_layout.dart';
+import '../../chofer/screens/chofer_main_layout.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -84,9 +85,11 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final nextScreen = authProvider.isAuthenticated
-        ? (authProvider.isVendedor
-              ? const VendedorMainLayout()
-              : const MainLayout())
+        ? (authProvider.isChofer
+            ? const ChoferMainLayout()
+            : (authProvider.isVendedor
+                ? const VendedorMainLayout()
+                : const MainLayout()))
         : const LoginScreen();
 
     Navigator.of(context).pushReplacement(

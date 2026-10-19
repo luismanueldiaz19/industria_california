@@ -2,6 +2,7 @@
 
 namespace App\Modules\CamionVictual\Services;
 
+use App\Models\Chofer;
 use App\Models\User;
 use App\Modules\CamionVictual\Enums\EstadoCamion;
 use App\Modules\CamionVictual\Enums\EstadoEntrega;
@@ -10,8 +11,9 @@ use App\Modules\CamionVictual\Enums\TipoGastoViaje;
 use App\Modules\CamionVictual\Models\CamionVictual;
 use App\Modules\CamionVictual\Models\CamionViaje;
 use App\Modules\CamionVictual\Models\CamionViajePedido;
-use App\Modules\CamionVictual\Models\CamionViajeGasto;
+use App\Modules\Vehiculo\Models\VehiculoGasto;
 use App\Modules\Pedido\Models\Pedido;
+use App\Modules\Vehiculo\Models\Vehiculo;
 use Illuminate\Support\Facades\DB;
 
 class CamionVictualService
@@ -28,7 +30,54 @@ class CamionVictualService
             ->where('clave', 'camion_victual_monto_minimo')
             ->value('valor');
 
-        return (float) ($config ?? 500000.00);
+        return (float) ($config ?? 5000.00);
+    }
+
+    /**
+     * Obtener el monto mínimo de salida para un camión específico.
+     * Prioriza el minimo_salida del camión si es mayor a 0; de lo contrario, usa la configuración global.
+     */
+    public function getMinimoSalidaCamion(CamionVictual $camion): float
+    {
+        if ((float) $camion->minimo_salida > 0) {
+            return (float) $camion->minimo_salida;
+        }
+
+        return $this->getMontoMinimo();
+    }
+
+    /**
+     * Obtener el ID del chofer virtual por defecto.
+     */
+    public function getChoferVictualId(): int
+    {
+        $chofer = Chofer::where('numero_licencia', 'victual')
+            ->orWhereHas('user', fn($q) => $q->where('username', 'victual')->orWhere('name', 'ilike', '%victual%'))
+            ->first();
+
+        return $chofer ? (int) $chofer->id : 1;
+    }
+
+    /**
+     * Verificar si un chofer corresponde al chofer virtual.
+     */
+    public function esChoferVictual(int $choferId): bool
+    {
+        $victualId = $this->getChoferVictualId();
+        if ($choferId === $victualId) {
+            return true;
+        }
+
+        $chofer = Chofer::with('user')->find($choferId);
+        if (!$chofer) {
+            return false;
+        }
+
+        $lic = strtolower($chofer->numero_licencia ?? '');
+        $username = strtolower($chofer->user?->username ?? '');
+        $name = strtolower($chofer->user?->name ?? '');
+
+        return str_contains($lic, 'victual') || str_contains($username, 'victual') || str_contains($name, 'victual');
     }
 
     /**
@@ -63,10 +112,17 @@ class CamionVictualService
     {
         if (isset($datos['estado'])) {
             $nuevoEstado = EstadoCamion::from($datos['estado']);
-            if ($nuevoEstado === EstadoCamion::Listo) {
-                $minimo = ($camion->minimo_salida > 5000.0) ? (float)$camion->minimo_salida : $this->getMontoMinimo();
-                if ((float)$camion->monto_total < $minimo) {
-                    throw new \Exception("No se puede marcar como 'listo'. El monto cargado (RD$ " . number_format($camion->monto_total, 2) . ") no alcanza el mínimo requerido (RD$ " . number_format($minimo, 2) . ").");
+            if ($nuevoEstado === EstadoCamion::Listo || $nuevoEstado === EstadoCamion::EnRuta) {
+                // 1. Debe tener pedidos asignados
+                if ($camion->pedidos()->count() === 0 || (float) $camion->monto_total <= 0) {
+                    throw new \Exception("No se puede cambiar el estado a '{$nuevoEstado->value}'. El camión no tiene pedidos asignados.");
+                }
+
+                // 2. Debe cumplir con el mínimo requerido
+                $minimo = $this->getMinimoSalidaCamion($camion);
+                if ((float) $camion->monto_total < $minimo) {
+                    $falta = $minimo - (float) $camion->monto_total;
+                    throw new \Exception("No se puede cambiar el estado a '{$nuevoEstado->value}'. El monto cargado (RD$ " . number_format($camion->monto_total, 2) . ") no alcanza el mínimo requerido (RD$ " . number_format($minimo, 2) . "). Faltan RD$ " . number_format($falta, 2) . ".");
                 }
             }
             $datos['estado'] = $nuevoEstado;
@@ -236,17 +292,78 @@ class CamionVictualService
     /**
      * Logística pone el camión en_ruta (sale a logística).
      * Solo posible si el camión está en estado 'listo' o 'armando'.
+     * Es OBLIGATORIO asignar un vehículo físico real y un conductor real (no virtual).
      * Pone automáticamente todos sus pedidos asignados en estado 'en_curso'
      * y genera automáticamente un nuevo registro de Viaje Histórico (ej: VJ-0001).
      */
-    public function ponerEnRuta(CamionVictual $camion): CamionVictual
+    public function ponerEnRuta(CamionVictual $camion, array $datos = []): CamionVictual
     {
         if ($camion->estado !== EstadoCamion::Listo && $camion->estado !== EstadoCamion::Armando) {
             throw new \Exception("Solo camiones en estado 'listo' o 'armando' pueden salir a ruta. Estado actual: '{$camion->estado->value}'.");
         }
 
-        DB::transaction(function () use ($camion) {
-            $camion->update(['estado' => EstadoCamion::EnRuta]);
+        // 1. Debe tener pedidos asignados
+        if ($camion->pedidos()->count() === 0 || (float) $camion->monto_total <= 0) {
+            throw new \Exception("No se puede despachar el camión porque no tiene pedidos asignados.");
+        }
+
+        // 2. Debe cumplir con el monto mínimo de salida
+        $minimo = $this->getMinimoSalidaCamion($camion);
+        if ((float) $camion->monto_total < $minimo) {
+            $falta = $minimo - (float) $camion->monto_total;
+            throw new \Exception("No se puede despachar el camión. El monto cargado (RD$ " . number_format($camion->monto_total, 2) . ") no alcanza el mínimo de salida requerido (RD$ " . number_format($minimo, 2) . "). Faltan RD$ " . number_format($falta, 2) . ".");
+        }
+
+        // 3. Obligatorio: Asignar vehículo físico real
+        $vehiculoId = (int) ($datos['vehiculo_id'] ?? $camion->vehiculo_id ?? 0);
+        if ($vehiculoId <= 0) {
+            throw new \Exception("Es obligatorio asignar un vehículo físico real para despachar el viaje a ruta.");
+        }
+        $vehiculo = Vehiculo::find($vehiculoId);
+        if (!$vehiculo) {
+            throw new \Exception("El vehículo seleccionado no existe.");
+        }
+        if ($vehiculo->estado === 'inactivo') {
+            throw new \Exception("El vehículo {$vehiculo->ficha} se encuentra inactivo y no puede despacharse.");
+        }
+        $vehiculoEnUso = CamionVictual::where('estado', EstadoCamion::EnRuta)
+            ->where('vehiculo_id', $vehiculoId)
+            ->where('id', '!=', $camion->id)
+            ->exists();
+        if ($vehiculoEnUso) {
+            throw new \Exception("El vehículo {$vehiculo->ficha} ya se encuentra asignado y en ruta en otro camión.");
+        }
+
+        // 4. Obligatorio: Asignar chofer real (no puede ser el chofer virtual)
+        $choferId = (int) ($datos['chofer_id'] ?? $camion->chofer_id ?? 0);
+        if ($choferId <= 0) {
+            throw new \Exception("Es obligatorio asignar un conductor real para despachar el viaje.");
+        }
+        if ($this->esChoferVictual($choferId)) {
+            throw new \Exception("Debe asignar un conductor real para despachar el viaje. No se permite despachar con el chofer virtual.");
+        }
+        $chofer = Chofer::with('user')->find($choferId);
+        if (!$chofer) {
+            throw new \Exception("El conductor seleccionado no existe.");
+        }
+        if ($chofer->estado !== 'activo') {
+            throw new \Exception("El conductor seleccionado no se encuentra activo.");
+        }
+        $choferEnUso = CamionVictual::where('estado', EstadoCamion::EnRuta)
+            ->where('chofer_id', $choferId)
+            ->where('id', '!=', $camion->id)
+            ->exists();
+        if ($choferEnUso) {
+            $nombreChofer = $chofer->user?->name ?? 'seleccionado';
+            throw new \Exception("El conductor {$nombreChofer} ya se encuentra en ruta en otro camión.");
+        }
+
+        DB::transaction(function () use ($camion, $vehiculoId, $choferId) {
+            $camion->update([
+                'estado'      => EstadoCamion::EnRuta,
+                'vehiculo_id' => $vehiculoId,
+                'chofer_id'   => $choferId,
+            ]);
 
             // Actualiza todos los pedidos asignados a este camión a 'en_curso' (excepto los ya entregados)
             DB::table('camion_victual_pedido')
@@ -262,11 +379,12 @@ class CamionVictualService
             $count = CamionViaje::count() + 1;
             $codigo = 'VJ-' . str_pad($count, 4, '0', STR_PAD_LEFT);
 
-            // Crear el registro del Viaje en ruta
+            // Crear el registro del Viaje en ruta con el vehículo y chofer reales asignados
             $viaje = CamionViaje::create([
                 'codigo'            => $codigo,
                 'camion_victual_id' => $camion->id,
-                'chofer_id'         => $camion->chofer_id,
+                'chofer_id'         => $choferId,
+                'vehiculo_id'       => $vehiculoId,
                 'vendedor_id'       => $camion->vendedor_id,
                 'fecha_salida'      => now(),
                 'total_facturado'   => $camion->monto_total,
@@ -340,34 +458,75 @@ class CamionVictualService
                     }
                     $totalGastos += $monto;
 
-                    CamionViajeGasto::create([
+                    VehiculoGasto::create([
                         'viaje_id'        => $viaje->id,
-                        'tipo_gasto'      => $g['tipo_gasto'] ?? 'otro',
+                        'vehiculo_id'     => $viaje->vehiculo_id,
+                        'fecha_gasto'     => now()->toDateString(),
+                        'tipo_gasto'      => $g['tipo_gasto'] ?? 'OTRO',
                         'concepto'        => $g['concepto'] ?? ucfirst($g['tipo_gasto'] ?? 'Gasto de viaje'),
-                        'cantidad'        => $g['cantidad'] ?? 0,
-                        'precio_unitario' => $g['precio_unitario'] ?? 0,
+                        'cantidad'        => (float) ($g['cantidad'] ?? 1),
+                        'unidad_medida'   => 'UNIDAD',
+                        'precio_unitario' => (float) ($g['precio_unitario'] ?? $monto),
                         'monto_total'     => $monto,
-                        'comprobante'     => $g['comprobante'] ?? null,
+                        'comprobante'     => !empty($g['comprobante']) ? $g['comprobante'] : null,
+                        'comprobantes'    => !empty($g['comprobante']) ? [$g['comprobante']] : null,
                         'registrado_por'  => $responsable->id,
                     ]);
                 }
             }
 
-            // 3. Sincronizar estados finales de los pedidos en el viaje
+            // 3. Sincronizar estados finales de los pedidos en el viaje y actualizar tabla pedidos
             $pedidosCamion = DB::table('camion_victual_pedido')
                 ->where('camion_victual_id', $camion->id)
                 ->get();
 
+            // Si no se especifica explícitamente en el payload, por defecto en liquidación final
+            // los pedidos en ruta pasan a entregados. Solo los pedidos explícitamente 'fallidos'
+            // (o si se envía false) se liberan como 'facturado'.
+            $marcarRestantesEntregados = array_key_exists('marcar_restantes_entregados', $datos)
+                ? (bool) $datos['marcar_restantes_entregados']
+                : true;
+
             foreach ($pedidosCamion as $pc) {
+                $estadoEntrega = $pc->estado_entrega;
+                $fechaEntregado = $pc->fecha_entregado;
+
+                // Si se solicitó auto-marcar los que siguen en curso o pendiente como entregados:
+                if ($marcarRestantesEntregados && ($estadoEntrega === EstadoEntrega::EnCurso->value || $estadoEntrega === EstadoEntrega::Pendiente->value)) {
+                    $estadoEntrega = EstadoEntrega::Entregado->value;
+                    $fechaEntregado = now();
+                }
+
+                // Guardar en el histórico del viaje
                 CamionViajePedido::updateOrCreate(
                     ['viaje_id' => $viaje->id, 'pedido_id' => $pc->pedido_id],
                     [
                         'orden_viaje'        => $pc->orden_viaje,
-                        'estado_entrega'     => $pc->estado_entrega,
-                        'fecha_entregado'    => $pc->fecha_entregado,
+                        'estado_entrega'     => $estadoEntrega,
+                        'fecha_entregado'    => $fechaEntregado,
                         'comentario_entrega' => $pc->comentario_entrega,
                     ]
                 );
+
+                // Actualizar la tabla general de pedidos:
+                if ($estadoEntrega === EstadoEntrega::Entregado->value) {
+                    // Pedido ENTREGADO: se finaliza en entregado
+                    DB::table('pedidos')
+                        ->where('id', $pc->pedido_id)
+                        ->update([
+                            'estado'     => 'entregado',
+                            'updated_at' => now(),
+                        ]);
+                } else {
+                    // Pedido FALLIDO o no entregado: Se LIBERA dejándolo en estado 'facturado'
+                    // para que quede disponible para asignarse a otro camión en una nueva ocasión
+                    DB::table('pedidos')
+                        ->where('id', $pc->pedido_id)
+                        ->update([
+                            'estado'     => 'facturado',
+                            'updated_at' => now(),
+                        ]);
+                }
             }
 
             // 4. Completar y cerrar el viaje histórico
@@ -381,13 +540,17 @@ class CamionVictualService
                 'estado'            => EstadoViaje::Completado,
             ]);
 
-            // 5. LIBERAR EL CAMIÓN: desvincular pedidos y volverlo a estado VACÍO con $0.00
+            // 5. LIBERAR EL CAMIÓN: desvincular pedidos, volverlo a estado VACÍO ($0.00),
+            // restaurar el chofer virtual por defecto y liberar el vehículo físico asignado.
+            $choferVictualId = $this->getChoferVictualId();
             $camion->pedidos()->detach();
             $camion->update([
                 'estado'       => EstadoCamion::Vacio,
                 'monto_total'  => 0.00,
                 'fecha_cierre' => now(),
                 'cerrado_por'  => $responsable->id,
+                'chofer_id'    => $choferVictualId,
+                'vehiculo_id'  => null,
             ]);
 
             return [
@@ -405,6 +568,7 @@ class CamionVictualService
         $query = CamionViaje::with([
             'chofer.user:id,name',
             'vendedor:id,name',
+            'vehiculo',
             'cerradoPor:id,name',
             'gastos',
             'pedidos.pedido.cliente:id,nombre',
@@ -412,6 +576,10 @@ class CamionVictualService
 
         if (!empty($filtros['chofer_id'])) {
             $query->where('chofer_id', $filtros['chofer_id']);
+        }
+
+        if (!empty($filtros['vehiculo_id'])) {
+            $query->where('vehiculo_id', $filtros['vehiculo_id']);
         }
 
         if (!empty($filtros['estado'])) {
@@ -441,6 +609,7 @@ class CamionVictualService
         return CamionViaje::with([
             'chofer.user:id,name',
             'vendedor:id,name',
+            'vehiculo',
             'cerradoPor:id,name',
             'gastos',
             'pedidos.pedido.cliente:id,nombre,direccion',
@@ -458,8 +627,10 @@ class CamionVictualService
         return DB::transaction(function () use ($camion) {
             $camion->pedidos()->detach();
             $camion->update([
-                'estado' => EstadoCamion::Vacio,
-                'monto_total' => 0.00
+                'estado'      => EstadoCamion::Vacio,
+                'monto_total' => 0.00,
+                'chofer_id'   => $this->getChoferVictualId(),
+                'vehiculo_id' => null,
             ]);
             return $this->cargarRelaciones($camion->fresh());
         });
@@ -492,6 +663,7 @@ class CamionVictualService
         return $camion->fresh([
             'chofer.user:id,name',
             'vendedor:id,name',
+            'vehiculo',
             'pedidos' => function ($q) {
                 $q->with('cliente:id,nombre,direccion')
                   ->orderByPivot('orden_viaje', 'asc');

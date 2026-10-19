@@ -16,6 +16,7 @@ class TipoGastoController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $request->merge(['nombre' => mb_strtoupper(trim($request->nombre ?? ''), 'UTF-8')]);
         $request->validate(['nombre' => 'required|string|unique:tipo_gastos,nombre|max:100']);
         $tipo = TipoGasto::create($request->only('nombre'));
         return response()->json($tipo, 201);
@@ -24,6 +25,7 @@ class TipoGastoController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         $tipo = TipoGasto::findOrFail($id);
+        $request->merge(['nombre' => mb_strtoupper(trim($request->nombre ?? ''), 'UTF-8')]);
         $request->validate(['nombre' => 'required|string|unique:tipo_gastos,nombre,' . $tipo->id . '|max:100']);
         $tipo->update($request->only('nombre'));
         return response()->json($tipo, 200);

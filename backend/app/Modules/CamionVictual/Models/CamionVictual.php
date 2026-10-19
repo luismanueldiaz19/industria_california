@@ -18,6 +18,7 @@ class CamionVictual extends Model
     protected $fillable = [
         'chofer_id',
         'vendedor_id',
+        'vehiculo_id',
         'nombre',
         'slot_numero',
         'estado',
@@ -34,6 +35,7 @@ class CamionVictual extends Model
         'minimo_salida'=> 'decimal:2',
         'fecha_cierre' => 'datetime',
         'slot_numero'  => 'integer',
+        'vehiculo_id'  => 'integer',
     ];
 
     // ─── Relaciones ───────────────────────────────────────────────
@@ -46,6 +48,11 @@ class CamionVictual extends Model
     public function vendedor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'vendedor_id');
+    }
+
+    public function vehiculo(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Vehiculo\Models\Vehiculo::class, 'vehiculo_id');
     }
 
     public function cerradoPor(): BelongsTo

@@ -215,6 +215,9 @@ Route::prefix('v1')->group(function () {
                 Route::get('vehiculos/gastos/pdf-url', [VehiculoController::class, 'getGastosPdfUrl']);
                 Route::get('vehiculos/gastos/estadisticas/pdf-url', [VehiculoController::class, 'getGastosEstadisticasPdfUrl']);
                 Route::get('vehiculos/gastos/estadisticas', [VehiculoController::class, 'gastosEstadisticas']);
+                Route::post('vehiculos/gastos', [VehiculoController::class, 'gastosStoreGeneral']);
+                Route::patch('vehiculos/gastos/{gasto}', [VehiculoController::class, 'gastosUpdateGeneral']);
+                Route::delete('vehiculos/gastos/{gasto}', [VehiculoController::class, 'gastosDestroyGeneral']);
                 Route::get('vehiculos/{vehiculo}/gastos', [VehiculoController::class, 'gastosIndex']);
                 Route::post('vehiculos/{vehiculo}/gastos', [VehiculoController::class, 'gastosStore']);
                 Route::patch('vehiculos/{vehiculo}/gastos/{gasto}', [VehiculoController::class, 'gastosUpdate']);

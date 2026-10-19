@@ -308,7 +308,7 @@ class VehiculoController extends Controller
      */
     public function gastosTodos(Request $request): JsonResponse
     {
-        $query = VehiculoGasto::with(['vehiculo:id,ficha,placa', 'registrador:id,name']);
+        $query = VehiculoGasto::with(['vehiculo:id,ficha,placa', 'viaje:id,codigo', 'registrador:id,name']);
 
         if ($request->filled('tipo_gasto')) {
             $query->where('tipo_gasto', $request->tipo_gasto);
@@ -320,6 +320,16 @@ class VehiculoController extends Controller
 
         if ($request->filled('fecha_hasta')) {
             $query->where('fecha_gasto', '<=', $request->fecha_hasta);
+        }
+
+        if ($request->filled('vehiculo_ficha') && $request->vehiculo_ficha !== 'todos' && $request->vehiculo_ficha !== 'Todos') {
+            if ($request->vehiculo_ficha === 'GENERAL' || $request->vehiculo_ficha === 'PLANTA' || $request->vehiculo_ficha === 'S/N') {
+                $query->whereNull('vehiculo_id');
+            } else {
+                $query->whereHas('vehiculo', function ($q) use ($request) {
+                    $q->where('ficha', $request->vehiculo_ficha);
+                });
+            }
         }
 
         return response()->json($query->orderBy('fecha_gasto', 'desc')->get());
@@ -398,15 +408,19 @@ class VehiculoController extends Controller
             abort(401, 'URL expirada o inválida');
         }
 
-        $query = VehiculoGasto::with(['vehiculo:id,ficha,placa', 'registrador:id,name']);
+        $query = VehiculoGasto::with(['vehiculo:id,ficha,placa', 'viaje:id,codigo', 'registrador:id,name']);
 
         if ($request->filled('tipo_gasto') && $request->tipo_gasto !== 'todos' && $request->tipo_gasto !== 'Todos') {
-            $query->where('tipo_gasto', strtolower($request->tipo_gasto));
+            $query->whereRaw('UPPER(tipo_gasto) = ?', [mb_strtoupper($request->tipo_gasto, 'UTF-8')]);
         }
         if ($request->filled('vehiculo_ficha') && $request->vehiculo_ficha !== 'todos' && $request->vehiculo_ficha !== 'Todos') {
-            $query->whereHas('vehiculo', function ($q) use ($request) {
-                $q->where('ficha', $request->vehiculo_ficha);
-            });
+            if ($request->vehiculo_ficha === 'GENERAL' || $request->vehiculo_ficha === 'PLANTA' || $request->vehiculo_ficha === 'S/N') {
+                $query->whereNull('vehiculo_id');
+            } else {
+                $query->whereHas('vehiculo', function ($q) use ($request) {
+                    $q->where('ficha', $request->vehiculo_ficha);
+                });
+            }
         }
         if ($request->filled('fecha_inicio')) {
             $query->where('fecha_gasto', '>=', $request->fecha_inicio);
@@ -477,8 +491,14 @@ class VehiculoController extends Controller
             'unidad_medida'   => 'nullable|string|max:50',
             'precio_unitario' => 'nullable|numeric|min:0',
             'monto_total'     => 'nullable|numeric|min:0',
+            'comprobante'     => 'nullable|string|max:100',
             'comprobantes'    => 'nullable|array',
         ]);
+
+        if ($request->has('comprobante')) {
+            $comp = $request->filled('comprobante') ? mb_strtoupper(trim($request->input('comprobante')), 'UTF-8') : null;
+            $datos['comprobante'] = $comp;
+        }
 
         try {
             $gasto = $this->service->actualizarGasto($gasto, $datos);
@@ -492,6 +512,65 @@ class VehiculoController extends Controller
      * Eliminar un gasto.
      */
     public function gastosDestroy(Vehiculo $vehiculo, VehiculoGasto $gasto): JsonResponse
+    {
+        try {
+            $this->service->eliminarGasto($gasto);
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    // ─── GASTOS GENERALES (INDEPENDIENTES / VEHÍCULO OPCIONAL) ──────
+
+    /**
+     * Registrar un nuevo gasto de forma independiente o con vehículo opcional.
+     */
+    public function gastosStoreGeneral(StoreGastoRequest $request): JsonResponse
+    {
+        try {
+            $gasto = $this->service->registrarGastoGeneral($request->validated(), Auth::user());
+            return response()->json($gasto->load(['vehiculo:id,ficha,placa', 'registrador:id,name']), 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Actualizar un gasto directamente por su ID.
+     */
+    public function gastosUpdateGeneral(Request $request, VehiculoGasto $gasto): JsonResponse
+    {
+        $datos = $request->validate([
+            'vehiculo_id'     => 'nullable|exists:vehiculos,id',
+            'tipo_gasto'      => 'nullable|string|max:100',
+            'fecha_gasto'     => 'nullable|date',
+            'concepto'        => 'nullable|string|max:255',
+            'cantidad'        => 'nullable|numeric|min:0',
+            'unidad_medida'   => 'nullable|string|max:50',
+            'precio_unitario' => 'nullable|numeric|min:0',
+            'monto_total'     => 'nullable|numeric|min:0',
+            'comprobante'     => 'nullable|string|max:100',
+            'comprobantes'    => 'nullable|array',
+        ]);
+
+        if ($request->has('comprobante')) {
+            $comp = $request->filled('comprobante') ? mb_strtoupper(trim($request->input('comprobante')), 'UTF-8') : null;
+            $datos['comprobante'] = $comp;
+        }
+
+        try {
+            $gasto = $this->service->actualizarGasto($gasto, $datos);
+            return response()->json($gasto->load(['vehiculo:id,ficha,placa', 'registrador:id,name']), 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Eliminar un gasto directamente por su ID.
+     */
+    public function gastosDestroyGeneral(VehiculoGasto $gasto): JsonResponse
     {
         try {
             $this->service->eliminarGasto($gasto);

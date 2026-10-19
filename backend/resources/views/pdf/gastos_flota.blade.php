@@ -49,9 +49,21 @@
         <tbody>
             @forelse($gastos as $gasto)
                 <tr>
-                    <td style="font-weight: 600;">{{ $gasto->vehiculo->ficha ?? 'S/N' }} ({{ $gasto->vehiculo->placa ?? 'S/N' }})</td>
-                    <td>{{ $gasto->tipo_gasto ? ucfirst($gasto->tipo_gasto) : 'N/A' }}</td>
-                    <td>{{ Str::limit($gasto->concepto, 120) }}</td>
+                    <td style="font-weight: 600;">
+                        {{ $gasto->vehiculo ? $gasto->vehiculo->ficha . ' (' . ($gasto->vehiculo->placa ?? 'S/P') . ')' : 'PLANTA / GENERAL' }}
+                        @if($gasto->viaje)
+                            <div style="margin-top: 3px;">
+                                <span style="display: inline-block; font-size: 9px; color: #1d4ed8; background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 1px 5px; border-radius: 3px; font-weight: bold; text-transform: uppercase;">Viaje: {{ $gasto->viaje->codigo }}</span>
+                            </div>
+                        @endif
+                    </td>
+                    <td>{{ $gasto->tipo_gasto ? ucfirst($gasto->tipo_gasto) : 'N/A' }}</td>     
+                    <td>
+                        {{ Str::limit($gasto->concepto, 120) }}
+                        @if($gasto->comprobante)
+                            <div style="font-size: 10px; color: #6b21a8; font-weight: bold; margin-top: 2px;">NCF / Comp: {{ $gasto->comprobante }}</div>
+                        @endif
+                    </td>
                     <td>{{ $gasto->fecha_gasto ? \Carbon\Carbon::parse($gasto->fecha_gasto)->format('d/m/Y') : 'N/A' }}</td>
                     <td>{{ $gasto->registrador->name ?? 'N/A' }}</td>
                     <td style="text-align: right;">${{ number_format($gasto->monto_total, 2) }}</td>

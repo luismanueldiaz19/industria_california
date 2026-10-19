@@ -412,12 +412,16 @@ class PdfSecurityService
                 $query = \App\Models\VehiculoGasto::with(['vehiculo:id,ficha,placa', 'registrador:id,name']);
 
                 if (!empty($params['tipo_gasto']) && $params['tipo_gasto'] !== 'todos' && $params['tipo_gasto'] !== 'Todos') {
-                    $query->where('tipo_gasto', strtolower($params['tipo_gasto']));
+                    $query->whereRaw('UPPER(tipo_gasto) = ?', [mb_strtoupper($params['tipo_gasto'], 'UTF-8')]);
                 }
                 if (!empty($params['vehiculo_ficha']) && $params['vehiculo_ficha'] !== 'todos' && $params['vehiculo_ficha'] !== 'Todos') {
-                    $query->whereHas('vehiculo', function ($q) use ($params) {
-                        $q->where('ficha', $params['vehiculo_ficha']);
-                    });
+                    if ($params['vehiculo_ficha'] === 'GENERAL' || $params['vehiculo_ficha'] === 'PLANTA' || $params['vehiculo_ficha'] === 'S/N') {
+                        $query->whereNull('vehiculo_id');
+                    } else {
+                        $query->whereHas('vehiculo', function ($q) use ($params) {
+                            $q->where('ficha', $params['vehiculo_ficha']);
+                        });
+                    }
                 }
                 if (!empty($params['fecha_inicio'])) {
                     $query->where('fecha_gasto', '>=', $params['fecha_inicio']);

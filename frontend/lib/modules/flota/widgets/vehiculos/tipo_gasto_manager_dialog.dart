@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../providers/gasto_vehiculo_provider.dart';
 import '../../models/tipo_gasto.dart';
 import '../../../auth/providers/auth_provider.dart';
+
+class _UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return TextEditingValue(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+    );
+  }
+}
 
 class TipoGastoManagerDialog extends StatefulWidget {
   const TipoGastoManagerDialog({super.key});
@@ -23,7 +37,7 @@ class _TipoGastoManagerDialogState extends State<TipoGastoManagerDialog> {
   }
 
   void _save(GastoVehiculoProvider provider) async {
-    final nombre = _controller.text.trim();
+    final nombre = _controller.text.trim().toUpperCase();
     if (nombre.isEmpty) return;
 
     bool success;
@@ -102,6 +116,8 @@ class _TipoGastoManagerDialogState extends State<TipoGastoManagerDialog> {
                     Expanded(
                       child: TextField(
                         controller: _controller,
+                        textCapitalization: TextCapitalization.characters,
+                        inputFormatters: [_UpperCaseTextFormatter()],
                         style: const TextStyle(color: Colors.white, fontSize: 12),
                         decoration: InputDecoration(
                           isDense: true,

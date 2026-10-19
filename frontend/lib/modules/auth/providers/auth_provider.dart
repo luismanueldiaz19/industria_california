@@ -23,6 +23,7 @@ class AuthProvider extends ChangeNotifier {
   String? get token => HttpService.token;
 
   bool get isVendedor => _roles.contains('vendedor');
+  bool get isChofer => _roles.contains('chofer');
   bool get isAdmin => _roles.contains('admin');
   bool get isEncargadoVehiculos => _roles.contains('encargado_vehiculos');
 

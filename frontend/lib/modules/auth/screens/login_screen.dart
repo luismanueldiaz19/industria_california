@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../../../models/company.dart';
 import '../../../main.dart';
 import '../../vendedor/screens/vendedor_main_layout.dart';
+import '../../chofer/screens/chofer_main_layout.dart';
 import 'forgot_password_screen.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/auth_submit_button.dart';
@@ -72,10 +73,15 @@ class _LoginScreenState extends State<LoginScreen>
     if (success && mounted) {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              authProvider.isVendedor
-              ? const VendedorMainLayout()
-              : const MainLayout(),
+          pageBuilder: (context, animation, secondaryAnimation) {
+            if (authProvider.isChofer) {
+              return const ChoferMainLayout();
+            }
+            if (authProvider.isVendedor) {
+              return const VendedorMainLayout();
+            }
+            return const MainLayout();
+          },
           transitionsBuilder: (context, animation, secondaryAnimation, child) =>
               FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 600),
@@ -99,6 +105,9 @@ class _LoginScreenState extends State<LoginScreen>
       } else if (role == 'vendedor') {
         _usernameController.text = "wagner";
         _passwordController.text = "123456";
+      } else if (role == 'chofer') {
+        _usernameController.text = "jose";
+        _passwordController.text = "123456";
       } else if (role == 'vehiculo') {
         _usernameController.text = "vehiculo";
         _passwordController.text = "199512";
@@ -116,12 +125,14 @@ class _LoginScreenState extends State<LoginScreen>
           style: TextStyle(color: Colors.white54, fontSize: 11),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
             _roleOption('admin', 'Admin', const Color(0xFFE31E24)),
             // _roleOption('gerente', 'Gerente', const Color(0xFF4CAF50)),
             _roleOption('vendedor', 'Vendedor', const Color(0xFF2196F3)),
+            _roleOption('chofer', 'Chofer', Colors.orange),
             _roleOption('vehiculo', 'Vehiculo', Colors.teal),
           ],
         ),
@@ -484,7 +495,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
 
               // Comentar esto en producción para ocultar los botones de prueba
-              _buildQuickLoginRoles(),
+              // _buildQuickLoginRoles(),
             ],
           ),
         ),

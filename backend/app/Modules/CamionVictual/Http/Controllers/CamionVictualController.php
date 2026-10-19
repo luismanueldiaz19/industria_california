@@ -30,11 +30,22 @@ class CamionVictualController extends Controller
         $query = CamionVictual::with([
             'chofer.user:id,name',
             'vendedor:id,name',
+            'vehiculo',
         ]);
 
         // Si es vendedor y no es admin, solo ve sus camiones
         if ($user && $user->hasRole('vendedor') && !$user->hasRole('admin')) {
             $query->where('vendedor_id', $user->id);
+        }
+
+        // Si es chofer y no es admin, solo ve los camiones donde esté asignado
+        if ($user && $user->hasRole('chofer') && !$user->hasRole('admin')) {
+            $choferId = $user->chofer?->id;
+            if ($choferId) {
+                $query->where('chofer_id', $choferId);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
         }
 
         if ($request->filled('chofer_id')) {
@@ -47,7 +58,7 @@ class CamionVictualController extends Controller
 
         if ($request->boolean('with_pedidos')) {
             $query->with(['pedidos' => function ($q) {
-                $q->with('cliente:id,nombre,direccion')
+                $q->with('cliente:id,nombre,direccion,telefono,rnc')
                   ->orderByPivot('orden_viaje', 'asc');
             }]);
         }
@@ -112,6 +123,7 @@ class CamionVictualController extends Controller
             $camionVictual->load([
                 'chofer.user:id,name',
                 'vendedor:id,name',
+                'vehiculo',
                 'pedidos' => function ($q) {
                     $q->with('cliente:id,nombre,direccion')
                       ->orderByPivot('orden_viaje', 'asc');
@@ -197,12 +209,22 @@ class CamionVictualController extends Controller
     }
 
     /**
-     * Logística pone el camión en_ruta.
+     * Logística pone el camión en_ruta con vehículo físico y conductor real obligatorios.
      */
-    public function ponerEnRuta(CamionVictual $camionVictual): JsonResponse
+    public function ponerEnRuta(Request $request, CamionVictual $camionVictual): JsonResponse
     {
+        $datos = $request->validate([
+            'vehiculo_id' => 'required|integer|exists:vehiculos,id',
+            'chofer_id'   => 'required|integer|exists:choferes,id',
+        ], [
+            'vehiculo_id.required' => 'Debe asignar un vehículo físico real para despachar el camión a ruta.',
+            'vehiculo_id.exists'   => 'El vehículo seleccionado no es válido.',
+            'chofer_id.required'   => 'Debe asignar un conductor real para despachar el camión a ruta.',
+            'chofer_id.exists'     => 'El conductor seleccionado no es válido.',
+        ]);
+
         try {
-            $camion = $this->service->ponerEnRuta($camionVictual);
+            $camion = $this->service->ponerEnRuta($camionVictual, $datos);
             return response()->json($camion);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
@@ -229,16 +251,17 @@ class CamionVictualController extends Controller
     public function cerrarConLiquidacion(Request $request, CamionVictual $camionVictual): JsonResponse
     {
         $datos = $request->validate([
-            'cant_ayudantes'           => 'nullable|integer|min:0',
-            'nombres_ayudantes'        => 'nullable|string|max:500',
-            'comentarios'              => 'nullable|string|max:1000',
-            'gastos'                   => 'nullable|array',
-            'gastos.*.tipo_gasto'      => 'required|string',
-            'gastos.*.concepto'        => 'nullable|string|max:255',
-            'gastos.*.cantidad'        => 'nullable|numeric|min:0',
-            'gastos.*.precio_unitario' => 'nullable|numeric|min:0',
-            'gastos.*.monto_total'     => 'nullable|numeric|min:0',
-            'gastos.*.comprobante'     => 'nullable|string|max:100',
+            'cant_ayudantes'              => 'nullable|integer|min:0',
+            'nombres_ayudantes'           => 'nullable|string|max:500',
+            'comentarios'                 => 'nullable|string|max:1000',
+            'marcar_restantes_entregados' => 'nullable|boolean',
+            'gastos'                      => 'nullable|array',
+            'gastos.*.tipo_gasto'         => 'required|string',
+            'gastos.*.concepto'           => 'nullable|string|max:255',
+            'gastos.*.cantidad'           => 'nullable|numeric|min:0',
+            'gastos.*.precio_unitario'    => 'nullable|numeric|min:0',
+            'gastos.*.monto_total'        => 'nullable|numeric|min:0',
+            'gastos.*.comprobante'        => 'nullable|string|max:100',
         ]);
 
         try {
@@ -255,7 +278,7 @@ class CamionVictualController extends Controller
     public function historialViajes(Request $request): JsonResponse
     {
         try {
-            $filtros = $request->only(['chofer_id', 'estado', 'fecha_inicio', 'fecha_fin', 'per_page', 'page']);
+            $filtros = $request->only(['chofer_id', 'vehiculo_id', 'estado', 'fecha_inicio', 'fecha_fin', 'per_page', 'page']);
             $resultado = $this->service->getHistorialViajes($filtros);
             return response()->json($resultado);
         } catch (\Exception $e) {

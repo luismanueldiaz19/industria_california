@@ -6,6 +6,11 @@ class CamionViaje {
   final int? choferId;
   final int? vendedorId;
   final int? vehiculoId;
+  final String? vehiculoFicha;
+  final String? vehiculoPlaca;
+  final String? vehiculoMarca;
+  final String? vehiculoModelo;
+  final String? choferLicencia;
   final DateTime? fechaSalida;
   final DateTime? fechaCierre;
   final double totalFacturado;
@@ -29,6 +34,11 @@ class CamionViaje {
     this.choferId,
     this.vendedorId,
     this.vehiculoId,
+    this.vehiculoFicha,
+    this.vehiculoPlaca,
+    this.vehiculoMarca,
+    this.vehiculoModelo,
+    this.choferLicencia,
     this.fechaSalida,
     this.fechaCierre,
     required this.totalFacturado,
@@ -45,6 +55,40 @@ class CamionViaje {
     this.gastos = const [],
     this.pedidos = const [],
   });
+
+  /// Retorna la descripción completa y legible del vehículo utilizado
+  String? get vehiculoDescripcion {
+    final partes = <String>[];
+    if (vehiculoFicha != null && vehiculoFicha!.trim().isNotEmpty) {
+      partes.add(vehiculoFicha!.trim());
+    }
+    final detalle = [
+      if (vehiculoMarca != null && vehiculoMarca!.trim().isNotEmpty)
+        vehiculoMarca!.trim(),
+      if (vehiculoModelo != null && vehiculoModelo!.trim().isNotEmpty)
+        vehiculoModelo!.trim(),
+    ].join(' ');
+    if (detalle.isNotEmpty) {
+      partes.add(detalle);
+    }
+    if (vehiculoPlaca != null && vehiculoPlaca!.trim().isNotEmpty) {
+      partes.add('(${vehiculoPlaca!.trim()})');
+    }
+    return partes.isEmpty ? null : partes.join(' · ');
+  }
+
+  /// Retorna un identificador corto del vehículo
+  String? get vehiculoCorto {
+    if (vehiculoFicha != null && vehiculoFicha!.trim().isNotEmpty) {
+      return vehiculoPlaca != null && vehiculoPlaca!.trim().isNotEmpty
+          ? '${vehiculoFicha!.trim()} (${vehiculoPlaca!.trim()})'
+          : vehiculoFicha!.trim();
+    }
+    if (vehiculoPlaca != null && vehiculoPlaca!.trim().isNotEmpty) {
+      return 'Placa ${vehiculoPlaca!.trim()}';
+    }
+    return null;
+  }
 
   factory CamionViaje.fromJson(Map<String, dynamic> json) {
     final gastosRaw = json['gastos'] as List? ?? [];
@@ -76,7 +120,14 @@ class CamionViaje {
           : null,
       vehiculoId: json['vehiculo_id'] != null
           ? int.tryParse(json['vehiculo_id'].toString())
-          : null,
+          : (json['vehiculo']?['id'] != null
+              ? int.tryParse(json['vehiculo']['id'].toString())
+              : null),
+      vehiculoFicha: json['vehiculo']?['ficha'],
+      vehiculoPlaca: json['vehiculo']?['placa'],
+      vehiculoMarca: json['vehiculo']?['marca'],
+      vehiculoModelo: json['vehiculo']?['modelo'],
+      choferLicencia: json['chofer']?['numero_licencia'],
       fechaSalida: json['fecha_salida'] != null
           ? DateTime.tryParse(json['fecha_salida'])
           : null,

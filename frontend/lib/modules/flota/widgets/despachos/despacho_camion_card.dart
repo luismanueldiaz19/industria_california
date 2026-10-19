@@ -170,6 +170,41 @@ class DespachoCamionCard extends StatelessWidget {
                 ],
               ],
             ),
+            if (camion.vehiculoFicha != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.local_shipping_outlined,
+                    size: 12,
+                    color: Color(0xFF2563EB),
+                  ),
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      camion.vehiculoFicha!,
+                      style: const TextStyle(
+                        color: Color(0xFF2563EB),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (camion.vehiculoPlaca != null && camion.vehiculoPlaca!.isNotEmpty) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      '(${camion.vehiculoPlaca!})',
+                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 9.5),
+                    ),
+                  ],
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
 
             // Amount, Count & Progress

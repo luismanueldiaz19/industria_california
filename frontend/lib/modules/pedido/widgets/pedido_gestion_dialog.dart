@@ -78,6 +78,13 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
       widget.pedido.estado.toLowerCase() == 'entregado' ||
       _estadoSeleccionado.toLowerCase() == 'entregado';
 
+  bool get _esFacturado =>
+      widget.pedido.estado.toLowerCase() == 'facturado' ||
+      _estadoSeleccionado.toLowerCase() == 'facturado' ||
+      (widget.pedido.numFactura != null && widget.pedido.numFactura!.trim().isNotEmpty);
+
+  bool get _noSePuedeEliminar => _esFacturado || _esEntregado;
+
   @override
   void initState() {
     super.initState();
@@ -247,6 +254,14 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
   }
 
   void _confirmDelete() {
+    if (_esFacturado) {
+      CompactSnackBar.showWarning(
+        context,
+        '⚠️ No se puede eliminar un pedido que ya fue FACTURADO.',
+      );
+      return;
+    }
+
     if (_esEntregado) {
       CompactSnackBar.showWarning(
         context,
@@ -1718,7 +1733,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                   final isCompact = constraints.maxWidth < 620;
 
                   final operationalActions = <Widget>[
-                    if (isAdmin && !_esEntregado)
+                    if (isAdmin && !_noSePuedeEliminar)
                       CustomButton(
                         text: 'ELIMINAR',
                         icon: Icons.delete_outline,

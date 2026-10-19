@@ -93,11 +93,16 @@ class CamionVictualService {
   Future<CamionVictual> actualizarEntrega(
     int camionId,
     int pedidoId,
-    String estadoEntrega,
-  ) async {
+    String estadoEntrega, {
+    String? comentarioEntrega,
+  }) async {
     final response = await _http.patchV2(
       '$_base/$camionId/pedidos/$pedidoId/entrega',
-      {'estado_entrega': estadoEntrega},
+      {
+        'estado_entrega': estadoEntrega,
+        if (comentarioEntrega != null && comentarioEntrega.isNotEmpty)
+          'comentario_entrega': comentarioEntrega,
+      },
     );
     return CamionVictual.fromJson(response);
   }
@@ -107,8 +112,15 @@ class CamionVictualService {
     return CamionVictual.fromJson(response);
   }
 
-  Future<CamionVictual> ponerEnRuta(int camionId) async {
-    final response = await _http.patchV2('$_base/$camionId/en-ruta', {});
+  Future<CamionVictual> ponerEnRuta(
+    int camionId, {
+    required int vehiculoId,
+    required int choferId,
+  }) async {
+    final response = await _http.patchV2('$_base/$camionId/en-ruta', {
+      'vehiculo_id': vehiculoId,
+      'chofer_id': choferId,
+    });
     return CamionVictual.fromJson(response);
   }
 
@@ -133,6 +145,7 @@ class CamionVictualService {
   /// Obtiene el historial de viajes liquidados con filtros y paginación.
   Future<Map<String, dynamic>> getHistorialViajes({
     int? choferId,
+    int? vehiculoId,
     String? estado,
     String? fechaInicio,
     String? fechaFin,
@@ -141,6 +154,7 @@ class CamionVictualService {
   }) async {
     final params = {
       if (choferId != null) 'chofer_id': choferId.toString(),
+      if (vehiculoId != null) 'vehiculo_id': vehiculoId.toString(),
       if (estado != null && estado.isNotEmpty) 'estado': estado,
       if (fechaInicio != null) 'fecha_inicio': fechaInicio,
       if (fechaFin != null) 'fecha_fin': fechaFin,

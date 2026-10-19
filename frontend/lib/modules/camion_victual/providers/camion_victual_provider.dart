@@ -186,8 +186,9 @@ class CamionVictualProvider extends ChangeNotifier {
   Future<bool> actualizarEntrega(
     int camionId,
     int pedidoId,
-    String estadoEntrega,
-  ) async {
+    String estadoEntrega, {
+    String? comentarioEntrega,
+  }) async {
     _isActualizando = true;
     notifyListeners();
     try {
@@ -195,6 +196,7 @@ class CamionVictualProvider extends ChangeNotifier {
         camionId,
         pedidoId,
         estadoEntrega,
+        comentarioEntrega: comentarioEntrega,
       );
       _actualizarEnLista(actualizado);
       return true;
@@ -223,11 +225,19 @@ class CamionVictualProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> ponerEnRuta(int camionId) async {
+  Future<bool> ponerEnRuta(
+    int camionId, {
+    required int vehiculoId,
+    required int choferId,
+  }) async {
     _isActualizando = true;
     notifyListeners();
     try {
-      final actualizado = await _service.ponerEnRuta(camionId);
+      final actualizado = await _service.ponerEnRuta(
+        camionId,
+        vehiculoId: vehiculoId,
+        choferId: choferId,
+      );
       _actualizarEnLista(actualizado);
       return true;
     } catch (e) {

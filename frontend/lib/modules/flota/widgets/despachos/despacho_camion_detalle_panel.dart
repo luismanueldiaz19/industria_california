@@ -10,6 +10,7 @@ import '../../../pedido/widgets/pedido_detalle_dialog.dart';
 import '../camiones/camion_victual_form_modal.dart';
 import 'despacho_agregar_pedidos_modal.dart';
 import 'despacho_cambiar_chofer_dialog.dart';
+import 'despacho_en_ruta_dialog.dart';
 import 'despacho_liquidacion_dialog.dart';
 
 class DespachoCamionDetallePanel extends StatefulWidget {
@@ -95,59 +96,31 @@ class _DespachoCamionDetallePanelState
   }
 
   Future<void> _ponerEnRuta() async {
-    final confirmar = await showDialog<bool>(
+    if (widget.camion.pedidos.isEmpty || widget.camion.montoTotal <= 0) {
+      CompactSnackBar.showError(
+        context,
+        'No se puede despachar un camión sin pedidos asignados.',
+      );
+      return;
+    }
+
+    if (widget.camion.montoTotal < widget.camion.minimoSalida) {
+      final falta = widget.camion.minimoSalida - widget.camion.montoTotal;
+      CompactSnackBar.showError(
+        context,
+        'No alcanza el mínimo de salida (${_currencyFmt.format(widget.camion.minimoSalida)}). Faltan ${_currencyFmt.format(falta)}.',
+      );
+      return;
+    }
+
+    final despachado = await showDialog<bool>(
       context: context,
-      builder: (c) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text(
-          'Poner Camión en Ruta',
-          style: TextStyle(
-            color: Color(0xFF0F172A),
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        content: Text(
-          '¿Desea despachar el "${widget.camion.nombre}" con chofer ${widget.camion.choferNombre ?? "sin asignar"} en ruta? Todos los pedidos asignados pasarán al estado "En curso".',
-          style: const TextStyle(color: Color(0xFF475569), fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(color: Color(0xFF64748B)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text(
-              'Despachar / En Ruta',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (_) => DespachoEnRutaDialog(camion: widget.camion),
     );
 
-    if (confirmar != true || !mounted) return;
-
-    final provider = context.read<CamionVictualProvider>();
-    final ok = await provider.ponerEnRuta(widget.camion.id);
-    if (!mounted) return;
-    if (ok) {
-      CompactSnackBar.showSuccess(
-        context,
-        'Camión puesto EN RUTA y pedidos pasados a EN CURSO exitosamente',
-      );
+    if (despachado == true && mounted) {
       widget.onCamionUpdated();
-    } else {
-      CompactSnackBar.showError(context, provider.error ?? 'Error');
     }
   }
 
@@ -387,40 +360,81 @@ class _DespachoCamionDetallePanelState
         ),
 
         // Workflow buttons based on state
-        if (camion.estado == 'armando')
-          ElevatedButton.icon(
-            onPressed: _marcarListo,
-            icon: const Icon(Icons.check_circle, size: 14),
-            label: const Text('Marcar Listo', style: TextStyle(fontSize: 11)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF16A34A),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              visualDensity: VisualDensity.compact,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-          ),
+        if (camion.estado == 'armando') ...[
+          () {
+            final bool cumpleMinimo =
+                camion.pedidos.isNotEmpty &&
+                camion.montoTotal >= camion.minimoSalida;
+            final double falta = (camion.minimoSalida - camion.montoTotal)
+                .clamp(0.0, double.infinity);
 
-        if (camion.estado == 'listo' || camion.estado == 'armando')
-          ElevatedButton.icon(
-            onPressed: _ponerEnRuta,
-            icon: const Icon(Icons.departure_board, size: 14),
-            label: const Text(
-              'Despachar / En Ruta',
-              style: TextStyle(fontSize: 11),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              visualDensity: VisualDensity.compact,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+            return Tooltip(
+              message: cumpleMinimo
+                  ? 'Marcar como listo para salir'
+                  : 'Faltan ${_currencyFmt.format(falta)} para alcanzar el mínimo de salida',
+              child: ElevatedButton.icon(
+                onPressed: _marcarListo,
+                icon: const Icon(Icons.check_circle, size: 14),
+                label: const Text(
+                  'Marcar Listo',
+                  style: TextStyle(fontSize: 11),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: cumpleMinimo
+                      ? const Color(0xFF16A34A)
+                      : const Color(0xFF94A3B8),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          }(),
+        ],
+
+        if (camion.estado == 'listo' || camion.estado == 'armando') ...[
+          () {
+            final bool puedeDespachar =
+                camion.pedidos.isNotEmpty &&
+                camion.montoTotal >= camion.minimoSalida;
+            final double falta = (camion.minimoSalida - camion.montoTotal)
+                .clamp(0.0, double.infinity);
+
+            return Tooltip(
+              message: puedeDespachar
+                  ? 'Despachar camión a ruta logística'
+                  : 'Faltan ${_currencyFmt.format(falta)} para alcanzar el mínimo de salida',
+              child: ElevatedButton.icon(
+                onPressed: _ponerEnRuta,
+                icon: const Icon(Icons.departure_board, size: 14),
+                label: const Text(
+                  'Despachar / En Ruta',
+                  style: TextStyle(fontSize: 11),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: puedeDespachar
+                      ? const Color(0xFF2563EB)
+                      : const Color(0xFF94A3B8),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            );
+          }(),
+        ],
 
         if (camion.estado == 'en_ruta' ||
             camion.estado == 'listo' ||
@@ -747,6 +761,70 @@ class _DespachoCamionDetallePanelState
                         ],
                       ),
                     ),
+                    if (camion.vehiculoFicha != null) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.local_shipping,
+                              color: Color(0xFF2563EB),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Vehículo Físico:',
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                camion.vehiculoFicha!,
+                                style: const TextStyle(
+                                  color: Color(0xFF2563EB),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '${camion.vehiculoMarca ?? ''} ${camion.vehiculoModelo ?? ''} ${camion.vehiculoPlaca != null ? '(${camion.vehiculoPlaca})' : ''}'.trim(),
+                                style: const TextStyle(
+                                  color: Color(0xFF1E293B),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

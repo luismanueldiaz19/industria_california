@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../camion_victual/models/camion_viaje.dart';
 import '../../camion_victual/services/camion_victual_service.dart';
 import '../providers/chofer_provider.dart';
+import '../providers/vehiculo_provider.dart';
 
 class HistorialViajesScreen extends StatefulWidget {
   final bool isDialog;
@@ -25,6 +26,7 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
   String? _error;
 
   int? _filtroChoferId;
+  int? _filtroVehiculoId;
   String _filtroEstado = '';
   CamionViaje? _viajeSeleccionado;
 
@@ -33,6 +35,7 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ChoferProvider>().fetchChoferes();
+      context.read<VehiculoProvider>().loadVehiculos();
       _cargarViajes();
     });
   }
@@ -46,6 +49,7 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
     try {
       final res = await _service.getHistorialViajes(
         choferId: _filtroChoferId,
+        vehiculoId: _filtroVehiculoId,
         estado: _filtroEstado.isEmpty ? null : _filtroEstado,
         perPage: 50,
       );
@@ -88,6 +92,7 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 900;
     final choferes = context.watch<ChoferProvider>().choferes;
+    final vehiculos = context.watch<VehiculoProvider>().vehiculos;
 
     final content = Column(
       children: [
@@ -135,7 +140,7 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
             children: [
               // Filtro Chofer
               SizedBox(
-                width: 220,
+                width: 200,
                 child: DropdownButtonFormField<int?>(
                   initialValue: _filtroChoferId,
                   isExpanded: true,
@@ -174,9 +179,54 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
               ),
               const SizedBox(width: 10),
 
+              // Filtro Vehículo
+              SizedBox(
+                width: 200,
+                child: DropdownButtonFormField<int?>(
+                  initialValue: _filtroVehiculoId,
+                  isExpanded: true,
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF0F172A)),
+                  decoration: InputDecoration(
+                    labelText: 'Filtrar por Vehículo',
+                    labelStyle: const TextStyle(fontSize: 11),
+                    isDense: true,
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                    ),
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Todos los vehículos'),
+                    ),
+                    ...vehiculos.map(
+                      (vh) => DropdownMenuItem(
+                        value: vh.id,
+                        child: Text(
+                          [
+                            if (vh.ficha.isNotEmpty) vh.ficha,
+                            if (vh.marca != null && vh.marca!.isNotEmpty) vh.marca!,
+                            if (vh.placa != null && vh.placa!.isNotEmpty) '(${vh.placa!})',
+                          ].join(' '),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                  onChanged: (val) {
+                    setState(() => _filtroVehiculoId = val);
+                    _cargarViajes();
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+
               // Filtro Estado
               SizedBox(
-                width: 180,
+                width: 160,
                 child: DropdownButtonFormField<String>(
                   initialValue: _filtroEstado,
                   style: const TextStyle(fontSize: 11, color: Color(0xFF0F172A)),
@@ -449,7 +499,7 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top row: Código, Estado, Fechas
+                // Top row: Código, Chofer, Estado
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -472,6 +522,9 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
+                        const Icon(Icons.person,
+                            size: 13, color: Color(0xFF2563EB)),
+                        const SizedBox(width: 3),
                         Text(
                           v.choferNombre ?? 'Sin chofer',
                           style: const TextStyle(
@@ -485,7 +538,30 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
                     _buildEstadoChip(v.estado),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
+
+                // Vehículo row
+                Row(
+                  children: [
+                    const Icon(Icons.local_shipping,
+                        size: 13, color: Color(0xFF0284C7)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        v.vehiculoDescripcion ??
+                            (v.vehiculoCorto ?? 'Sin vehículo registrado'),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0284C7),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
 
                 // Info row: Fechas & Personal
                 Row(
@@ -613,10 +689,86 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
               _buildEstadoChip(viaje.estado),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Chofer: ${viaje.choferNombre ?? "Sin asignar"}${viaje.cerradoPorNombre != null ? ' · Cerrado por: ${viaje.cerradoPorNombre}' : ''}',
-            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+          const SizedBox(height: 8),
+
+          // Tarjeta Logística: Chofer y Vehículo
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.person, size: 14, color: Color(0xFF2563EB)),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Chofer que entregó: ',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        viaje.choferNombre ?? 'Sin chofer asignado',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.local_shipping, size: 14, color: Color(0xFF0284C7)),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Vehículo de transporte: ',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        viaje.vehiculoDescripcion ?? (viaje.vehiculoCorto ?? 'Sin vehículo registrado'),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0284C7),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                if (viaje.cerradoPorNombre != null || viaje.fechaCierre != null) ...[
+                  const SizedBox(height: 6),
+                  const Divider(height: 8, color: Color(0xFFE2E8F0)),
+                  Row(
+                    children: [
+                      const Icon(Icons.verified_outlined, size: 13, color: Color(0xFF64748B)),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Cerrado por: ${viaje.cerradoPorNombre ?? "Sistema"}${viaje.fechaCierre != null ? " · ${_dateFmt.format(viaje.fechaCierre!)}" : ""}',
+                        style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
           if (viaje.nombresAyudantes != null &&
               viaje.nombresAyudantes!.isNotEmpty) ...[

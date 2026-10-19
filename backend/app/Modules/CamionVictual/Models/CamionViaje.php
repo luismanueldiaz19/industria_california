@@ -6,6 +6,7 @@ use App\Models\Chofer;
 use App\Models\User;
 use App\Modules\CamionVictual\Enums\EstadoViaje;
 use App\Modules\Vehiculo\Models\Vehiculo;
+use App\Modules\Vehiculo\Models\VehiculoGasto;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -90,6 +91,6 @@ class CamionViaje extends Model
 
     public function gastos(): HasMany
     {
-        return $this->hasMany(CamionViajeGasto::class, 'viaje_id')->orderBy('id', 'asc');
+        return $this->hasMany(VehiculoGasto::class, 'viaje_id')->orderBy('id', 'asc');
     }
 }
