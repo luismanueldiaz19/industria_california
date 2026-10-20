@@ -269,6 +269,67 @@ class PedidoProvider extends ChangeNotifier {
     }
   }
 
+  Future<Pedido?> updateItem(
+    int pedidoId,
+    int detalleId, {
+    double? cantidad,
+    double? precioUnitario,
+  }) async {
+    try {
+      final updatedPedido = await _service.updateItem(
+        pedidoId,
+        detalleId,
+        cantidad: cantidad,
+        precioUnitario: precioUnitario,
+      );
+      final index = _pedidos.indexWhere((p) => p.id == pedidoId);
+      if (index != -1) {
+        _pedidos[index] = updatedPedido;
+      }
+      notifyListeners();
+      return updatedPedido;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<Pedido?> updateItems(
+    int pedidoId,
+    List<Map<String, dynamic>> items,
+  ) async {
+    try {
+      final updatedPedido = await _service.updateItems(pedidoId, items);
+      final index = _pedidos.indexWhere((p) => p.id == pedidoId);
+      if (index != -1) {
+        _pedidos[index] = updatedPedido;
+      }
+      notifyListeners();
+      return updatedPedido;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<Pedido?> deleteItem(int pedidoId, int detalleId) async {
+    try {
+      final updatedPedido = await _service.deleteItem(pedidoId, detalleId);
+      final index = _pedidos.indexWhere((p) => p.id == pedidoId);
+      if (index != -1) {
+        _pedidos[index] = updatedPedido;
+      }
+      notifyListeners();
+      return updatedPedido;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<String> getPdfUrl(int id) async {
     return await _service.getPdfUrl(id);
   }

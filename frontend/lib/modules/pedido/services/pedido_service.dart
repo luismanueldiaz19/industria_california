@@ -98,6 +98,33 @@ class PedidoService {
     await _http.delete('$_base/$id');
   }
 
+  Future<Pedido> updateItem(
+    int pedidoId,
+    int detalleId, {
+    double? cantidad,
+    double? precioUnitario,
+  }) async {
+    final Map<String, dynamic> data = {
+      if (cantidad != null) 'cantidad': cantidad,
+      if (precioUnitario != null) 'precio_unitario': precioUnitario,
+    };
+    final response = await _http.patch('$_base/$pedidoId/items/$detalleId', data);
+    return Pedido.fromJson(response);
+  }
+
+  Future<Pedido> updateItems(
+    int pedidoId,
+    List<Map<String, dynamic>> items,
+  ) async {
+    final response = await _http.put('$_base/$pedidoId/items', {'items': items});
+    return Pedido.fromJson(response);
+  }
+
+  Future<Pedido> deleteItem(int pedidoId, int detalleId) async {
+    final response = await _http.delete('$_base/$pedidoId/items/$detalleId');
+    return Pedido.fromJson(response);
+  }
+
   Future<Map<String, dynamic>> facturarVigente(
     int id, {
     required String numFactura,

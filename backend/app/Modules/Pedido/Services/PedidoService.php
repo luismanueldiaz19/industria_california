@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Modules\Produccion\Models\OrdenProduccionDetalle;
+use App\Modules\Produccion\Models\OrdenProduccion;
 
 class PedidoService
 {
@@ -481,8 +482,8 @@ class PedidoService
 
                     InventarioMovimiento::create([
                         'producto_id'      => $producto->id,
-                        'user_id'          => Auth::id(),
-                        'tipo'             => 'ENTRADA',
+                        'user_id'          => Auth::id() ?? $pedido->user_id ?? 1,
+                        'tipo'             => 'AJUSTE',
                         'subtipo'          => 'RETORNO INVENTARIO',
                         'cantidad'         => $cantidadEntregada,
                         'stock_anterior'   => $stockReal,
@@ -494,6 +495,226 @@ class PedidoService
                 $detalle->update(['cantidad_en_produccion' => 0]);
             }
         }
+    }
+
+    public function actualizarItem(Pedido $pedido, PedidoDetalle $detalle, ?float $nuevaCantidad, ?float $nuevoPrecio, User $usuario): Pedido
+    {
+        return DB::transaction(function () use ($pedido, $detalle, $nuevaCantidad, $nuevoPrecio, $usuario) {
+            $this->ejecutarActualizacionItem($pedido, $detalle, $nuevaCantidad, $nuevoPrecio, $usuario);
+
+            $nuevoTotal = round($pedido->detalles()->sum('subtotal') ?? 0, 2);
+            $pedido->total = $nuevoTotal;
+            $pedido->save();
+
+            return $pedido->fresh()->load([
+                'cliente:id,nombre',
+                'ruta:id,nombre',
+                'vendedor:id,name',
+                'facturador:id,name',
+                'ordenProduccion:id,pedido_id,estado',
+                'detalles.producto:id,codigo,descripcion,imagen_producto,unidad,medidas,capacidad'
+            ]);
+        });
+    }
+
+    public function actualizarItems(Pedido $pedido, array $items, User $usuario): Pedido
+    {
+        return DB::transaction(function () use ($pedido, $items, $usuario) {
+            foreach ($items as $itemData) {
+                $detalleId = $itemData['id'] ?? null;
+                if (!$detalleId) continue;
+                $detalle = PedidoDetalle::where('pedido_id', $pedido->id)->findOrFail($detalleId);
+                $nuevaCantidad = isset($itemData['cantidad']) ? (float)$itemData['cantidad'] : null;
+                $nuevoPrecio = isset($itemData['precio_unitario']) ? (float)$itemData['precio_unitario'] : null;
+
+                $this->ejecutarActualizacionItem($pedido, $detalle, $nuevaCantidad, $nuevoPrecio, $usuario);
+            }
+
+            $nuevoTotal = round($pedido->detalles()->sum('subtotal') ?? 0, 2);
+            $pedido->total = $nuevoTotal;
+            $pedido->save();
+
+            return $pedido->fresh()->load([
+                'cliente:id,nombre',
+                'ruta:id,nombre',
+                'vendedor:id,name',
+                'facturador:id,name',
+                'ordenProduccion:id,pedido_id,estado',
+                'detalles.producto:id,codigo,descripcion,imagen_producto,unidad,medidas,capacidad'
+            ]);
+        });
+    }
+
+    private function ejecutarActualizacionItem(Pedido $pedido, PedidoDetalle $detalle, ?float $nuevaCantidad, ?float $nuevoPrecio, User $usuario): void
+    {
+        $estado = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+        if ($estado === 'entregado') {
+            throw new \InvalidArgumentException('Un pedido ENTREGADO no puede ser modificado ya que finalizó su ciclo de despacho.');
+        }
+
+        $cantidadFinal = $nuevaCantidad !== null ? (float)$nuevaCantidad : (float)$detalle->cantidad;
+        $precioFinal = $nuevoPrecio !== null ? (float)$nuevoPrecio : (float)$detalle->precio_unitario;
+
+        if ($cantidadFinal <= 0) {
+            throw new \InvalidArgumentException('La cantidad debe ser mayor a 0.');
+        }
+        if ($precioFinal < 0) {
+            throw new \InvalidArgumentException('El precio no puede ser negativo.');
+        }
+
+        $cantidadCambio = abs($cantidadFinal - (float)$detalle->cantidad) > 0.0001;
+
+        if ($estado === 'enviado' || $estado === 'facturado') {
+            if ($cantidadCambio) {
+                $producto = Producto::lockForUpdate()->findOrFail($detalle->producto_id);
+                $cantSolicitadaAnterior = (float)$detalle->cantidad;
+                $cantFaltanteAnterior = (float)$detalle->cantidad_en_produccion;
+                $cantEntregadaAnterior = max(0, $cantSolicitadaAnterior - $cantFaltanteAnterior);
+
+                // Stock actualmente disponible en almacén sumando lo que este detalle tenía apartado
+                $stockDisponible = (float)$producto->stock + $cantEntregadaAnterior;
+
+                // Nueva distribución para la cantidad actualizada
+                $nuevaCantidadFaltante = max(0, $cantidadFinal - $stockDisponible);
+                $nuevaCantidadEntregada = $cantidadFinal - $nuevaCantidadFaltante;
+                $nuevoStockAlmacen = $stockDisponible - $nuevaCantidadEntregada;
+
+                $stockActualBD = (float)$producto->stock;
+                $producto->update(['stock' => $nuevoStockAlmacen]);
+
+                // Registrar ajuste en movimientos de inventario si cambió lo despachado/apartado
+                $diferencia = $nuevaCantidadEntregada - $cantEntregadaAnterior;
+                if ($diferencia > 0) {
+                    InventarioMovimiento::create([
+                        'producto_id'      => $producto->id,
+                        'user_id'          => $usuario->id,
+                        'tipo'             => 'VENTA',
+                        'subtipo'          => 'VENTA A PEDIDO (AJUSTE)',
+                        'cantidad'         => -$diferencia,
+                        'stock_anterior'   => $stockActualBD,
+                        'stock_resultante' => $nuevoStockAlmacen,
+                        'nota'             => "Ajuste item Pedido #{$pedido->id} ({$cantSolicitadaAnterior} -> {$cantidadFinal})",
+                    ]);
+                } elseif ($diferencia < 0) {
+                    $cantRetorno = abs($diferencia);
+                    InventarioMovimiento::create([
+                        'producto_id'      => $producto->id,
+                        'user_id'          => $usuario->id,
+                        'tipo'             => 'AJUSTE',
+                        'subtipo'          => 'RETORNO INVENTARIO (AJUSTE)',
+                        'cantidad'         => $cantRetorno,
+                        'stock_anterior'   => $stockActualBD,
+                        'stock_resultante' => $nuevoStockAlmacen,
+                        'nota'             => "Ajuste item Pedido #{$pedido->id} ({$cantSolicitadaAnterior} -> {$cantidadFinal})",
+                    ]);
+                }
+
+                // Sincronizar Orden de Producción
+                $opDetalles = OrdenProduccionDetalle::where('pedido_detalle_id', $detalle->id)->get();
+                if ($opDetalles->isNotEmpty()) {
+                    foreach ($opDetalles as $opd) {
+                        if ($nuevaCantidadFaltante > 0) {
+                            $opd->update(['cantidad_faltante' => $nuevaCantidadFaltante]);
+                        } else {
+                            if ($opd->estado === 'pendiente' && (float)$opd->cantidad_producida == 0) {
+                                $opd->delete();
+                            } else {
+                                $opd->update(['cantidad_faltante' => 0]);
+                            }
+                        }
+                    }
+                } elseif ($nuevaCantidadFaltante > 0) {
+                    $op = OrdenProduccion::where('pedido_id', $pedido->id)->first();
+                    if ($op) {
+                        OrdenProduccionDetalle::create([
+                            'orden_produccion_id' => $op->id,
+                            'producto_id'         => $detalle->producto_id,
+                            'pedido_detalle_id'   => $detalle->id,
+                            'cantidad_faltante'   => $nuevaCantidadFaltante,
+                            'cantidad_producida'  => 0,
+                            'estado'              => 'pendiente',
+                        ]);
+                    }
+                }
+
+                $detalle->cantidad_en_produccion = $nuevaCantidadFaltante;
+            }
+        } else {
+            // Borrador o Cotización: no descuenta inventario físico todavía
+            $producto = Producto::find($detalle->producto_id);
+            if ($producto) {
+                $stockActual = (float)$producto->stock;
+                $detalle->cantidad_en_produccion = max(0, $cantidadFinal - $stockActual);
+            }
+        }
+
+        $detalle->cantidad = $cantidadFinal;
+        $detalle->precio_unitario = $precioFinal;
+        $detalle->subtotal = round($cantidadFinal * $precioFinal, 2);
+        $detalle->save();
+    }
+
+    public function eliminarItem(Pedido $pedido, PedidoDetalle $detalle, User $usuario): Pedido
+    {
+        return DB::transaction(function () use ($pedido, $detalle, $usuario) {
+            $estado = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+            if ($estado === 'entregado') {
+                throw new \InvalidArgumentException('Un pedido ENTREGADO no puede ser modificado ya que finalizó su ciclo de despacho.');
+            }
+
+            if ($pedido->detalles()->count() <= 1) {
+                throw new \InvalidArgumentException('No se puede eliminar el único producto del pedido. Si desea anular el pedido completo, cancélelo.');
+            }
+
+            if ($estado === 'enviado' || $estado === 'facturado') {
+                $cantSolicitada = (float)$detalle->cantidad;
+                $cantFaltante = (float)$detalle->cantidad_en_produccion;
+                $cantEntregada = max(0, $cantSolicitada - $cantFaltante);
+
+                $producto = Producto::lockForUpdate()->find($detalle->producto_id);
+                if ($producto && $cantEntregada > 0) {
+                    $stockAnterior = (float)$producto->stock;
+                    $stockNuevo = $stockAnterior + $cantEntregada;
+                    $producto->update(['stock' => $stockNuevo]);
+
+                    InventarioMovimiento::create([
+                        'producto_id'      => $producto->id,
+                        'user_id'          => $usuario->id,
+                        'tipo'             => 'AJUSTE',
+                        'subtipo'          => 'RETORNO INVENTARIO (ELIMINAR ITEM)',
+                        'cantidad'         => $cantEntregada,
+                        'stock_anterior'   => $stockAnterior,
+                        'stock_resultante' => $stockNuevo,
+                        'nota'             => "Eliminación de producto en Pedido #{$pedido->id}",
+                    ]);
+                }
+            }
+
+            // Eliminar detalles de Orden de Producción asociados a este item
+            OrdenProduccionDetalle::where('pedido_detalle_id', $detalle->id)->delete();
+
+            // Si la Orden de Producción quedó sin ningún detalle, cancelarla o eliminarla
+            $op = OrdenProduccion::where('pedido_id', $pedido->id)->first();
+            if ($op && $op->detalles()->count() == 0) {
+                $op->delete();
+            }
+
+            $detalle->delete();
+
+            // Recalcular total del pedido
+            $nuevoTotal = round($pedido->detalles()->sum('subtotal') ?? 0, 2);
+            $pedido->total = $nuevoTotal;
+            $pedido->save();
+
+            return $pedido->fresh()->load([
+                'cliente:id,nombre',
+                'ruta:id,nombre',
+                'vendedor:id,name',
+                'facturador:id,name',
+                'ordenProduccion:id,pedido_id,estado',
+                'detalles.producto:id,codigo,descripcion,imagen_producto,unidad,medidas,capacidad'
+            ]);
+        });
     }
 
     private function esViolacionDeUnicidad(QueryException $e): bool

@@ -14,6 +14,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('pedidos/{pedido}/informacion', [PedidoController::class, 'updateInformacion']);
     Route::post('pedidos/{pedido}/facturar-vigente', [PedidoController::class, 'facturarVigente']);
 
+    // Gestión de Items del Pedido (Solo Admin)
+    Route::put('pedidos/{pedido}/items', [PedidoController::class, 'updateItems']);
+    Route::patch('pedidos/{pedido}/items/{detalle}', [PedidoController::class, 'updateItem']);
+    Route::delete('pedidos/{pedido}/items/{detalle}', [PedidoController::class, 'deleteItem']);
+
     // URLs de Reportes PDF
     Route::get('pedidos-pdf-url', [PedidoController::class, 'getGeneralPdfUrl']);
     Route::get('pedidos/pdf-url', [PedidoController::class, 'getGeneralPdfUrl']);

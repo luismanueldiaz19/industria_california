@@ -4,6 +4,7 @@ namespace App\Modules\Pedido\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Pedido\Models\Pedido;
+use App\Modules\Pedido\Models\PedidoDetalle;
 use App\Modules\Pedido\Http\Requests\StorePedidoRequest;
 use App\Modules\Pedido\Services\PedidoService;
 use App\Services\PdfSecurityService;
@@ -309,6 +310,92 @@ class PedidoController extends Controller
 
             return response()->json($resultado);
         } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function updateItem(Request $request, $pedidoId, $detalleId)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'Solo los administradores pueden modificar los artículos del pedido.'], 403);
+        }
+
+        $pedido = Pedido::findOrFail($pedidoId);
+        $detalle = PedidoDetalle::where('pedido_id', $pedido->id)->findOrFail($detalleId);
+
+        $request->validate([
+            'cantidad' => 'nullable|numeric|min:0.001',
+            'precio_unitario' => 'nullable|numeric|min:0',
+        ]);
+
+        if (!$request->has('cantidad') && !$request->has('precio_unitario')) {
+            return response()->json(['message' => 'Debes proporcionar cantidad o precio_unitario para actualizar.'], 422);
+        }
+
+        try {
+            $pedidoActualizado = $this->pedidoService->actualizarItem(
+                $pedido,
+                $detalle,
+                $request->has('cantidad') ? (float)$request->input('cantidad') : null,
+                $request->has('precio_unitario') ? (float)$request->input('precio_unitario') : null,
+                Auth::user()
+            );
+            return response()->json($pedidoActualizado);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function updateItems(Request $request, $pedidoId)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'Solo los administradores pueden modificar los artículos del pedido.'], 403);
+        }
+
+        $pedido = Pedido::findOrFail($pedidoId);
+
+        $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required|integer',
+            'items.*.cantidad' => 'nullable|numeric|min:0.001',
+            'items.*.precio_unitario' => 'nullable|numeric|min:0',
+        ]);
+
+        try {
+            $pedidoActualizado = $this->pedidoService->actualizarItems(
+                $pedido,
+                $request->input('items'),
+                Auth::user()
+            );
+            return response()->json($pedidoActualizado);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function deleteItem(Request $request, $pedidoId, $detalleId)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'Solo los administradores pueden eliminar artículos del pedido.'], 403);
+        }
+
+        $pedido = Pedido::findOrFail($pedidoId);
+        $detalle = PedidoDetalle::where('pedido_id', $pedido->id)->findOrFail($detalleId);
+
+        try {
+            $pedidoActualizado = $this->pedidoService->eliminarItem(
+                $pedido,
+                $detalle,
+                Auth::user()
+            );
+            return response()->json($pedidoActualizado);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
     }

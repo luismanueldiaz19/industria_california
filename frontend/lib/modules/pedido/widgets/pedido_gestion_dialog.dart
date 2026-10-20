@@ -14,6 +14,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../ruta/providers/ruta_provider.dart';
 import '../../users/providers/users_provider.dart';
 import '../models/pedido.dart';
+import '../models/pedido_detalle.dart';
 import '../providers/pedido_provider.dart';
 import '../utils/pedido_utils.dart';
 import '../../produccion/widgets/orden_produccion_pedido_dialog.dart';
@@ -72,36 +73,34 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
 
   bool _isSaving = false;
 
+  late Pedido _pedido;
   late final List<String> _estadosDisponibles;
 
   bool get _esEntregado =>
-      widget.pedido.estado.toLowerCase() == 'entregado' ||
+      _pedido.estado.toLowerCase() == 'entregado' ||
       _estadoSeleccionado.toLowerCase() == 'entregado';
 
   bool get _esFacturado =>
-      widget.pedido.estado.toLowerCase() == 'facturado' ||
+      _pedido.estado.toLowerCase() == 'facturado' ||
       _estadoSeleccionado.toLowerCase() == 'facturado' ||
-      (widget.pedido.numFactura != null && widget.pedido.numFactura!.trim().isNotEmpty);
+      (_pedido.numFactura != null && _pedido.numFactura!.trim().isNotEmpty);
 
   bool get _noSePuedeEliminar => _esFacturado || _esEntregado;
 
   @override
   void initState() {
     super.initState();
-    _numFacturaCtrl = TextEditingController(
-      text: widget.pedido.numFactura ?? '',
-    );
+    _pedido = widget.pedido;
+    _numFacturaCtrl = TextEditingController(text: _pedido.numFactura ?? '');
     _clienteCtrl = TextEditingController(
-      text: widget.pedido.clienteNombre ?? 'Cliente sin nombre',
+      text: _pedido.clienteNombre ?? 'Cliente sin nombre',
     );
-    _comentarioCtrl = TextEditingController(
-      text: widget.pedido.comentario ?? '',
-    );
+    _comentarioCtrl = TextEditingController(text: _pedido.comentario ?? '');
     _notaProduccionCtrl = TextEditingController(
-      text: widget.pedido.notaProduccion ?? '',
+      text: _pedido.notaProduccion ?? '',
     );
 
-    final estadoOriginal = widget.pedido.estado.toLowerCase();
+    final estadoOriginal = _pedido.estado.toLowerCase();
     _estadoSeleccionado = estadoOriginal;
 
     // Reglas de transición solicitadas:
@@ -203,7 +202,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
     setState(() => _isSaving = true);
     try {
       final success = await provider.updateInformacion(
-        widget.pedido.id,
+        _pedido.id,
         clienteId: _clienteId,
         rutaId: _rutaId,
         vendedorId: _vendedorId,
@@ -240,9 +239,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
   Future<void> _generarPdf() async {
     CompactSnackBar.showInfo(context, 'Generando Factura...');
     try {
-      final urlStr = await context.read<PedidoProvider>().getPdfUrl(
-        widget.pedido.id,
-      );
+      final urlStr = await context.read<PedidoProvider>().getPdfUrl(_pedido.id);
       final url = Uri.parse(urlStr);
       if (!await launchUrl(url)) {
         throw Exception('No se pudo abrir el enlace');
@@ -288,7 +285,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
             ),
           ),
           content: Text(
-            '¿Estás seguro de eliminar el pedido #${widget.pedido.id}? Esta acción no se puede deshacer.',
+            '¿Estás seguro de eliminar el pedido #${_pedido.id}? Esta acción no se puede deshacer.',
             style: const TextStyle(color: _textSecondary, fontSize: 13),
           ),
           actions: [
@@ -308,7 +305,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
               onPressed: () async {
                 Navigator.pop(ctx);
                 final provider = context.read<PedidoProvider>();
-                final success = await provider.deletePedido(widget.pedido.id);
+                final success = await provider.deletePedido(_pedido.id);
                 if (success && mounted) {
                   Navigator.pop(context);
                   widget.onUpdated();
@@ -472,7 +469,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                     const SizedBox(height: 14),
 
                     Text(
-                      'Al confirmar, el Pedido #${widget.pedido.id} quedará FACTURADO con el lote disponible (${_currencyFmt.format(totalVigente)}). Se creará automáticamente un Pedido Remanente para los artículos faltantes vinculado a Producción.',
+                      'Al confirmar, el Pedido #${_pedido.id} quedará FACTURADO con el lote disponible (${_currencyFmt.format(totalVigente)}). Se creará automáticamente un Pedido Remanente para los artículos faltantes vinculado a Producción.',
                       style: const TextStyle(
                         color: _textSecondary,
                         fontSize: 11,
@@ -553,7 +550,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                   final numFac = numFacturaInputCtrl.text
                                       .trim();
                                   final res = await pedidoProv.facturarVigente(
-                                    widget.pedido.id,
+                                    _pedido.id,
                                     numFactura: numFac,
                                     fechaEntrega: _fechaEntrega,
                                     notaProduccion:
@@ -575,7 +572,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                     final remanenteId = remanente?['id'];
                                     CompactSnackBar.showSuccess(
                                       context,
-                                      'Pedido #${widget.pedido.id} facturado por ${_currencyFmt.format(totalVigente)}.'
+                                      'Pedido #${_pedido.id} facturado por ${_currencyFmt.format(totalVigente)}.'
                                       '${remanenteId != null ? " Creado Pedido Remanente #$remanenteId para producción." : ""}',
                                     );
                                   } else {
@@ -598,17 +595,453 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
     );
   }
 
+  Future<void> _mostrarDialogoEditarItem(PedidoDetalle det) async {
+    if (_esEntregado) {
+      CompactSnackBar.showWarning(
+        context,
+        '⚠️ Este pedido ya fue ENTREGADO y no admite modificaciones.',
+      );
+      return;
+    }
+
+    final cantCtrl = TextEditingController(
+      text: det.cantidad % 1 == 0
+          ? det.cantidad.toInt().toString()
+          : det.cantidad.toString(),
+    );
+    final precioCtrl = TextEditingController(
+      text: det.precioUnitario.toStringAsFixed(2),
+    );
+    final formKey = GlobalKey<FormState>();
+    bool isUpdating = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dlgContext) {
+        return StatefulBuilder(
+          builder: (ctx, setDlgState) {
+            final double cant = double.tryParse(cantCtrl.text.trim()) ?? 0.0;
+            final double precio =
+                double.tryParse(precioCtrl.text.trim()) ?? 0.0;
+            final double nuevoSubtotal = cant * precio;
+
+            return AlertDialog(
+              backgroundColor: _bgDialog,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: const BorderSide(color: _borderColor),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 6,
+              ),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.edit_note_rounded,
+                      color: Color(0xFF2563EB),
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Modificar Artículo',
+                      style: TextStyle(
+                        color: _textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Form(
+                key: formKey,
+                child: SizedBox(
+                  width: 360,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Producto info
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _cardSubtleBg,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: _borderColor),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.inventory_2_outlined,
+                              size: 15,
+                              color: Color(0xFF6B7280),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    det.productoNombre ??
+                                        'Producto #${det.productoId}',
+                                    style: const TextStyle(
+                                      color: _textPrimary,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (det.productoCodigo != null &&
+                                      det.productoCodigo!.isNotEmpty)
+                                    Text(
+                                      'Cód: ${det.productoCodigo}',
+                                      style: const TextStyle(
+                                        color: _textMuted,
+                                        fontSize: 9.5,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Cantidad
+                      TextFormField(
+                        controller: cantCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: _textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Cantidad Solicitada',
+                          labelStyle: const TextStyle(fontSize: 11),
+                          suffixText: det.productoUnidad ?? 'UNIDAD',
+                          suffixStyle: const TextStyle(
+                            fontSize: 10,
+                            color: _textSecondary,
+                          ),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        validator: (val) {
+                          if (val == null || val.trim().isEmpty)
+                            return 'Ingresa la cantidad';
+                          final n = double.tryParse(val.trim());
+                          if (n == null || n <= 0) return 'Mayor a 0';
+                          return null;
+                        },
+                        onChanged: (_) => setDlgState(() {}),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Precio Unitario
+                      TextFormField(
+                        controller: precioCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: _textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Precio Unitario (\$)',
+                          labelStyle: const TextStyle(fontSize: 11),
+                          prefixText: '\$ ',
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        validator: (val) {
+                          if (val == null || val.trim().isEmpty)
+                            return 'Ingresa el precio';
+                          final n = double.tryParse(val.trim());
+                          if (n == null || n < 0) return 'No negativo';
+                          return null;
+                        },
+                        onChanged: (_) => setDlgState(() {}),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Card de Recálculo Automático
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0FDF4),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFBBF7D0)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Nuevo Subtotal Calculado:',
+                              style: TextStyle(
+                                color: Color(0xFF166534),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              _currencyFmt.format(nuevoSubtotal),
+                              style: const TextStyle(
+                                color: Color(0xFF166534),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      const Text(
+                        'ℹ️ El total del pedido, stock e ítems faltantes se recalcularán automáticamente en el sistema.',
+                        style: TextStyle(
+                          color: _textMuted,
+                          fontSize: 9.5,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                CancelButton(
+                  text: 'CANCELAR',
+                  isDark: false,
+                  height: 32,
+                  borderRadius: 6,
+                  onPressed: isUpdating
+                      ? null
+                      : () => Navigator.pop(dlgContext),
+                ),
+                CustomButton(
+                  text: isUpdating ? 'GUARDANDO...' : 'GUARDAR CAMBIOS',
+                  height: 32,
+                  borderRadius: 6,
+                  color: const Color(0xFF2563EB),
+                  onPressed: isUpdating
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+                          setDlgState(() => isUpdating = true);
+                          try {
+                            final double c = double.parse(cantCtrl.text.trim());
+                            final double p = double.parse(
+                              precioCtrl.text.trim(),
+                            );
+                            final pedidoProv = context.read<PedidoProvider>();
+                            final updatedPedido = await pedidoProv.updateItem(
+                              _pedido.id,
+                              det.id,
+                              cantidad: c,
+                              precioUnitario: p,
+                            );
+                            if (dlgContext.mounted) {
+                              Navigator.pop(dlgContext);
+                            }
+                            if (!mounted) return;
+                            if (updatedPedido != null) {
+                              setState(() {
+                                _pedido = updatedPedido;
+                              });
+                              widget.onUpdated();
+                              CompactSnackBar.showSuccess(
+                                context,
+                                'Artículo actualizado y recálculo aplicado',
+                              );
+                            } else {
+                              final err =
+                                  pedidoProv.error ??
+                                  'Error al actualizar artículo';
+                              CompactSnackBar.showError(context, err);
+                            }
+                          } catch (e) {
+                            if (dlgContext.mounted) {
+                              setDlgState(() => isUpdating = false);
+                            }
+                            if (mounted) {
+                              CompactSnackBar.showError(
+                                context,
+                                'Error: ${e.toString().replaceAll('Exception:', '').trim()}',
+                              );
+                            }
+                          }
+                        },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmarEliminarItem(PedidoDetalle det) async {
+    if (_esEntregado) {
+      CompactSnackBar.showWarning(
+        context,
+        '⚠️ Este pedido ya fue ENTREGADO y no admite modificaciones.',
+      );
+      return;
+    }
+
+    if (_pedido.detalles.length <= 1) {
+      CompactSnackBar.showWarning(
+        context,
+        '⚠️ No puedes eliminar el único producto del pedido. Si deseas anularlo, cancela el pedido.',
+      );
+      return;
+    }
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: _bgDialog,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: _borderColor),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Color(0xFFDC2626),
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Eliminar Artículo',
+                style: TextStyle(
+                  color: _textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '¿Estás seguro de eliminar "${det.productoNombre ?? 'este producto'}" del Pedido #${_pedido.id}?',
+                style: const TextStyle(color: _textSecondary, fontSize: 12),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Esta acción reintegrará al inventario las unidades apartadas y recalculará automáticamente el total.',
+                style: TextStyle(
+                  color: _textMuted,
+                  fontSize: 10.5,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            CancelButton(
+              text: 'CANCELAR',
+              isDark: false,
+              height: 32,
+              borderRadius: 6,
+              onPressed: () => Navigator.pop(ctx, false),
+            ),
+            CustomButton(
+              text: 'ELIMINAR',
+              height: 32,
+              borderRadius: 6,
+              color: const Color(0xFFDC2626),
+              onPressed: () => Navigator.pop(ctx, true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar != true) return;
+    if (!mounted) return;
+
+    final pedidoProv = context.read<PedidoProvider>();
+    try {
+      final updatedPedido = await pedidoProv.deleteItem(_pedido.id, det.id);
+
+      if (updatedPedido != null) {
+        if (!mounted) return;
+        setState(() {
+          _pedido = updatedPedido;
+        });
+        widget.onUpdated();
+        CompactSnackBar.showSuccess(
+          context,
+          'Producto eliminado y recálculo aplicado',
+        );
+      } else {
+        final err = pedidoProv.error ?? 'Error al eliminar producto';
+        throw Exception(err);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      CompactSnackBar.showError(
+        context,
+        'Error: ${e.toString().replaceAll('Exception:', '').trim()}',
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isAdmin = context.watch<AuthProvider>().isAdmin;
     final estadoColor = PedidoUtils.getColorForEstado(_estadoSeleccionado);
     final fechaCreacion = DateFormat(
       'dd/MM/yyyy HH:mm',
-    ).format(widget.pedido.createdAt);
+    ).format(_pedido.createdAt);
 
     double totalFaltante = 0.0;
     double totalVigente = 0.0;
-    for (var det in widget.pedido.detalles) {
+    for (var det in _pedido.detalles) {
       final cantFaltante = det.cantidadEnProduccion;
       final cantVigente = (det.cantidad - cantFaltante).clamp(
         0.0,
@@ -618,12 +1051,13 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
       totalVigente += (cantVigente * det.precioUnitario);
     }
     final tieneFaltantes = totalFaltante > 0;
-    final estadoLower = widget.pedido.estado.toLowerCase();
+    final estadoLower = _pedido.estado.toLowerCase();
     final isFacturado = estadoLower == 'facturado';
     final isCancelado = estadoLower == 'cancelado';
     final puedeFacturarVigente =
         !isFacturado && !isCancelado && tieneFaltantes && totalVigente > 0;
     final puedeVerOrdenProd = !isCancelado && tieneFaltantes;
+    final puedeEditarItems = isAdmin && !_esEntregado;
 
     return Dialog(
       backgroundColor: _bgDialog,
@@ -633,7 +1067,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
       ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 550, maxHeight: 750),
+        constraints: const BoxConstraints(maxWidth: 630, maxHeight: 780),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -668,7 +1102,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                         Row(
                           children: [
                             Text(
-                              'Trabajar Pedido #${widget.pedido.id}',
+                              'Trabajar Pedido #${_pedido.id}',
                               style: const TextStyle(
                                 color: _textPrimary,
                                 fontWeight: FontWeight.bold,
@@ -698,7 +1132,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                 ),
                               ),
                             ),
-                            if (widget.pedido.tieneOrdenProduccion) ...[
+                            if (_pedido.tieneOrdenProduccion) ...[
                               const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -723,7 +1157,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                     ),
                                     const SizedBox(width: 3),
                                     Text(
-                                      'OP #${widget.pedido.ordenProduccionId} (${widget.pedido.ordenProduccionEstado?.toUpperCase()})',
+                                      'OP #${_pedido.ordenProduccionId} (${_pedido.ordenProduccionEstado?.toUpperCase()})',
                                       style: const TextStyle(
                                         color: Color(0xFFB45309),
                                         fontSize: 9,
@@ -762,7 +1196,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${widget.pedido.clienteNombre ?? 'Cliente sin nombre'} • Vendedor: ${widget.pedido.vendedorNombre ?? '-'} • $fechaCreacion',
+                          '${_pedido.clienteNombre ?? 'Cliente sin nombre'} • Vendedor: ${_pedido.vendedorNombre ?? '-'} • $fechaCreacion',
                           style: const TextStyle(
                             color: _textSecondary,
                             fontSize: 11,
@@ -824,7 +1258,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               Expanded(
                                 child: _buildMetricItem(
                                   'Total Original',
-                                  _currencyFmt.format(widget.pedido.total),
+                                  _currencyFmt.format(_pedido.total),
                                   _textPrimary,
                                 ),
                               ),
@@ -860,16 +1294,12 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               Expanded(
                                 child: _buildMetricItem(
                                   'Factura',
-                                  (widget.pedido.numFactura != null &&
-                                          widget.pedido.numFactura!
-                                              .trim()
-                                              .isNotEmpty)
-                                      ? widget.pedido.numFactura!
+                                  (_pedido.numFactura != null &&
+                                          _pedido.numFactura!.trim().isNotEmpty)
+                                      ? _pedido.numFactura!
                                       : 'Sin Facturar',
-                                  (widget.pedido.numFactura != null &&
-                                          widget.pedido.numFactura!
-                                              .trim()
-                                              .isNotEmpty)
+                                  (_pedido.numFactura != null &&
+                                          _pedido.numFactura!.trim().isNotEmpty)
                                       ? const Color(0xFF2563EB)
                                       : _textMuted,
                                 ),
@@ -878,7 +1308,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               Expanded(
                                 child: _buildMetricItem(
                                   'Total Pedido',
-                                  _currencyFmt.format(widget.pedido.total),
+                                  _currencyFmt.format(_pedido.total),
                                   const Color(0xFF059669),
                                 ),
                               ),
@@ -890,7 +1320,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               Expanded(
                                 child: _buildMetricItem(
                                   'Productos',
-                                  '${widget.pedido.detalles.length} ítem(s)',
+                                  '${_pedido.detalles.length} ítem(s)',
                                   _textSecondary,
                                 ),
                               ),
@@ -902,16 +1332,12 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               Expanded(
                                 child: _buildMetricItem(
                                   'Factura Actual',
-                                  (widget.pedido.numFactura != null &&
-                                          widget.pedido.numFactura!
-                                              .trim()
-                                              .isNotEmpty)
-                                      ? widget.pedido.numFactura!
+                                  (_pedido.numFactura != null &&
+                                          _pedido.numFactura!.trim().isNotEmpty)
+                                      ? _pedido.numFactura!
                                       : 'Sin Facturar',
-                                  (widget.pedido.numFactura != null &&
-                                          widget.pedido.numFactura!
-                                              .trim()
-                                              .isNotEmpty)
+                                  (_pedido.numFactura != null &&
+                                          _pedido.numFactura!.trim().isNotEmpty)
                                       ? const Color(0xFF2563EB)
                                       : _textMuted,
                                 ),
@@ -1031,10 +1457,12 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               label: _esEntregado
                                   ? 'Estado del Pedido (Entregado / Cerrado):'
                                   : (_estadosDisponibles.length <= 1
-                                      ? 'Estado del Pedido (Bloqueado):'
-                                      : 'Estado del Pedido:'),
+                                        ? 'Estado del Pedido (Bloqueado):'
+                                        : 'Estado del Pedido:'),
                               value: _estadoSeleccionado,
-                              icon: (_esEntregado || _estadosDisponibles.length <= 1)
+                              icon:
+                                  (_esEntregado ||
+                                      _estadosDisponibles.length <= 1)
                                   ? Icons.lock_outline_rounded
                                   : Icons.tune_rounded,
                               iconColor: estadoColor,
@@ -1067,7 +1495,8 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                   ),
                                 );
                               }).toList(),
-                              onChanged: (_esEntregado ||
+                              onChanged:
+                                  (_esEntregado ||
                                       _estadosDisponibles.length <= 1)
                                   ? null
                                   : (val) {
@@ -1100,10 +1529,11 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                               label: _esEntregado
                                   ? 'No. Factura (Bloqueado):'
                                   : (_estadoSeleccionado.toLowerCase() ==
-                                          'facturado'
-                                      ? 'No. Factura: *'
-                                      : 'No. Factura:'),
-                              hint: _estadoSeleccionado.toLowerCase() ==
+                                            'facturado'
+                                        ? 'No. Factura: *'
+                                        : 'No. Factura:'),
+                              hint:
+                                  _estadoSeleccionado.toLowerCase() ==
                                       'facturado'
                                   ? 'Ej. B0100000045 (obligatorio)'
                                   : 'Ej. B0100000045 (opcional)',
@@ -1122,7 +1552,8 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                       ),
                                     )
                                   : null,
-                              optional: _esEntregado ||
+                              optional:
+                                  _esEntregado ||
                                   _estadoSeleccionado.toLowerCase() !=
                                       'facturado',
                               validator: (val) {
@@ -1334,9 +1765,9 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                         readOnly: _esEntregado,
                         optional: true,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
 
-                      // ── SECCIÓN 2: PRODUCTOS (SOLO LECTURA) ──
+                      // ── SECCIÓN 2: PRODUCTOS ──
                       Row(
                         children: [
                           const Icon(
@@ -1354,38 +1785,76 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                             ),
                           ),
                           const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEF3C7),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFFDE68A),
+                          if (puedeEditarItems)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFFBFDBFE),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.edit_note_rounded,
+                                    size: 13,
+                                    color: Color(0xFF1D4ED8),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Edición Admin Habilitada',
+                                    style: TextStyle(
+                                      color: Color(0xFF1D4ED8),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFFFDE68A),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _esEntregado
+                                        ? Icons.lock_rounded
+                                        : Icons.lock_outline_rounded,
+                                    size: 11,
+                                    color: const Color(0xFFB45309),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _esEntregado
+                                        ? 'Bloqueado (Entregado)'
+                                        : 'Solo Lectura',
+                                    style: const TextStyle(
+                                      color: Color(0xFFB45309),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.lock_outline_rounded,
-                                  size: 11,
-                                  color: Color(0xFFB45309),
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Solo Lectura',
-                                  style: TextStyle(
-                                    color: Color(0xFFB45309),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -1400,14 +1869,24 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Table(
-                            columnWidths: const {
-                              0: FlexColumnWidth(2.8), // Producto
-                              1: FlexColumnWidth(1.1), // Solicitado
-                              2: FlexColumnWidth(0.9), // Vigente
-                              3: FlexColumnWidth(1.0), // Faltante
-                              4: FlexColumnWidth(1.1), // Precio
-                              5: FlexColumnWidth(1.4), // Subtotal
-                            },
+                            columnWidths: puedeEditarItems
+                                ? const {
+                                    0: FlexColumnWidth(2.6), // Producto
+                                    1: FlexColumnWidth(1.1), // Solicitado
+                                    2: FlexColumnWidth(0.9), // Vigente
+                                    3: FlexColumnWidth(0.9), // Faltante
+                                    4: FlexColumnWidth(1.1), // Precio
+                                    5: FlexColumnWidth(1.3), // Subtotal
+                                    6: FlexColumnWidth(1.1), // Acciones
+                                  }
+                                : const {
+                                    0: FlexColumnWidth(2.8), // Producto
+                                    1: FlexColumnWidth(1.1), // Solicitado
+                                    2: FlexColumnWidth(0.9), // Vigente
+                                    3: FlexColumnWidth(1.0), // Faltante
+                                    4: FlexColumnWidth(1.1), // Precio
+                                    5: FlexColumnWidth(1.4), // Subtotal
+                                  },
                             children: [
                               TableRow(
                                 decoration: const BoxDecoration(
@@ -1438,9 +1917,14 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                     'SUBTOTAL',
                                     align: TextAlign.right,
                                   ),
+                                  if (puedeEditarItems)
+                                    _buildTableHeaderCell(
+                                      'ACCIONES',
+                                      align: TextAlign.center,
+                                    ),
                                 ],
                               ),
-                              ...widget.pedido.detalles.map((det) {
+                              ..._pedido.detalles.map((det) {
                                 final cantFaltante = det.cantidadEnProduccion;
                                 final cantVigente =
                                     (det.cantidad - cantFaltante).clamp(
@@ -1500,20 +1984,78 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                         ],
                                       ),
                                     ),
-                                    // Solicitado / Pedido
+                                    // Solicitado / Pedido (Editable si admin)
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                        vertical: 6,
+                                        horizontal: 2,
+                                        vertical: 4,
                                       ),
-                                      child: Text(
-                                        '${det.cantidad.toStringAsFixed(det.cantidad % 1 == 0 ? 0 : 2)}${det.productoUnidad != null && det.productoUnidad!.trim().isNotEmpty ? ' ${det.productoUnidad!.trim()}' : ''}',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: _textSecondary,
-                                          fontSize: 11,
-                                        ),
-                                      ),
+                                      child: puedeEditarItems
+                                          ? Tooltip(
+                                              message:
+                                                  'Clic para modificar cantidad o precio',
+                                              child: InkWell(
+                                                onTap: () =>
+                                                    _mostrarDialogoEditarItem(
+                                                      det,
+                                                    ),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 2,
+                                                        vertical: 2,
+                                                      ),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Flexible(
+                                                        child: Text(
+                                                          '${det.cantidad.toStringAsFixed(det.cantidad % 1 == 0 ? 0 : 2)}${det.productoUnidad != null && det.productoUnidad!.trim().isNotEmpty ? ' ${det.productoUnidad!.trim()}' : ''}',
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          style: const TextStyle(
+                                                            color: Color(
+                                                              0xFF1D4ED8,
+                                                            ),
+                                                            fontSize: 11,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            decoration:
+                                                                TextDecoration
+                                                                    .underline,
+                                                            decorationStyle:
+                                                                TextDecorationStyle
+                                                                    .dotted,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 2),
+                                                      const Icon(
+                                                        Icons.edit,
+                                                        size: 10,
+                                                        color: Color(
+                                                          0xFF2563EB,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : Text(
+                                              '${det.cantidad.toStringAsFixed(det.cantidad % 1 == 0 ? 0 : 2)}${det.productoUnidad != null && det.productoUnidad!.trim().isNotEmpty ? ' ${det.productoUnidad!.trim()}' : ''}',
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                color: _textSecondary,
+                                                fontSize: 11,
+                                              ),
+                                            ),
                                     ),
                                     // Vigente (Stock)
                                     Padding(
@@ -1587,20 +2129,79 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                               ),
                                             ),
                                     ),
-                                    // Precio
+                                    // Precio (Editable si admin)
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                        vertical: 6,
+                                        horizontal: 2,
+                                        vertical: 4,
                                       ),
-                                      child: Text(
-                                        _currencyFmt.format(det.precioUnitario),
-                                        textAlign: TextAlign.right,
-                                        style: const TextStyle(
-                                          color: _textSecondary,
-                                          fontSize: 11,
-                                        ),
-                                      ),
+                                      child: puedeEditarItems
+                                          ? Tooltip(
+                                              message:
+                                                  'Clic para modificar precio o cantidad',
+                                              child: InkWell(
+                                                onTap: () =>
+                                                    _mostrarDialogoEditarItem(
+                                                      det,
+                                                    ),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 2,
+                                                        vertical: 2,
+                                                      ),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.end,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        _currencyFmt.format(
+                                                          det.precioUnitario,
+                                                        ),
+                                                        textAlign:
+                                                            TextAlign.right,
+                                                        style: const TextStyle(
+                                                          color: Color(
+                                                            0xFF1D4ED8,
+                                                          ),
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .underline,
+                                                          decorationStyle:
+                                                              TextDecorationStyle
+                                                                  .dotted,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 2),
+                                                      const Icon(
+                                                        Icons.edit,
+                                                        size: 10,
+                                                        color: Color(
+                                                          0xFF2563EB,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : Text(
+                                              _currencyFmt.format(
+                                                det.precioUnitario,
+                                              ),
+                                              textAlign: TextAlign.right,
+                                              style: const TextStyle(
+                                                color: _textSecondary,
+                                                fontSize: 11,
+                                              ),
+                                            ),
                                     ),
                                     // Subtotal
                                     Padding(
@@ -1641,6 +2242,54 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                                         ],
                                       ),
                                     ),
+                                    // Acciones (si admin)
+                                    if (puedeEditarItems)
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 2,
+                                          vertical: 2,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.edit_outlined,
+                                                size: 15,
+                                                color: Color(0xFF2563EB),
+                                              ),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(
+                                                minWidth: 26,
+                                                minHeight: 26,
+                                              ),
+                                              tooltip:
+                                                  'Modificar cantidad y precio',
+                                              onPressed: () =>
+                                                  _mostrarDialogoEditarItem(
+                                                    det,
+                                                  ),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.delete_outline_rounded,
+                                                size: 15,
+                                                color: Color(0xFFDC2626),
+                                              ),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(
+                                                minWidth: 26,
+                                                minHeight: 26,
+                                              ),
+                                              tooltip:
+                                                  'Eliminar producto del pedido',
+                                              onPressed: () =>
+                                                  _confirmarEliminarItem(det),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                   ],
                                 );
                               }),
@@ -1704,10 +2353,14 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
                         ),
                       ],
                       const SizedBox(height: 8),
-                      const Text(
-                        '* Los productos, cantidades y precios no se modifican desde este formulario para resguardar la consistencia contable y de inventario.',
+                      Text(
+                        puedeEditarItems
+                            ? '* Como Administrador, puedes modificar la cantidad y precio de cada producto o eliminarlo. Los subtotales, totales e inventarios se recalcularán automáticamente.'
+                            : '* Los productos, cantidades y precios no se modifican desde este formulario para resguardar la consistencia contable y de inventario.',
                         style: TextStyle(
-                          color: _textMuted,
+                          color: puedeEditarItems
+                              ? const Color(0xFF1D4ED8)
+                              : _textMuted,
                           fontSize: 10,
                           fontStyle: FontStyle.italic,
                         ),
