@@ -19,6 +19,9 @@ import '../../../vendedor/screens/vendedor_cxc_sync_screen.dart';
 import '../../../../core/widgets/general_header.dart';
 import '../../../../core/services/http_service.dart';
 import '../../../users/providers/users_provider.dart';
+import '../../../auth/providers/auth_provider.dart';
+import 'cxc_cuarentena_screen.dart';
+import '../widgets/cxc_cuarentena_dialog.dart';
 
 class CxcScreen extends StatefulWidget {
   const CxcScreen({super.key});
@@ -548,6 +551,17 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
       icon: Icons.request_quote_rounded,
       iconColor: AppTheme.ledhouseBlue,
       actions: [
+        HeaderButton(
+          icon: Icons.shield_outlined,
+          tooltip: 'Cuarentena CXC',
+          color: Colors.amber,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CxcCuarentenaScreen()),
+          ).then((_) {
+            Provider.of<CxcProvider>(context, listen: false).fetchCxcs();
+          }),
+        ),
         HeaderButton(
           icon: Icons.bug_report_rounded,
           tooltip: 'Auditoría de Datos',
@@ -1479,6 +1493,43 @@ class _CxcScreenState extends State<CxcScreen> with TickerProviderStateMixin {
                                         padding: const EdgeInsets.all(4),
                                         constraints: const BoxConstraints(),
                                         onPressed: () => _showFormDialog(cxc),
+                                      ),
+                                      Consumer<AuthProvider>(
+                                        builder: (context, auth, _) {
+                                          if (!auth.isAdmin) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          return Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const SizedBox(width: 4),
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.shield_outlined,
+                                                  color: Colors.amber,
+                                                  size: 19,
+                                                ),
+                                                tooltip: 'Mandar a Cuarentena',
+                                                padding: const EdgeInsets.all(4),
+                                                constraints: const BoxConstraints(),
+                                                onPressed: () async {
+                                                  final res = await showDialog<bool>(
+                                                    context: context,
+                                                    builder: (_) => CxcCuarentenaDialog(cxc: cxc),
+                                                  );
+                                                  if (res == true && mounted) {
+                                                    Provider.of<CxcProvider>(context, listen: false).fetchCxcs(
+                                                      vendedorId: _selectedVendedorId,
+                                                      vencidos: _soloVencidos,
+                                                      startDate: _startDate?.toIso8601String().split('T')[0],
+                                                      endDate: _endDate?.toIso8601String().split('T')[0],
+                                                    );
+                                                  }
+                                                },
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),

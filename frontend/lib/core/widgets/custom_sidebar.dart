@@ -197,6 +197,14 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                     'Reporte Cheques',
                                     accentColor,
                                   ),
+                                  if (authProvider.isAdmin)
+                                    _buildMenuItem(
+                                      28,
+                                      Icons.shield_outlined,
+                                      Icons.shield,
+                                      'Cuarentena CXC',
+                                      accentColor,
+                                    ),
                                 ],
                               ),
                               _buildExpansionSection(

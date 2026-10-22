@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\CuentasPorCobrar\Http\Controllers\CuentaPorCobrarController;
+use App\Modules\CuentasPorCobrar\Http\Controllers\CxcCuarentenaController;
 use Illuminate\Support\Facades\Route;
 use App\Modules\Alerta\Http\Controllers\AlertaController;
 Route::middleware('auth:sanctum')->group(function () {
@@ -34,6 +35,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::patch('cxc/alertas/{alerta}/tipo', [CuentaPorCobrarController::class, 'alertaUpdateTipo']);
     // Route::delete('cxc/alertas/{alerta}', [CuentaPorCobrarController::class, 'alertaDestroy']);
     // Route::post('cxc/{cxc}/alerta', [CuentaPorCobrarController::class, 'alertaStore']);
+
+    // Cuarentena (Notas de Crédito / Débito pendientes) - solo admin
+    Route::get('cxc/cuarentena/resumen', [CxcCuarentenaController::class, 'resumen']);
+    Route::get('cxc/cuarentena', [CxcCuarentenaController::class, 'index']);
+    Route::post('cxc/cuarentena/masivo', [CxcCuarentenaController::class, 'enviarMasivo']);
+    Route::get('cxc/cuarentena/{cuarentena}', [CxcCuarentenaController::class, 'show'])->whereNumber('cuarentena');
+    Route::patch('cxc/cuarentena/{cuarentena}/aplicar', [CxcCuarentenaController::class, 'aplicar'])->whereNumber('cuarentena');
+    Route::patch('cxc/cuarentena/{cuarentena}/anular', [CxcCuarentenaController::class, 'anular'])->whereNumber('cuarentena');
+    Route::post('cxc/{cxc}/cuarentena', [CxcCuarentenaController::class, 'enviar'])->whereNumber('cxc');
 
     // Soportes
     Route::get('cxc/{cxc}/soporte', [CuentaPorCobrarController::class, 'soportesIndex']);

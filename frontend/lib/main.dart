@@ -18,6 +18,7 @@ import 'modules/users/providers/role_provider.dart';
 import 'core/widgets/custom_sidebar.dart';
 import 'modules/led_house/providers/ledhouse_provider.dart';
 import 'modules/led_house/cxc/screens/cxc_screen.dart';
+import 'modules/led_house/cxc/screens/cxc_cuarentena_screen.dart';
 import 'modules/led_house/cxp/screens/cxp_screen.dart';
 import 'modules/led_house/cxc/providers/cxc_provider.dart';
 import 'modules/led_house/cxp/providers/cxp_provider.dart';
@@ -222,6 +223,7 @@ class _MainLayoutState extends State<MainLayout> {
     const ChequesAdminScreen(), // 25 — Admin Cheques Futuristas
     const ChequeReporteScreen(), // 26 — Reporte Cheques
     const HistorialViajesScreen(), // 27 — Historial de Viajes y Liquidaciones
+    const CxcCuarentenaScreen(), // 28 — Cuarentena CXC
   ];
 
   @override
