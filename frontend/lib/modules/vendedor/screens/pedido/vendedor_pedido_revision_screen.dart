@@ -49,12 +49,12 @@ class _VendedorPedidoRevisionScreenState
   @override
   void initState() {
     super.initState();
-    // Si estamos editando y el estado era otro (ej. facturado/cancelado, que usualmente el vendedor no setea pero podría ver),
-    // podríamos ajustarlo. Por ahora, asumimos que el vendedor crea/edita como Borrador o Enviado.
     final provider = context.read<PedidoFormProvider>();
-    // default to borrador unless editing and it was already enviado
-    if (provider.isEditing && _estadosConfig.containsKey('enviado')) {
-      // Simplificado: por defecto borrador.
+    if (provider.isEditing && provider.pedidoOriginal != null) {
+      final estadoOrig = provider.pedidoOriginal!.estado.toLowerCase();
+      if (_estadosConfig.containsKey(estadoOrig)) {
+        _estadoSeleccionado = estadoOrig;
+      }
     }
   }
 
@@ -682,11 +682,21 @@ class _VendedorPedidoRevisionScreenState
       if (!mounted) return;
 
       if (ok) {
-        CompactSnackBar.showSuccess(context, _estadoSeleccionado == 'enviado'
-                  ? 'Pedido enviado a logística'
-                  : (_estadoSeleccionado == 'cotizacion'
-                      ? 'Cotización guardada exitosamente'
-                      : 'Borrador guardado exitosamente'));
+        final String msg;
+        if (formProvider.isEditing) {
+          msg = _estadoSeleccionado == 'enviado'
+              ? 'Pedido actualizado y enviado a logística'
+              : (_estadoSeleccionado == 'cotizacion'
+                  ? 'Cotización actualizada exitosamente'
+                  : 'Borrador actualizado exitosamente');
+        } else {
+          msg = _estadoSeleccionado == 'enviado'
+              ? 'Pedido enviado a logística'
+              : (_estadoSeleccionado == 'cotizacion'
+                  ? 'Cotización guardada exitosamente'
+                  : 'Borrador guardado exitosamente');
+        }
+        CompactSnackBar.showSuccess(context, msg);
         Navigator.of(context).pop(true);
       } else {
         CompactSnackBar.showError(context, pedidoProvider.error ?? 'Error desconocido');

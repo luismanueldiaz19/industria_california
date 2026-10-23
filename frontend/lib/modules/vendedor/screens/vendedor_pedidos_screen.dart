@@ -692,37 +692,59 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
                 ],
               ),
             ),
-            // Acciones — para borradores y cotizaciones
+            // Acciones — para borradores, cotizaciones y pedidos enviados
             if (pedido.estado == 'borrador' ||
-                pedido.estado == 'cotizacion') ...[
+                pedido.estado == 'cotizacion' ||
+                pedido.estado == 'enviado') ...[
               const Divider(height: 1),
               Row(
                 children: [
                   Expanded(
                     child: TextButton.icon(
                       onPressed: () => _goToEdit(pedido),
-                      icon: const Icon(Icons.edit_outlined, size: 15),
+                      icon: const Icon(Icons.edit_outlined, size: 14),
                       label: const Text(
                         'Editar',
-                        style: TextStyle(fontSize: 13),
-                      ),
-                      style: TextButton.styleFrom(foregroundColor: _bgPrimary),
-                    ),
-                  ),
-                  const SizedBox(height: 36, child: VerticalDivider(width: 1)),
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: () => _confirmarEnvio(pedido),
-                      icon: const Icon(Icons.send_outlined, size: 15),
-                      label: const Text(
-                        'Enviar',
-                        style: TextStyle(fontSize: 13),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                       style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF4CAF50),
+                        foregroundColor: _bgPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 28, child: VerticalDivider(width: 1)),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () => _confirmarEliminar(pedido),
+                      icon: const Icon(Icons.delete_outline, size: 14),
+                      label: const Text(
+                        'Eliminar',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+                  if (pedido.estado != 'enviado') ...[
+                    const SizedBox(height: 28, child: VerticalDivider(width: 1)),
+                    Expanded(
+                      child: TextButton.icon(
+                        onPressed: () => _confirmarEnvio(pedido),
+                        icon: const Icon(Icons.send_outlined, size: 14),
+                        label: const Text(
+                          'Enviar',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF4CAF50),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -817,23 +839,36 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Enviar Pedido'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.send_rounded, color: Color(0xFF4CAF50), size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Enviar Pedido',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
         content: Text(
-          '¿Confirmas el envío del Pedido #${pedido.id}?\nUna vez enviado no podrás editarlo.',
+          '¿Confirmas el envío a logística del Pedido #${pedido.id}?',
+          style: const TextStyle(fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+            child: const Text('Cancelar', style: TextStyle(fontSize: 13)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
               'Sí, Enviar',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -847,6 +882,71 @@ class _VendedorPedidosScreenState extends State<VendedorPedidosScreen>
     );
     if (!mounted) return;
 
-    CompactSnackBar.showSuccess(context, ok ? 'Pedido enviado correctamente' : 'Error al enviar');
+    CompactSnackBar.showSuccess(
+      context,
+      ok ? 'Pedido #${pedido.id} enviado a logística' : 'Error al enviar pedido',
+    );
+  }
+
+  Future<void> _confirmarEliminar(Pedido pedido) async {
+    final bool esEnviado = pedido.estado == 'enviado';
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 22),
+            SizedBox(width: 8),
+            Text(
+              'Eliminar Pedido',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          esEnviado
+              ? '¿Confirmas que deseas eliminar el Pedido #${pedido.id}?\n\nEl pedido será eliminado y los productos reservados volverán al inventario.'
+              : '¿Confirmas que deseas eliminar el Pedido #${pedido.id}?\n\nEsta acción no se puede deshacer.',
+          style: const TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar', style: TextStyle(fontSize: 13)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Sí, Eliminar',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    final provider = context.read<PedidoProvider>();
+    final ok = await provider.deletePedido(pedido.id);
+    if (!mounted) return;
+
+    if (ok) {
+      CompactSnackBar.showSuccess(
+        context,
+        'Pedido #${pedido.id} eliminado correctamente',
+      );
+    } else {
+      CompactSnackBar.showError(
+        context,
+        provider.error ?? 'Error al eliminar el pedido',
+      );
+    }
   }
 }

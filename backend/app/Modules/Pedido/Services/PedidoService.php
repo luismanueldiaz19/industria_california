@@ -85,6 +85,11 @@ class PedidoService
                 throw new \InvalidArgumentException('Un pedido ENTREGADO no puede ser modificado ya que finalizó su ciclo de despacho.');
             }
 
+            // Si el pedido original ya estaba enviado, restaurar el inventario deducido previamente
+            if ($originalEstado === 'enviado') {
+                $this->restaurarInventario($pedido->load('detalles'));
+            }
+
             $pedido->detalles()->delete(); // Clear old ones to easily sync
 
             [$detalles, $total] = $this->prepararDetalles($datos['detalles'], $pedido->id);
@@ -111,7 +116,7 @@ class PedidoService
 
             $pedido->update($updateData);
 
-            if (in_array($originalEstado, ['borrador', 'cotizacion']) && $datos['estado'] === 'enviado') {
+            if ($datos['estado'] === 'enviado' || $datos['estado'] === 'facturado') {
                 $this->deducirInventario($pedido->load('detalles'));
             }
 

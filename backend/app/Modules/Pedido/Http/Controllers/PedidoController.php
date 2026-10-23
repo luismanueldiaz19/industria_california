@@ -117,13 +117,26 @@ class PedidoController extends Controller
 
     public function update(StorePedidoRequest $request, Pedido $pedido)
     {
+        $usuario = Auth::user();
+        $isAdmin = $usuario->hasRole('admin');
         $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+
         if ($estadoActual === 'entregado') {
             return response()->json(['message' => 'Un pedido ENTREGADO no puede ser modificado ya que finalizó su ciclo de despacho.'], 422);
         }
 
-        if (!in_array($estadoActual, ['borrador', 'cotizacion']) && !Auth::user()->hasRole('admin')) {
-            return response()->json(['message' => 'No puedes editar un pedido que ya no es borrador o cotización.'], 403);
+        if ($estadoActual === 'facturado' && !$isAdmin) {
+            return response()->json(['message' => 'Un pedido FACTURADO no puede ser modificado.'], 422);
+        }
+
+        if (!$isAdmin) {
+            if ($pedido->vendedor_id !== $usuario->id) {
+                return response()->json(['message' => 'No autorizado para editar pedidos de otro vendedor.'], 403);
+            }
+
+            if (!in_array($estadoActual, ['borrador', 'cotizacion', 'enviado'])) {
+                return response()->json(['message' => 'Solo puedes editar pedidos en estado borrador, cotización o enviado.'], 403);
+            }
         }
 
         $datos = $request->validated();
@@ -134,11 +147,23 @@ class PedidoController extends Controller
 
     public function destroy(Pedido $pedido)
     {
-        if (!Auth::user()->hasRole('admin')) {
-            return response()->json(['message' => 'No autorizado para eliminar pedidos.'], 403);
+        $usuario = Auth::user();
+        $isAdmin = $usuario->hasRole('admin');
+        $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+
+        if (!$isAdmin) {
+            if ($pedido->vendedor_id !== $usuario->id) {
+                return response()->json(['message' => 'No autorizado para eliminar pedidos de otro vendedor.'], 403);
+            }
+
+            if (!in_array($estadoActual, ['borrador', 'cotizacion', 'enviado'])) {
+                return response()->json([
+                    'message' => 'Solo se pueden eliminar pedidos en estado borrador, cotización o enviado.',
+                    'errors' => ['pedido' => ['Solo se pueden eliminar pedidos en estado borrador, cotización o enviado.']]
+                ], 422);
+            }
         }
 
-        $estadoActual = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
         if ($estadoActual === 'facturado' || !empty(trim((string) $pedido->num_factura))) {
             return response()->json([
                 'message' => 'Un pedido FACTURADO no puede ser eliminado del sistema.',
@@ -154,7 +179,14 @@ class PedidoController extends Controller
         }
 
         try {
-            $pedido->delete();
+            DB::transaction(function () use ($pedido, $estadoActual) {
+                // Si estaba enviado, restaurar inventario deducido
+                if ($estadoActual === 'enviado') {
+                    $this->pedidoService->restaurarInventario($pedido->load('detalles'));
+                }
+                $pedido->delete();
+            });
+
             return response()->json(['message' => 'Pedido eliminado correctamente.']);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);

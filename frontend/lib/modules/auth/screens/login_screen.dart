@@ -189,12 +189,13 @@ class _LoginScreenState extends State<LoginScreen>
               },
             ),
           ),
+
+          // Overlay oscuro con transparencia al 80%
           Positioned.fill(
             child: Container(
               color: const Color(0xFF1A1C1E).withValues(alpha: 0.8),
             ),
           ),
-
           // Main Layout
           Positioned.fill(
             child: SingleChildScrollView(
@@ -484,7 +485,6 @@ class _LoginScreenState extends State<LoginScreen>
                 ],
               ),
               const SizedBox(height: 16),
-
               // Modular Submit Button
               AuthSubmitButton(
                 text: 'INGRESAR AL SISTEMA',
@@ -493,9 +493,8 @@ class _LoginScreenState extends State<LoginScreen>
                 backgroundColor: accentColor,
                 height: 40,
               ),
-
               // Comentar esto en producción para ocultar los botones de prueba
-              _buildQuickLoginRoles(),
+              // _buildQuickLoginRoles(),
             ],
           ),
         ),

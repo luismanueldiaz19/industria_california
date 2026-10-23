@@ -1,12 +1,5 @@
 <?php
 
-namespace App\Modules\Policies;
-
-use App\Modules\Pedido\Enums\EstadoPedido;
-use App\Modules\Pedido\Models\Pedido;
-use App\Models\User;
-
-// app/Modules/Pedido/Policies/PedidoPolicy.php
 namespace App\Modules\Pedido\Policies;
 
 use App\Modules\Pedido\Enums\EstadoPedido;
@@ -30,18 +23,30 @@ class PedidoPolicy
         return $user->can('crear_pedidos');
     }
 
-    /**
-     * También cubre la transición borrador → enviado: mandar un pedido
-     * es, técnicamente, una actualización del campo `estado`. No hay
-     * un rol separado para "enviar" todavía, así que no se justifica
-     * un método enviar() aparte por ahora.
-     */
     public function update(User $user, Pedido $pedido): bool
     {
-        return $user->can('editar_pedidos')
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        $estado = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+
+        return ($user->can('editar_pedidos') || $user->hasRole('vendedor'))
             && $pedido->vendedor_id === $user->id
-            && $pedido->estado === EstadoPedido::Borrador;
+            && in_array($estado, ['borrador', 'cotizacion', 'enviado']);
     }
 
+    public function delete(User $user, Pedido $pedido): bool
+    {
+        if ($user->hasRole('admin')) {
+            return true;
+        }
 
+        $estado = is_object($pedido->estado) ? $pedido->estado->value : (string) $pedido->estado;
+
+        return ($user->can('eliminar_pedidos') || $user->hasRole('vendedor'))
+            && $pedido->vendedor_id === $user->id
+            && in_array($estado, ['borrador', 'cotizacion', 'enviado']);
+    }
 }
+

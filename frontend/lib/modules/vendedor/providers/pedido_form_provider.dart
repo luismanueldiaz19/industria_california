@@ -15,6 +15,7 @@ class PedidoFormProvider extends ChangeNotifier {
 
   // En caso de edición
   Pedido? _pedidoOriginal;
+  Pedido? get pedidoOriginal => _pedidoOriginal;
   bool get isEditing => _pedidoOriginal != null && _pedidoOriginal!.id != 0;
   int? get originalId => isEditing ? _pedidoOriginal?.id : null;
 

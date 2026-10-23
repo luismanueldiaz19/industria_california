@@ -7,7 +7,7 @@ import '../../pedido/models/pedido.dart';
 import '../../pedido/models/pedido_detalle.dart';
 
 import 'package:url_launcher/url_launcher.dart';
-
+import 'vendedor_pedido_flow_screen.dart';
 import '../../pedido/providers/pedido_provider.dart';
 
 /// Pantalla de detalle de un pedido existente.
@@ -44,6 +44,80 @@ class _VendedorPedidoDetalleScreenState
   Pedido get pedido => widget.pedido;
 
   bool _isGeneratingPdf = false;
+
+  Future<void> _goToEdit() async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => VendedorPedidoFlowScreen(pedidoOriginal: pedido),
+      ),
+    );
+    if (result == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _confirmarEliminar() async {
+    final bool esEnviado = pedido.estado == 'enviado';
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 22),
+            SizedBox(width: 8),
+            Text(
+              'Eliminar Pedido',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          esEnviado
+              ? '¿Confirmas que deseas eliminar el Pedido #${pedido.id}?\n\nEl pedido será eliminado y los productos reservados volverán al inventario.'
+              : '¿Confirmas que deseas eliminar el Pedido #${pedido.id}?\n\nEsta acción no se puede deshacer.',
+          style: const TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar', style: TextStyle(fontSize: 13)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Sí, Eliminar',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    final provider = context.read<PedidoProvider>();
+    final ok = await provider.deletePedido(pedido.id);
+    if (!mounted) return;
+
+    if (ok) {
+      CompactSnackBar.showSuccess(
+        context,
+        'Pedido #${pedido.id} eliminado correctamente',
+      );
+      Navigator.of(context).pop(true);
+    } else {
+      CompactSnackBar.showError(
+        context,
+        provider.error ?? 'Error al eliminar el pedido',
+      );
+    }
+  }
 
   Future<void> _generarPdf() async {
     setState(() => _isGeneratingPdf = true);
@@ -93,6 +167,18 @@ class _VendedorPedidoDetalleScreenState
                     ),
                   ),
                   actions: [
+                    if (['borrador', 'cotizacion', 'enviado'].contains(pedido.estado)) ...[
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 20),
+                        tooltip: 'Editar Pedido',
+                        onPressed: _goToEdit,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                        tooltip: 'Eliminar Pedido',
+                        onPressed: _confirmarEliminar,
+                      ),
+                    ],
                     IconButton(
                       icon: _isGeneratingPdf
                           ? const SizedBox(
