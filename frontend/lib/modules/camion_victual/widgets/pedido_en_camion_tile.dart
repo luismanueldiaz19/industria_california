@@ -75,26 +75,56 @@ class PedidoEnCamionTile extends StatelessWidget {
     }
   }
 
+  Widget _buildEntregaBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: _entregaBgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: _entregaColor.withValues(alpha: 0.5),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_entregaIcon, size: 11, color: _entregaColor),
+          const SizedBox(width: 3),
+          Text(
+            _entregaLabel,
+            style: TextStyle(
+              color: _entregaColor,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
     final hasFactura =
         pedido.numFactura != null && pedido.numFactura!.trim().isNotEmpty;
-    final estadoPedidoColor =
-        PedidoUtils.getColorForEstado(pedido.estadoPedido);
+    final estadoPedidoColor = PedidoUtils.getColorForEstado(
+      pedido.estadoPedido,
+    );
 
     return Container(
       key: tileKey,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 1.5),
           ),
         ],
       ),
@@ -102,16 +132,16 @@ class PedidoEnCamionTile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // ── 1. Círculo con Orden de Entrega ──
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
                     color: const Color(0xFFEFF6FF),
                     shape: BoxShape.circle,
@@ -126,12 +156,12 @@ class PedidoEnCamionTile extends StatelessWidget {
                       style: const TextStyle(
                         color: Color(0xFF2563EB),
                         fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        fontSize: 12,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
 
                 // ── 2. Información Central ──
                 Expanded(
@@ -150,7 +180,7 @@ class PedidoEnCamionTile extends StatelessWidget {
                               style: const TextStyle(
                                 color: Color(0xFF0F172A),
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13.5,
+                                fontSize: 13,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -160,39 +190,40 @@ class PedidoEnCamionTile extends StatelessWidget {
                           Text(
                             fmt.format(pedido.total),
                             style: const TextStyle(
-                              color: Color(0xFF0F172A),
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13.5,
+                              color: Color(0xFF16A34A),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(height: 4),
 
                       // Fila de Badges: Pedido #, No. Factura, Estado Pedido
                       Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
+                        spacing: 5,
+                        runSpacing: 3,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           // Pedido #
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
+                              horizontal: 5,
+                              vertical: 1.5,
                             ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(6),
-                              border:
-                                  Border.all(color: const Color(0xFFE2E8F0)),
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(
                                   Icons.receipt_rounded,
-                                  size: 11,
+                                  size: 10,
                                   color: Color(0xFF475569),
                                 ),
                                 const SizedBox(width: 3),
@@ -200,7 +231,7 @@ class PedidoEnCamionTile extends StatelessWidget {
                                   'Pedido #${pedido.id}',
                                   style: const TextStyle(
                                     color: Color(0xFF334155),
-                                    fontSize: 10.5,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -211,14 +242,14 @@ class PedidoEnCamionTile extends StatelessWidget {
                           // No. Factura
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
+                              horizontal: 5,
+                              vertical: 1.5,
                             ),
                             decoration: BoxDecoration(
                               color: hasFactura
                                   ? const Color(0xFFEFF6FF)
                                   : const Color(0xFFF8FAFC),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(5),
                               border: Border.all(
                                 color: hasFactura
                                     ? const Color(0xFFBFDBFE)
@@ -230,7 +261,7 @@ class PedidoEnCamionTile extends StatelessWidget {
                               children: [
                                 Icon(
                                   Icons.description_outlined,
-                                  size: 11,
+                                  size: 10,
                                   color: hasFactura
                                       ? const Color(0xFF1D4ED8)
                                       : const Color(0xFF94A3B8),
@@ -244,7 +275,7 @@ class PedidoEnCamionTile extends StatelessWidget {
                                     color: hasFactura
                                         ? const Color(0xFF1D4ED8)
                                         : const Color(0xFF94A3B8),
-                                    fontSize: 10.5,
+                                    fontSize: 10,
                                     fontWeight: hasFactura
                                         ? FontWeight.w700
                                         : FontWeight.w500,
@@ -258,118 +289,97 @@ class PedidoEnCamionTile extends StatelessWidget {
                           if (pedido.estadoPedido.isNotEmpty)
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
+                                horizontal: 5,
+                                vertical: 1.5,
                               ),
                               decoration: BoxDecoration(
-                                color:
-                                    estadoPedidoColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
+                                color: estadoPedidoColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(5),
                                 border: Border.all(
-                                  color:
-                                      estadoPedidoColor.withValues(alpha: 0.4),
+                                  color: estadoPedidoColor.withValues(
+                                    alpha: 0.4,
+                                  ),
                                 ),
                               ),
                               child: Text(
                                 pedido.estadoPedido.toUpperCase(),
                                 style: TextStyle(
                                   color: estadoPedidoColor,
-                                  fontSize: 10,
+                                  fontSize: 9.5,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
                         ],
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(height: 4),
 
                       // Dirección del Cliente y Estado de Entrega
                       Row(
                         children: [
                           const Icon(
                             Icons.location_on_outlined,
-                            size: 12.5,
+                            size: 12,
                             color: Color(0xFF64748B),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 3),
                           Expanded(
                             child: Text(
                               (pedido.clienteDireccion != null &&
-                                      pedido.clienteDireccion!.trim().isNotEmpty)
+                                      pedido.clienteDireccion!
+                                          .trim()
+                                          .isNotEmpty)
                                   ? pedido.clienteDireccion!
                                   : 'Sin dirección registrada',
                               style: const TextStyle(
                                 color: Color(0xFF64748B),
-                                fontSize: 11,
+                                fontSize: 10.5,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
 
                           // Badge Estado Entrega (Pendiente, En curso, etc.)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _entregaBgColor,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: _entregaColor.withValues(alpha: 0.5),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _entregaIcon,
-                                  size: 11,
-                                  color: _entregaColor,
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  _entregaLabel,
-                                  style: TextStyle(
-                                    color: _entregaColor,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          _buildEntregaBadge(),
                         ],
                       ),
                     ],
                   ),
                 ),
 
-                // ── 3. Acciones (Quitar / Drag handle) ──
-                if (onQuitar != null) ...[
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: onQuitar,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFFECACA)),
-                      ),
-                      child: const Icon(
-                        Icons.remove_circle_outline_rounded,
-                        color: Color(0xFFDC2626),
-                        size: 17,
-                      ),
+                // ── 3. Acciones (Ver detalle / Quitar / Drag handle) ──
+                if (onTap != null && !showDragHandle) ...[
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.visibility_outlined,
+                      size: 16,
+                      color: Color(0xFF64748B),
                     ),
+                    tooltip: 'Ver Detalle del Pedido',
+                    onPressed: onTap,
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+                if (onQuitar != null) ...[
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.remove_circle_outline_rounded,
+                      size: 16,
+                      color: Color(0xFFDC2626),
+                    ),
+                    tooltip: 'Quitar del Camión',
+                    onPressed: onQuitar,
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(),
                   ),
                 ],
                 if (showDragHandle && index != null) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   ReorderableDragStartListener(
                     index: index!,
                     child: Container(

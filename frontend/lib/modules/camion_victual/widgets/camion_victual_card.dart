@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/camion_victual.dart';
 
-/// Tarjeta visual de un camión victual — Estilo CXC.
-/// - Nombre del camión
-/// - Estado con badge de color
-/// - Chofer asignado
-/// - Monto total vs monto mínimo (progress bar)
+/// Tarjeta visual compacta y detallada de un camión victual — Estilo combinado Despacho/Vendedor.
+/// Muestra:
+/// - Slot (#1), Nombre del camión (rojo oscuro), Badge de estado
+/// - Conductor asignado y Vendedor
+/// - Ficha de vehículo y placa
+/// - Cantidad de pedidos, faltante de meta (si aplica) y monto total cargado
+/// - Barra de progreso visual hacia el mínimo de salida
 class CamionVictualCard extends StatelessWidget {
   final CamionVictual camion;
   final double montoMinimo;
@@ -19,23 +21,27 @@ class CamionVictualCard extends StatelessWidget {
     required this.onTap,
   });
 
-  Color get _estadoColor {
-    switch (camion.estado) {
+  Color _getEstadoColor(String estado) {
+    switch (estado) {
+      case 'vacio':
+        return const Color(0xFF64748B);
       case 'armando':
-        return const Color(0xFFFB8C00); // Orange
+        return const Color(0xFFD97706);
       case 'listo':
-        return const Color(0xFF2E7D32); // Green
+        return const Color(0xFF16A34A);
       case 'en_ruta':
-        return const Color(0xFF1976D2); // Blue
+        return const Color(0xFF2563EB);
       case 'cerrado':
-        return Colors.grey.shade600;
+        return const Color(0xFFDC2626);
       default:
-        return Colors.grey.shade600;
+        return const Color(0xFF64748B);
     }
   }
 
-  String get _estadoLabel {
-    switch (camion.estado) {
+  String _getEstadoLabel(String estado) {
+    switch (estado) {
+      case 'vacio':
+        return 'VACÍO';
       case 'armando':
         return 'ARMANDO';
       case 'listo':
@@ -45,206 +51,282 @@ class CamionVictualCard extends StatelessWidget {
       case 'cerrado':
         return 'CERRADO';
       default:
-        return camion.estado.toUpperCase();
+        return estado.toUpperCase();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat('#,##0.00', 'es');
+    final currencyFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
+    final estadoColor = _getEstadoColor(camion.estado);
+    final tieneChofer =
+        camion.choferNombre != null && camion.choferNombre!.trim().isNotEmpty;
+
     final actualMinimo = (camion.minimoSalida > 5000)
         ? camion.minimoSalida
         : (montoMinimo > 0 ? montoMinimo : 500000.0);
-    final progreso = actualMinimo > 0
+    final double progreso = actualMinimo > 0
         ? (camion.montoTotal / actualMinimo).clamp(0.0, 1.0)
         : 1.0;
-    final falta = (actualMinimo - camion.montoTotal).clamp(0, double.infinity);
+    final falta = (actualMinimo - camion.montoTotal).clamp(0.0, double.infinity);
     final isCompletado = falta <= 0;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0),
+          width: 1,
         ),
-        child: Stack(
-          children: [
-            // Barra vertical de color
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 4,
-              child: Container(color: _estadoColor),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 10, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Fila 1: Nombre y Badge
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Fila 1: Slot (#), Nombre y Badge de Estado
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '#${camion.slotNumero}',
+                        style: const TextStyle(
+                          color: Color(0xFF475569),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        camion.nombre,
+                        style: const TextStyle(
+                          color: Color(0xFF991B1B),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: estadoColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: estadoColor.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Text(
+                        _getEstadoLabel(camion.estado),
+                        style: TextStyle(
+                          color: estadoColor,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                // Fila 2: Conductor & Vendedor
+                Row(
+                  children: [
+                    Icon(
+                      Icons.badge_outlined,
+                      size: 13,
+                      color: tieneChofer
+                          ? const Color(0xFF2563EB)
+                          : const Color(0xFFD97706),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        tieneChofer
+                            ? camion.choferNombre!
+                            : 'Sin conductor asignado',
+                        style: TextStyle(
+                          color: tieneChofer
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFD97706),
+                          fontSize: 11,
+                          fontWeight: tieneChofer
+                              ? FontWeight.w500
+                              : FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (camion.vendedorNombre != null &&
+                        camion.vendedorNombre!.trim().isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Flexible(
                         child: Text(
-                          camion.nombre.toUpperCase(),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            color: Colors.grey.shade800,
-                            letterSpacing: 0.1,
+                          'Vend: ${camion.vendedorNombre}',
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 10,
                           ),
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 5),
+
+                // Fila 3: Vehículo (Ficha y Placa)
+                Row(
+                  children: [
+                    Icon(
+                      Icons.local_shipping_outlined,
+                      size: 12,
+                      color: camion.vehiculoFicha != null
+                          ? const Color(0xFF2563EB)
+                          : const Color(0xFF94A3B8),
+                    ),
+                    const SizedBox(width: 4),
+                    if (camion.vehiculoFicha != null &&
+                        camion.vehiculoFicha!.trim().isNotEmpty) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
+                          horizontal: 4,
+                          vertical: 1,
                         ),
                         decoration: BoxDecoration(
-                          color: _estadoColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text(
-                          _estadoLabel,
-                          style: TextStyle(
-                            color: _estadoColor,
-                            fontSize: 9,
+                          camion.vehiculoFicha!,
+                          style: const TextStyle(
+                            color: Color(0xFF2563EB),
+                            fontSize: 9.5,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 0.2,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-
-                  // Fila 2: Chofer
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 12,
-                        color: Colors.grey.shade500,
+                      if (camion.vehiculoPlaca != null &&
+                          camion.vehiculoPlaca!.trim().isNotEmpty) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          '(${camion.vehiculoPlaca!})',
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 9.5,
+                          ),
+                        ),
+                      ],
+                    ] else ...[
+                      const Text(
+                        'Sin vehículo asignado',
+                        style: TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 9.5,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          camion.choferNombre?.toUpperCase() ?? 'SIN CHOFER',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 7),
+
+                // Fila 4: Cantidad de Pedidos y Monto Total
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.receipt_outlined,
+                          size: 12,
+                          color: Color(0xFF94A3B8),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${camion.pedidos.length} ${camion.pedidos.length == 1 ? 'pedido' : 'pedidos'}',
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
                             fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.1,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Fila 3: Montos y Pedidos
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildMontoItem(
-                        'Cargado',
-                        '\$${fmt.format(camion.montoTotal)}',
-                        const Color(0xFF1976D2),
-                      ),
-                      _buildMontoItem(
-                        'Pedidos',
-                        '${camion.pedidos.length}',
-                        Colors.grey.shade700,
-                      ),
-                      _buildMontoItem(
-                        isCompletado ? 'Monto' : 'Falta',
-                        isCompletado ? 'Alcanzado' : '\$${fmt.format(falta)}',
-                        isCompletado
-                            ? const Color(0xFF2E7D32)
-                            : Colors.orange.shade700,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Fila 4: Progress Bar
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: progreso,
-                            minHeight: 6,
-                            backgroundColor: Colors.grey.shade200,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              isCompletado
-                                  ? const Color(0xFF4CAF50)
-                                  : progreso > 0.6
-                                  ? const Color(0xFFFDD835)
-                                  : const Color(0xFFE53935),
+                        if (!isCompletado && actualMinimo > 0) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            '• Falta ${currencyFmt.format(falta)}',
+                            style: const TextStyle(
+                              color: Color(0xFFD97706),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ),
+                        ],
+                      ],
+                    ),
+                    Text(
+                      currencyFmt.format(camion.montoTotal),
+                      style: const TextStyle(
+                        color: Color(0xFF16A34A),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Min: \$${fmt.format(actualMinimo)}',
-                        style: TextStyle(
-                          fontSize: 9,
-                          color: Colors.grey.shade500,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                // Fila 5: Barra de Progreso hacia mínimo
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: progreso,
+                    minHeight: 4,
+                    backgroundColor: const Color(0xFFE2E8F0),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      progreso >= 1.0
+                          ? const Color(0xFF16A34A)
+                          : (progreso > 0.5
+                              ? const Color(0xFFD97706)
+                              : const Color(0xFFDC2626)),
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildMontoItem(String label, String value, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            fontSize: 8,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade500,
-            letterSpacing: 0.2,
-          ),
-        ),
-        const SizedBox(height: 1),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: color,
-            letterSpacing: -0.3,
-          ),
-        ),
-      ],
     );
   }
 }

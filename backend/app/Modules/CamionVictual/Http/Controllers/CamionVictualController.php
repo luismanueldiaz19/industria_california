@@ -346,9 +346,18 @@ class CamionVictualController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->whereHas('cliente', fn($q) =>
-                $q->where('nombre', 'like', '%' . $request->search . '%')
-            );
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('cliente', function ($cq) use ($search) {
+                    $cq->where('nombre', 'like', '%' . $search . '%')
+                       ->orWhere('direccion', 'like', '%' . $search . '%');
+                })
+                ->orWhere('num_factura', 'like', '%' . $search . '%');
+
+                if (is_numeric($search)) {
+                    $q->orWhere('id', (int) $search);
+                }
+            });
         }
 
         return response()->json($query->orderBy('created_at', 'desc')->get());

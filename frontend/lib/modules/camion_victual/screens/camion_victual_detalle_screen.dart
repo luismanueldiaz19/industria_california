@@ -78,7 +78,7 @@ class _CamionVictualDetalleScreenState
       constraints: const BoxConstraints(maxWidth: 450),
       builder: (_) => ChangeNotifierProvider.value(
         value: context.read<CamionVictualProvider>(),
-        child: AgregarPedidoSheet(camionId: widget.camionId),
+        child: AgregarPedidoSheet(camionId: widget.camionId, camion: _camion),
       ),
     ).then((_) {
       _refrescar();
@@ -309,8 +309,21 @@ class _CamionVictualDetalleScreenState
                   ],
                 ),
 
-                // ── Panel de estado del camión ───────────────────
+                // ── Strip de Conductor ────────────────────────────
+                _buildConductorStrip(camion),
+
+                // ── Strip de Vehículo Físico ──────────────────────
+                _buildVehiculoFisicoStrip(camion),
+
+                // ── Panel Financiero y Progreso (Summary Card) ────
                 _buildInfoPanel(camion, provider.montoMinimo, progreso),
+
+                // ── Banner de Viaje en Ruta (cuando en_ruta o cerrado)
+                if (camion.estado == 'en_ruta' || camion.estado == 'cerrado')
+                  _buildViajeEnRutaBanner(camion),
+
+                // ── Encabezado de la Sección de Pedidos ────────────
+                _buildSeccionPedidosHeader(camion),
 
                 // ── Lista de pedidos ──────────────────────────────
                 Expanded(
@@ -353,6 +366,139 @@ class _CamionVictualDetalleScreenState
     );
   }
 
+  Widget _buildConductorStrip(CamionVictual camion) {
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, top: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.person,
+            color: Color(0xFFE31E24),
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'Conductor:',
+            style: TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              camion.choferNombre ?? 'SIN ASIGNAR',
+              style: TextStyle(
+                color: camion.choferNombre != null
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFFD97706),
+                fontWeight: FontWeight.bold,
+                fontSize: 11.5,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVehiculoFisicoStrip(CamionVictual camion) {
+    final bool tieneVehiculo =
+        camion.vehiculoFicha != null || camion.vehiculoPlaca != null;
+
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: tieneVehiculo ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: tieneVehiculo
+              ? const Color(0xFFBFDBFE)
+              : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.local_shipping,
+            color: tieneVehiculo
+                ? const Color(0xFF2563EB)
+                : const Color(0xFF94A3B8),
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'Vehículo Físico:',
+            style: TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 6),
+          if (tieneVehiculo) ...[
+            if (camion.vehiculoFicha != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 1.5,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  camion.vehiculoFicha!,
+                  style: const TextStyle(
+                    color: Color(0xFF2563EB),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
+            Expanded(
+              child: Text(
+                '${camion.vehiculoMarca ?? ''} ${camion.vehiculoModelo ?? ''} ${camion.vehiculoPlaca != null ? '(${camion.vehiculoPlaca})' : ''}'
+                    .trim(),
+                style: const TextStyle(
+                  color: Color(0xFF1E293B),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ] else
+            const Expanded(
+              child: Text(
+                'Sin asignar por Despacho',
+                style: TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInfoPanel(
     CamionVictual camion,
     double montoMinimo,
@@ -360,160 +506,327 @@ class _CamionVictualDetalleScreenState
   ) {
     final falta = (montoMinimo - camion.montoTotal).clamp(0, double.infinity);
     final colorEstado = _colorEstado(camion.estado);
+    final pedidosEntregados = camion.pedidos
+        .where((p) => p.estadoEntrega.toLowerCase() == 'entregado')
+        .length;
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 6),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorEstado.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 1.5),
+          ),
+        ],
       ),
       child: Column(
         children: [
+          // Fila 1: Monto Total + Contador (Pedidos / Entregados)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Monto total
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Total cargado',
-                    style: TextStyle(color: Colors.black54, fontSize: 11),
+                    'Total Facturado Cargado',
+                    style: TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 10.5,
+                    ),
                   ),
                   Text(
                     '\$${_fmt.format(camion.montoTotal)}',
                     style: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 26,
+                      color: Color(0xFF16A34A),
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-              // Estado badge
+              // Contador de Pedidos y Entregados
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: colorEstado.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: colorEstado),
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Column(
+                      children: [
+                        Text(
+                          '${camion.pedidos.length}',
+                          style: const TextStyle(
+                            color: Color(0xFF0F172A),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const Text(
+                          'Pedidos',
+                          style: TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 9,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      children: [
+                        Text(
+                          '$pedidosEntregados',
+                          style: const TextStyle(
+                            color: Color(0xFF16A34A),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const Text(
+                          'Entregados',
+                          style: TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 9,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Fila 2: Mínimo y Estado de Mínimo / Botón Marcar Listo
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  'Mínimo: \$${_fmt.format(montoMinimo)}',
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 10.5,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 6),
+              if (falta > 0)
+                Text(
+                  'Falta \$${_fmt.format(falta)}',
+                  style: const TextStyle(
+                    color: Color(0xFFD97706),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              else
+                const Text(
+                  '✓ Mínimo Alcanzado',
+                  style: TextStyle(
+                    color: Color(0xFF16A34A),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 5),
+
+          // Barra de Progreso
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: progreso,
+              minHeight: 6,
+              backgroundColor: const Color(0xFFE2E8F0),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                progreso >= 1.0
+                    ? const Color(0xFF16A34A)
+                    : const Color(0xFFD97706),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Fila 3: Slot, Vendedor y Estado Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  _statChip(
+                    'Slot',
+                    '#${camion.slotNumero}',
+                    Icons.inventory_2_outlined,
+                  ),
+                  if (camion.vendedorNombre != null) ...[
+                    const SizedBox(width: 10),
+                    _statChip('Vend', camion.vendedorNombre!, Icons.storefront),
+                  ],
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: colorEstado.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colorEstado.withValues(alpha: 0.35),
+                  ),
                 ),
                 child: Text(
                   _labelEstado(camion.estado),
                   style: TextStyle(
                     color: colorEstado,
                     fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                    fontSize: 10.5,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          // Progress bar
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Mín: \$${_fmt.format(montoMinimo)}',
-                style: const TextStyle(color: Colors.black54, fontSize: 11),
-              ),
-              if (falta > 0)
+        ],
+      ),
+    );
+  }
+
+  Widget _buildViajeEnRutaBanner(CamionVictual camion) {
+    final pedidosEntregados = camion.pedidos
+        .where((p) => p.estadoEntrega.toLowerCase() == 'entregado')
+        .length;
+    final bool todosEntregados =
+        pedidosEntregados == camion.pedidos.length && camion.pedidos.isNotEmpty;
+    final bool esCerrado = camion.estado == 'cerrado';
+
+    final Color bgColor = esCerrado
+        ? const Color(0xFFFEF2F2)
+        : (todosEntregados
+            ? const Color(0xFFF0FDF4)
+            : const Color(0xFFFFF7ED));
+
+    final Color borderColor = esCerrado
+        ? const Color(0xFFFECACA)
+        : (todosEntregados
+            ? const Color(0xFF86EFAC)
+            : const Color(0xFFFDBA74));
+
+    final Color iconColor = esCerrado
+        ? const Color(0xFFDC2626)
+        : (todosEntregados
+            ? const Color(0xFF16A34A)
+            : const Color(0xFFEA580C));
+
+    final Color titleColor = esCerrado
+        ? const Color(0xFFB91C1C)
+        : (todosEntregados
+            ? const Color(0xFF15803D)
+            : const Color(0xFF9A3412));
+
+    final Color subColor = esCerrado
+        ? const Color(0xFF991B1B)
+        : (todosEntregados
+            ? const Color(0xFF166534)
+            : const Color(0xFF7C2D12));
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            esCerrado
+                ? Icons.assignment_late_outlined
+                : (todosEntregados
+                    ? Icons.check_circle_outline
+                    : Icons.local_shipping_outlined),
+            color: iconColor,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  'Falta \$${_fmt.format(falta)}',
+                  esCerrado
+                      ? 'Camión cerrado (${camion.pedidos.length} pedidos)'
+                      : (todosEntregados
+                          ? '¡Todos los pedidos han sido entregados!'
+                          : 'Viaje en ruta ($pedidosEntregados/${camion.pedidos.length} entregados)'),
                   style: TextStyle(
-                    color: colorEstado,
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.bold,
-                  ),
-                )
-              else if (camion.estado == 'armando')
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final prov = context.read<CamionVictualProvider>();
-                    try {
-                      await prov.update(camion.id, {'estado': 'listo'});
-                      if (mounted) {
-                        CompactSnackBar.showInfo(
-                          context,
-                          'Camión marcado como Listo',
-                        );
-                        _refrescar();
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        CompactSnackBar.showError(context, 'Error: $e');
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.check_circle_outline, size: 14),
-                  label: const Text('Marcar Listo'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(110, 32),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 0,
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 0,
-                  ),
-                )
-              else
-                const Text(
-                  '✓ Listo para salir',
-                  style: TextStyle(
-                    color: Color(0xFF4CAF50),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    color: titleColor,
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progreso,
-              minHeight: 8,
-              backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(
-                progreso >= 1.0
-                    ? const Color(0xFF4CAF50)
-                    : progreso > 0.6
-                    ? const Color(0xFFFFEB3B)
-                    : const Color(0xFFE53935),
-              ),
+                const SizedBox(height: 2),
+                Text(
+                  esCerrado
+                      ? 'El viaje ha finalizado y cerrado por despacho.'
+                      : 'Seguimiento de entregas en tiempo real.',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: subColor,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          // Resumen
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _statChip(
-                'Pedidos',
-                '${camion.pedidos.length}',
-                Icons.receipt_long,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeccionPedidosHeader(CamionVictual camion) {
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF1F5F9),
+        border: Border(
+          top: BorderSide(color: Color(0xFFE2E8F0)),
+          bottom: BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.list_alt,
+            color: Color(0xFF475569),
+            size: 15,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'PEDIDOS ASIGNADOS A ESTE CAMIÓN (${camion.pedidos.length})',
+              style: const TextStyle(
+                color: Color(0xFF0F172A),
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
-              _statChip(
-                'Slot',
-                '#${camion.slotNumero}',
-                Icons.inventory_2_outlined,
-              ),
-            ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -523,18 +836,18 @@ class _CamionVictualDetalleScreenState
   Widget _statChip(String label, String value, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: Colors.black38, size: 14),
+        Icon(icon, color: Colors.black38, size: 13),
         const SizedBox(width: 4),
         Text(
           '$label: ',
-          style: const TextStyle(color: Colors.black38, fontSize: 12),
+          style: const TextStyle(color: Colors.black45, fontSize: 11),
         ),
         Text(
           value,
           style: const TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
-            fontSize: 12,
+            fontSize: 11,
           ),
         ),
       ],
@@ -547,13 +860,13 @@ class _CamionVictualDetalleScreenState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.inbox_outlined, color: Colors.black12, size: 64),
-            const SizedBox(height: 12),
+            const Icon(Icons.inbox_outlined, color: Colors.black12, size: 54),
+            const SizedBox(height: 10),
             const Text(
               'El camión está vacío',
               style: TextStyle(
                 color: Colors.black38,
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -562,7 +875,7 @@ class _CamionVictualDetalleScreenState
               puedeEditar
                   ? 'Toca el botón + para agregar pedidos facturados'
                   : 'No hay pedidos asignados a este camión',
-              style: const TextStyle(color: Colors.black38, fontSize: 12),
+              style: const TextStyle(color: Colors.black38, fontSize: 11.5),
               textAlign: TextAlign.center,
             ),
           ],
@@ -591,7 +904,7 @@ class _CamionVictualDetalleScreenState
           Expanded(
             child: ReorderableListView.builder(
               buildDefaultDragHandles: false,
-              padding: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.only(top: 6, bottom: 24),
               itemCount: _pedidosLocales.length,
               onReorderItem: (oldIndex, newIndex) {
                 setState(() {
@@ -617,7 +930,7 @@ class _CamionVictualDetalleScreenState
 
     // Vista normal
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 100),
+      padding: const EdgeInsets.only(top: 6, bottom: 100),
       itemCount: _pedidosLocales.length,
       itemBuilder: (_, i) {
         final p = _pedidosLocales[i];
