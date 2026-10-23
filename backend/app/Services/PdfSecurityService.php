@@ -374,6 +374,7 @@ class PdfSecurityService
             case 'pedidos_general':
             case 'pedido':
             case 'pedidos_vendedores':
+            case 'productos_pendientes_entrega':
                 return app(\App\Modules\Pedido\Services\PedidoPdfService::class)->renderizarPdf($pdfToken->tipo, $params);
 
             case 'mantenimientos_flota':

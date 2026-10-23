@@ -687,6 +687,39 @@ class PedidoController extends Controller
         return response()->json(['url' => $url]);
     }
 
+    /**
+     * Reporte de productos facturados pendientes de entrega agrupados por vendedor.
+     */
+    public function reporteProductosPendientesEntrega(Request $request)
+    {
+        $params = $request->only(['vendedor_id', 'search', 'start_date', 'end_date']);
+
+        $user = Auth::user();
+        if ($user && !$user->hasRole('admin')) {
+            $params['vendedor_id'] = $user->id;
+        }
+
+        $datos = $this->pedidoService->obtenerReporteProductosPendientesEntrega($params);
+
+        return response()->json($datos);
+    }
+    /**
+     * URL temporal segura para el PDF del reporte de productos facturados pendientes de entrega.
+     */
+    public function getProductosPendientesEntregaPdfUrl(Request $request)
+    {
+        $params = $request->only(['vendedor_id', 'search', 'vista', 'start_date', 'end_date']);
+
+        $user = Auth::user();
+        if ($user && !$user->hasRole('admin')) {
+            $params['vendedor_id'] = $user->id;
+        }
+
+        $url = PdfSecurityService::generarUrl('productos_pendientes_entrega', $params, Auth::id(), 30);
+
+        return response()->json(['url' => $url]);
+    }
+
     private function _mesFmtExpr(string $columna): string
     {
         return match (DB::getDriverName()) {

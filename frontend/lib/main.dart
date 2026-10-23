@@ -35,6 +35,7 @@ import 'modules/producto/providers/categoria_provider.dart';
 import 'modules/producto/providers/producto_provider.dart';
 import 'modules/producto/screens/productos_screen.dart';
 import 'modules/producto/screens/categorias_screen.dart';
+import 'modules/producto/screens/productos_pendientes_entrega_screen.dart';
 
 // Módulo Flota y Despacho
 import 'modules/flota/screens/choferes_screen.dart';
@@ -173,7 +174,7 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 10;
 
   @override
   void initState() {
@@ -224,6 +225,7 @@ class _MainLayoutState extends State<MainLayout> {
     const ChequeReporteScreen(), // 26 — Reporte Cheques
     const HistorialViajesScreen(), // 27 — Historial de Viajes y Liquidaciones
     const CxcCuarentenaScreen(), // 28 — Cuarentena CXC
+    const ProductosPendientesEntregaScreen(), // 29 — Consulta Productos por Entregar
   ];
 
   @override

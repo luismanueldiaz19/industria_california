@@ -766,4 +766,176 @@ class PedidoService
     {
         return in_array($e->getCode(), ['23505', '1062'], true);
     }
+
+    /**
+     * Consulta y agrupa los productos facturados pendientes de entrega por vendedor y por producto.
+     */
+    public function obtenerReporteProductosPendientesEntrega(array $filtros): array
+    {
+        $vendedorId = $filtros['vendedor_id'] ?? null;
+        $search = $filtros['search'] ?? null;
+        $startDate = $filtros['start_date'] ?? null;
+        $endDate = $filtros['end_date'] ?? null;
+
+        $query = Pedido::query()
+            ->where('pedidos.estado', '!=', 'entregado')
+            ->where('pedidos.estado', '!=', 'cancelado')
+            ->where(function ($q) {
+                $q->where('pedidos.estado', 'facturado')
+                  ->orWhere(function ($sub) {
+                      $sub->whereNotNull('pedidos.num_factura')
+                          ->where('pedidos.num_factura', '!=', '');
+                  });
+            })
+            ->when($vendedorId, fn($q) => $q->where('pedidos.vendedor_id', $vendedorId))
+            ->when($startDate, fn($q) => $q->whereDate('pedidos.created_at', '>=', $startDate))
+            ->when($endDate, fn($q) => $q->whereDate('pedidos.created_at', '<=', $endDate))
+            ->with([
+                'vendedor:id,name,email',
+                'cliente:id,nombre,documento,whatsapp,direccion',
+                'detalles.producto:id,codigo,descripcion,medidas,capacidad,unidad,precio,stock,category_id',
+            ]);
+
+        $pedidos = $query->get();
+
+        $porVendedor = [];
+        $porProducto = [];
+        $totalGeneralUnidades = 0.0;
+        $totalGeneralMonto = 0.0;
+        $pedidosIds = [];
+
+        foreach ($pedidos as $pedido) {
+            $vId = $pedido->vendedor_id ?? 0;
+            $vNombre = $pedido->vendedor?->name ?? 'Sin Asignar';
+            $pedidosIds[$pedido->id] = true;
+
+            if (!isset($porVendedor[$vId])) {
+                $porVendedor[$vId] = [
+                    'vendedor_id' => $vId,
+                    'vendedor_nombre' => $vNombre,
+                    'vendedor_email' => $pedido->vendedor?->email,
+                    'total_pedidos' => 0,
+                    'total_unidades' => 0.0,
+                    'total_monto' => 0.0,
+                    'pedidos_ids' => [],
+                    'productos' => [],
+                ];
+            }
+
+            if (!in_array($pedido->id, $porVendedor[$vId]['pedidos_ids'], true)) {
+                $porVendedor[$vId]['pedidos_ids'][] = $pedido->id;
+                $porVendedor[$vId]['total_pedidos']++;
+            }
+
+            foreach ($pedido->detalles as $detalle) {
+                $prod = $detalle->producto;
+                $pId = $detalle->producto_id;
+                $cantidad = (float) $detalle->cantidad;
+                $subtotal = (float) $detalle->subtotal;
+
+                // Filtrado por búsqueda de texto
+                if (!empty($search)) {
+                    $searchLower = mb_strtolower($search);
+                    $prodDesc = mb_strtolower($prod?->nombre_completo ?? $prod?->descripcion ?? '');
+                    $prodCod = mb_strtolower($prod?->codigo ?? '');
+                    $cliNom = mb_strtolower($pedido->cliente?->nombre ?? '');
+                    $numFact = mb_strtolower($pedido->num_factura ?? '');
+                    if (
+                        !str_contains($prodDesc, $searchLower) &&
+                        !str_contains($prodCod, $searchLower) &&
+                        !str_contains($cliNom, $searchLower) &&
+                        !str_contains($numFact, $searchLower)
+                    ) {
+                        continue;
+                    }
+                }
+
+                $totalGeneralUnidades += $cantidad;
+                $totalGeneralMonto += $subtotal;
+                $porVendedor[$vId]['total_unidades'] += $cantidad;
+                $porVendedor[$vId]['total_monto'] += $subtotal;
+
+                // Acumulación en Vendedor
+                if (!isset($porVendedor[$vId]['productos'][$pId])) {
+                    $porVendedor[$vId]['productos'][$pId] = [
+                        'producto_id' => $pId,
+                        'codigo' => $prod?->codigo ?? 'N/A',
+                        'descripcion' => $prod?->descripcion ?? ('Producto #' . $pId),
+                        'nombre_completo' => $prod?->nombre_completo ?? $prod?->descripcion ?? ('Producto #' . $pId),
+                        'unidad' => $prod?->unidad ?? 'UND',
+                        'stock_actual' => (float) ($prod?->stock ?? 0),
+                        'cantidad_pendiente' => 0.0,
+                        'monto_pendiente' => 0.0,
+                        'pedidos' => [],
+                    ];
+                }
+
+                $porVendedor[$vId]['productos'][$pId]['cantidad_pendiente'] += $cantidad;
+                $porVendedor[$vId]['productos'][$pId]['monto_pendiente'] += $subtotal;
+                $porVendedor[$vId]['productos'][$pId]['pedidos'][] = [
+                    'pedido_id' => $pedido->id,
+                    'num_factura' => $pedido->num_factura,
+                    'cliente_id' => $pedido->cliente_id,
+                    'cliente_nombre' => $pedido->cliente?->nombre ?? 'N/A',
+                    'cantidad' => $cantidad,
+                    'precio_unitario' => (float) $detalle->precio_unitario,
+                    'subtotal' => $subtotal,
+                    'fecha_pedido' => $pedido->created_at?->format('Y-m-d H:i'),
+                ];
+
+                // Consolidado por Producto
+                if (!isset($porProducto[$pId])) {
+                    $porProducto[$pId] = [
+                        'producto_id' => $pId,
+                        'codigo' => $prod?->codigo ?? 'N/A',
+                        'descripcion' => $prod?->descripcion ?? ('Producto #' . $pId),
+                        'nombre_completo' => $prod?->nombre_completo ?? $prod?->descripcion ?? ('Producto #' . $pId),
+                        'unidad' => $prod?->unidad ?? 'UND',
+                        'stock_actual' => (float) ($prod?->stock ?? 0),
+                        'total_cantidad_pendiente' => 0.0,
+                        'total_monto_pendiente' => 0.0,
+                        'vendedores' => [],
+                    ];
+                }
+
+                $porProducto[$pId]['total_cantidad_pendiente'] += $cantidad;
+                $porProducto[$pId]['total_monto_pendiente'] += $subtotal;
+
+                if (!isset($porProducto[$pId]['vendedores'][$vId])) {
+                    $porProducto[$pId]['vendedores'][$vId] = [
+                        'vendedor_id' => $vId,
+                        'vendedor_nombre' => $vNombre,
+                        'cantidad' => 0.0,
+                        'monto' => 0.0,
+                    ];
+                }
+                $porProducto[$pId]['vendedores'][$vId]['cantidad'] += $cantidad;
+                $porProducto[$pId]['vendedores'][$vId]['monto'] += $subtotal;
+            }
+        }
+
+        // Limpiar vendedores sin productos resultantes
+        $vendedoresList = array_values(array_filter(array_map(function ($v) {
+            $v['productos'] = array_values($v['productos']);
+            unset($v['pedidos_ids']);
+            return $v;
+        }, $porVendedor), fn($v) => !empty($v['productos'])));
+
+        $productosList = array_values(array_map(function ($p) {
+            $p['vendedores'] = array_values($p['vendedores']);
+            return $p;
+        }, $porProducto));
+
+        return [
+            'resumen' => [
+                'total_pedidos' => count($pedidosIds),
+                'total_vendedores' => count($vendedoresList),
+                'total_productos_distintos' => count($productosList),
+                'total_unidades_pendientes' => $totalGeneralUnidades,
+                'total_monto_pendiente' => $totalGeneralMonto,
+            ],
+            'por_vendedor' => $vendedoresList,
+            'por_producto' => $productosList,
+        ];
+    }
 }

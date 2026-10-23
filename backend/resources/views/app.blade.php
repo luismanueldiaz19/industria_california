@@ -43,7 +43,7 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
-  <script src="flutter_bootstrap.js?v=20261023130405" async></script>
+  <script src="flutter_bootstrap.js?v=20261023154753" async></script>
 </body>
 
 </html>

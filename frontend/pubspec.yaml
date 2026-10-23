@@ -51,6 +51,7 @@ dependencies:
   top_snackbar_flutter: ^3.4.0
   pdf: ^3.12.0
   printing: ^5.14.3
+  showcaseview: ^5.1.0
 
 dev_dependencies:
   flutter_test:

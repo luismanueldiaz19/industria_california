@@ -245,6 +245,13 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                     'Categorías',
                                     accentColor,
                                   ),
+                                  _buildMenuItem(
+                                    29,
+                                    Icons.pending_actions_outlined,
+                                    Icons.pending_actions_rounded,
+                                    'Productos por Entregar',
+                                    accentColor,
+                                  ),
                                 ],
                               ),
                               _buildExpansionSection(

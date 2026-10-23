@@ -260,27 +260,16 @@ class _GastosEstadisticasScreenState extends State<GastosEstadisticasScreen> {
                       ),
                       for (int i = 1; i <= 12; i++)
                         DataCell(
-                          Text(
-                            fmt.format(data[key]![i] ?? 0.0),
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 12,
-                            ),
-                          ),
+                          _buildCellNumber(data[key]![i] ?? 0.0, fmt),
                         ),
                       DataCell(
-                        Text(
-                          fmt.format(
-                            List.generate(
-                              12,
-                              (i) => data[key]![i + 1] ?? 0.0,
-                            ).fold(0.0, (a, b) => a + b),
-                          ),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontSize: 13,
-                          ),
+                        _buildCellNumber(
+                          List.generate(
+                            12,
+                            (i) => data[key]![i + 1] ?? 0.0,
+                          ).fold(0.0, (a, b) => a + b),
+                          fmt,
+                          isRowTotal: true,
                         ),
                       ),
                     ],
@@ -300,24 +289,10 @@ class _GastosEstadisticasScreenState extends State<GastosEstadisticasScreen> {
                     ),
                     for (int i = 0; i < 12; i++)
                       DataCell(
-                        Text(
-                          fmt.format(totalesMes[i]),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
-                        ),
+                        _buildTotalGeneralCell(totalesMes[i], fmt),
                       ),
                     DataCell(
-                      Text(
-                        fmt.format(granTotal),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFE31E24),
-                          fontSize: 14,
-                        ),
-                      ),
+                      _buildTotalGeneralCell(granTotal, fmt, isGranTotal: true),
                     ),
                   ],
                 ),
@@ -326,6 +301,129 @@ class _GastosEstadisticasScreenState extends State<GastosEstadisticasScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Construye la celda numérica destacando los meses donde hubo gastos reales (> 0)
+  /// y atenuando los ceros (0.00) para facilitar la lectura inmediata de datos.
+  Widget _buildCellNumber(
+    double val,
+    NumberFormat fmt, {
+    bool isRowTotal = false,
+  }) {
+    if (val <= 0.0) {
+      return Text(
+        '0.00',
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.22),
+          fontSize: 11.5,
+          fontWeight: FontWeight.normal,
+        ),
+      );
+    }
+
+    if (isRowTotal) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2563EB).withValues(alpha: 0.20),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: const Color(0xFF3B82F6).withValues(alpha: 0.45),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          fmt.format(val),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF93C5FD), // Azul celeste brillante
+            fontSize: 12.5,
+          ),
+        ),
+      );
+    }
+
+    // Celda de mes con gasto real (> 0): badge suave con texto blanco brillante
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: const Color(0xFF38BDF8).withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: const Color(0xFF38BDF8).withValues(alpha: 0.4),
+          width: 0.8,
+        ),
+      ),
+      child: Text(
+        fmt.format(val),
+        style: const TextStyle(
+          color: Colors.white, // Blanco brillante nítido
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  /// Construye la celda para la fila de Total General
+  Widget _buildTotalGeneralCell(
+    double val,
+    NumberFormat fmt, {
+    bool isGranTotal = false,
+  }) {
+    if (val <= 0.0) {
+      return Text(
+        '0.00',
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.22),
+          fontSize: 11.5,
+          fontWeight: FontWeight.normal,
+        ),
+      );
+    }
+
+    if (isGranTotal) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+        decoration: BoxDecoration(
+          color: const Color(0xFFDC2626).withValues(alpha: 0.25),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: const Color(0xFFEF4444).withValues(alpha: 0.6),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          fmt.format(val),
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            color: Color(0xFFFCA5A5), // Rojo destacado
+            fontSize: 13.5,
+          ),
+        ),
+      );
+    }
+
+    // Mes en Total General con gastos acumulados (> 0)
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16A34A).withValues(alpha: 0.20),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: const Color(0xFF22C55E).withValues(alpha: 0.45),
+          width: 0.8,
+        ),
+      ),
+      child: Text(
+        fmt.format(val),
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF86EFAC), // Verde brillante
+          fontSize: 12,
+        ),
+      ),
     );
   }
 }

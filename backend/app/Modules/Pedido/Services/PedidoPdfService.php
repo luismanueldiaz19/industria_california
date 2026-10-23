@@ -154,6 +154,28 @@ class PedidoPdfService
                 $filename = 'Reporte_Vendedores_Pedidos_' . date('Ymd_His') . '.pdf';
                 break;
 
+            case 'productos_pendientes_entrega':
+                $datos = app(PedidoService::class)->obtenerReporteProductosPendientesEntrega($params);
+
+                $vendedorNombre = null;
+                if (!empty($params['vendedor_id'])) {
+                    $vendedor = \App\Models\User::find($params['vendedor_id']);
+                    $vendedorNombre = $vendedor?->name;
+                }
+
+                $pdf = Pdf::loadView('pdf.productos_pendientes_entrega', [
+                    'resumen'         => $datos['resumen'],
+                    'porVendedor'     => $datos['por_vendedor'],
+                    'porProducto'     => $datos['por_producto'],
+                    'vista'           => $params['vista'] ?? 'vendedor',
+                    'vendedorNombre'  => $vendedorNombre,
+                    'search'          => $params['search'] ?? null,
+                    'fechaGeneracion' => now()->subHours(4)->format('d/m/Y h:i A'),
+                ])->setPaper('a4', 'landscape');
+
+                $filename = 'Productos_Pendientes_Entrega_' . date('Ymd_His') . '.pdf';
+                break;
+
             default:
                 abort(404, 'Tipo de documento de pedido no soportado.');
         }

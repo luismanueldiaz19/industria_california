@@ -19,15 +19,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('pedidos/{pedido}/items/{detalle}', [PedidoController::class, 'updateItem']);
     Route::delete('pedidos/{pedido}/items/{detalle}', [PedidoController::class, 'deleteItem']);
 
-    // URLs de Reportes PDF
+    // Reporte de Productos Facturados Pendientes de Entrega por Vendedor (Rutas Estáticas de Mayor Prioridad)
+    Route::get('pedidos/productos-pendientes-entrega/pdf-url', [PedidoController::class, 'getProductosPendientesEntregaPdfUrl']);
+    Route::get('pedidos/productos-pendientes-entrega', [PedidoController::class, 'reporteProductosPendientesEntrega']);
+    Route::get('pedidos-productos-pendientes-pdf-url', [PedidoController::class, 'getProductosPendientesEntregaPdfUrl']);
+
+    // URLs de Reportes PDF Generales
     Route::get('pedidos-pdf-url', [PedidoController::class, 'getGeneralPdfUrl']);
     Route::get('pedidos/pdf-url', [PedidoController::class, 'getGeneralPdfUrl']);
-    Route::get('pedidos/{id}/pdf-url', [PedidoController::class, 'getPdfUrl']);
 
     // Reportes de Vendedores
+    Route::get('pedidos/reporte-vendedores/pdf-url', [PedidoController::class, 'getReporteVendedoresPdfUrl']);
     Route::get('pedidos/reporte-vendedores', [PedidoController::class, 'reporteVendedores']);
     Route::get('pedidos-vendedores-pdf-url', [PedidoController::class, 'getReporteVendedoresPdfUrl']);
-    Route::get('pedidos/reporte-vendedores/pdf-url', [PedidoController::class, 'getReporteVendedoresPdfUrl']);
+
+    // URLs de Reportes PDF Individuales (Con Parámetro Numérico)
+    Route::get('pedidos/{id}/pdf-url', [PedidoController::class, 'getPdfUrl'])->whereNumber('id');
 
     // CRUD Base
     Route::apiResource('pedidos', PedidoController::class);
