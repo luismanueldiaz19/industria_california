@@ -210,10 +210,10 @@ class PedidoController extends Controller
             ], 422);
         }
 
-        if ($estadoActual === 'facturado' && $nuevoEstado !== 'facturado') {
+        if ($estadoActual === 'facturado' && !in_array($nuevoEstado, ['facturado', 'entregado'], true)) {
             return response()->json([
-                'message' => 'Un pedido FACTURADO no puede cambiar a ningún otro estado.',
-                'errors' => ['estado' => ['Un pedido en estado FACTURADO no puede ser modificado a otro estado.']]
+                'message' => 'Un pedido FACTURADO no puede cambiar a ningún otro estado excepto ENTREGADO.',
+                'errors' => ['estado' => ['Un pedido en estado FACTURADO solo puede cambiar a ENTREGADO.']]
             ], 422);
         }
         
@@ -289,10 +289,10 @@ class PedidoController extends Controller
             'nota_produccion' => 'nullable|string|max:2000',
         ]);
 
-        if ($estadoActual === 'facturado' && $request->has('estado') && $request->estado !== 'facturado') {
+        if ($estadoActual === 'facturado' && $request->has('estado') && !in_array($request->estado, ['facturado', 'entregado'], true)) {
             return response()->json([
-                'message' => 'Un pedido FACTURADO no puede cambiar a ningún otro estado.',
-                'errors' => ['estado' => ['Un pedido en estado FACTURADO no puede ser modificado a otro estado.']]
+                'message' => 'Un pedido FACTURADO no puede cambiar a ningún otro estado excepto ENTREGADO.',
+                'errors' => ['estado' => ['Un pedido en estado FACTURADO solo puede cambiar a ENTREGADO.']]
             ], 422);
         }
 

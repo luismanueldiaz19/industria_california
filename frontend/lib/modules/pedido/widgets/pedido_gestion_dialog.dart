@@ -77,8 +77,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
   late final List<String> _estadosDisponibles;
 
   bool get _esEntregado =>
-      _pedido.estado.toLowerCase() == 'entregado' ||
-      _estadoSeleccionado.toLowerCase() == 'entregado';
+      _pedido.estado.toLowerCase() == 'entregado';
 
   bool get _esFacturado =>
       _pedido.estado.toLowerCase() == 'facturado' ||
@@ -103,25 +102,26 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
     final estadoOriginal = _pedido.estado.toLowerCase();
     _estadoSeleccionado = estadoOriginal;
 
-    // Reglas de transición solicitadas:
+    // Reglas de transición:
     // 0. Entregado: ya pasó por despacho y finalizó su ciclo, totalmente bloqueado.
-    // 1. Facturado no puede cambiar a ningún otro.
-    // 2. Enviado puede ponerse en borrador, facturado o cancelado.
-    // 3. Cotización puede ponerse en borrador, facturar o cancelar.
+    // 1. Facturado puede mantenerse o marcarse como entregado.
+    // 2. Enviado puede ponerse en borrador, facturado, entregado o cancelado.
+    // 3. Cotización puede ponerse en borrador, enviado, facturado, entregado o cancelado.
     // 4. Cancelado queda cerrado.
-    // 5. Borrador puede pasar a cotización, enviado, facturado o cancelado.
+    // 5. Borrador puede pasar a cotización, enviado, facturado, entregado o cancelado.
     switch (estadoOriginal) {
       case 'entregado':
         _estadosDisponibles = const ['entregado'];
         break;
       case 'facturado':
-        _estadosDisponibles = const ['facturado'];
+        _estadosDisponibles = const ['facturado', 'entregado'];
         break;
       case 'enviado':
         _estadosDisponibles = const [
           'enviado',
           'borrador',
           'facturado',
+          'entregado',
           'cancelado',
         ];
         break;
@@ -129,7 +129,9 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
         _estadosDisponibles = const [
           'cotizacion',
           'borrador',
+          'enviado',
           'facturado',
+          'entregado',
           'cancelado',
         ];
         break;
@@ -143,6 +145,7 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
           'enviado',
           'cotizacion',
           'facturado',
+          'entregado',
           'cancelado',
         ];
         break;
@@ -192,6 +195,58 @@ class _PedidoGestionDialogState extends State<PedidoGestionDialog> {
         '⚠️ Debes ingresar el número de factura para guardar el pedido como FACTURADO.',
       );
       return;
+    }
+
+    // Confirmación al marcar como ENTREGADO
+    if (_estadoSeleccionado.toLowerCase() == 'entregado' &&
+        _pedido.estado.toLowerCase() != 'entregado') {
+      final confirmar = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E2229),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: Color(0xFF374151)),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981), size: 22),
+              SizedBox(width: 8),
+              Text(
+                'Marcar como ENTREGADO',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            '¿Deseas marcar el Pedido #${_pedido.id} como ENTREGADO?\n\nAl guardarlo, el pedido finalizará su ciclo de entrega y quedará protegido en modo solo lectura.',
+            style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('CANCELAR', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('CONFIRMAR ENTREGA', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmar != true) return;
+      if (!mounted) return;
     }
 
     if (!_formKey.currentState!.validate()) return;

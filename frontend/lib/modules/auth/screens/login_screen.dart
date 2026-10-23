@@ -40,11 +40,11 @@ class _LoginScreenState extends State<LoginScreen>
 
     _formSlideAnimation =
         Tween<Offset>(begin: const Offset(0.12, 0.0), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _formAnimController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+      CurvedAnimation(
+        parent: _formAnimController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
 
     _formFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _formAnimController, curve: Curves.easeOut),
@@ -292,10 +292,10 @@ class _LoginScreenState extends State<LoginScreen>
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) =>
                             const Icon(
-                              Icons.business,
-                              color: Color(0xFFE31E24),
-                              size: 35,
-                            ),
+                          Icons.business,
+                          color: Color(0xFFE31E24),
+                          size: 35,
+                        ),
                       ),
                     ),
                   ),

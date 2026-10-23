@@ -133,8 +133,8 @@ class PedidoService
                 throw new \InvalidArgumentException('Un pedido ENTREGADO no puede cambiar a ningún otro estado ya que finalizó su ciclo de despacho.');
             }
 
-            if ($estadoAnterior === 'facturado' && $nuevoEstado !== 'facturado') {
-                throw new \InvalidArgumentException('Un pedido FACTURADO no puede cambiar a ningún otro estado.');
+            if ($estadoAnterior === 'facturado' && !in_array($nuevoEstado, ['facturado', 'entregado'], true)) {
+                throw new \InvalidArgumentException('Un pedido FACTURADO no puede cambiar a ningún otro estado excepto ENTREGADO.');
             }
 
             if ($nuevoEstado === 'facturado' || $nuevoEstado === 'cancelado') {
@@ -148,13 +148,33 @@ class PedidoService
             $pedido->estado = $nuevoEstado;
             $pedido->save();
 
-            // Si pasa de borrador o cotización a enviado o facturado -> deducir
-            if (in_array($estadoAnterior, ['borrador', 'cotizacion'], true) && in_array($nuevoEstado, ['enviado', 'facturado'], true)) {
+            // Si pasa de borrador o cotización a enviado, facturado o entregado -> deducir
+            if (in_array($estadoAnterior, ['borrador', 'cotizacion'], true) && in_array($nuevoEstado, ['enviado', 'facturado', 'entregado'], true)) {
                 $this->deducirInventario($pedido->load('detalles'));
             } 
             // Si pasa de enviado a borrador o cancelado -> restaurar inventario
             elseif ($estadoAnterior === 'enviado' && in_array($nuevoEstado, ['borrador', 'cancelado'], true)) {
                 $this->restaurarInventario($pedido->load('detalles'));
+            }
+
+            if ($nuevoEstado === 'entregado') {
+                DB::table('camion_victual_pedido')
+                    ->where('pedido_id', $pedido->id)
+                    ->where('estado_entrega', '!=', 'entregado')
+                    ->update([
+                        'estado_entrega' => 'entregado',
+                        'fecha_entregado' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                DB::table('camion_viaje_pedidos')
+                    ->where('pedido_id', $pedido->id)
+                    ->where('estado_entrega', '!=', 'entregado')
+                    ->update([
+                        'estado_entrega' => 'entregado',
+                        'fecha_entregado' => now(),
+                        'updated_at' => now(),
+                    ]);
             }
 
             return $pedido;
@@ -196,8 +216,8 @@ class PedidoService
                 $anteriorValor = is_string($estadoAnterior) ? $estadoAnterior : (is_object($estadoAnterior) ? $estadoAnterior->value : strval($estadoAnterior));
                 
                 if ($nuevoEstado !== $anteriorValor) {
-                    if ($anteriorValor === 'facturado') {
-                        throw new \InvalidArgumentException('Un pedido FACTURADO no puede cambiar a ningún otro estado.');
+                    if ($anteriorValor === 'facturado' && $nuevoEstado !== 'entregado') {
+                        throw new \InvalidArgumentException('Un pedido FACTURADO no puede cambiar a ningún otro estado excepto ENTREGADO.');
                     }
 
                     if ($nuevoEstado === 'facturado' || $nuevoEstado === 'cancelado') {
@@ -205,13 +225,33 @@ class PedidoService
                     }
                     $pedido->estado = $nuevoEstado;
 
-                    // Si pasa de borrador o cotización a enviado o facturado -> deducir
-                    if (in_array($anteriorValor, ['borrador', 'cotizacion'], true) && in_array($nuevoEstado, ['enviado', 'facturado'], true)) {
+                    // Si pasa de borrador o cotización a enviado, facturado o entregado -> deducir
+                    if (in_array($anteriorValor, ['borrador', 'cotizacion'], true) && in_array($nuevoEstado, ['enviado', 'facturado', 'entregado'], true)) {
                         $this->deducirInventario($pedido->load('detalles'));
                     } 
                     // Si pasa de enviado a borrador o cancelado -> restaurar inventario
                     elseif ($anteriorValor === 'enviado' && in_array($nuevoEstado, ['borrador', 'cancelado'], true)) {
                         $this->restaurarInventario($pedido->load('detalles'));
+                    }
+
+                    if ($nuevoEstado === 'entregado') {
+                        DB::table('camion_victual_pedido')
+                            ->where('pedido_id', $pedido->id)
+                            ->where('estado_entrega', '!=', 'entregado')
+                            ->update([
+                                'estado_entrega' => 'entregado',
+                                'fecha_entregado' => now(),
+                                'updated_at' => now(),
+                            ]);
+
+                        DB::table('camion_viaje_pedidos')
+                            ->where('pedido_id', $pedido->id)
+                            ->where('estado_entrega', '!=', 'entregado')
+                            ->update([
+                                'estado_entrega' => 'entregado',
+                                'fecha_entregado' => now(),
+                                'updated_at' => now(),
+                            ]);
                     }
                 }
             }

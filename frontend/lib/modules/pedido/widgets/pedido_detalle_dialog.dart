@@ -30,8 +30,10 @@ class _PedidoDetalleDialogState extends State<PedidoDetalleDialog> {
 
   static final Map<String, Color> _estadoColor = {
     'borrador': const Color(0xFFFF9800),
+    'cotizacion': const Color(0xFF9C27B0),
     'enviado': _accentBlue,
     'facturado': const Color(0xFF4CAF50),
+    'entregado': const Color(0xFF10B981),
     'cancelado': const Color(0xFFE31E24),
   };
 
