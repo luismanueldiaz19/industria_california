@@ -19,6 +19,7 @@ class Alerta extends Model
     protected $fillable = [
         'ledhouse_cxc_id',
         'vendedor_id',
+        'grupo_pago_id',
         'tipo',
         'monto_informado',
         'nota',
@@ -53,6 +54,20 @@ class Alerta extends Model
     public function evidencias(): HasMany
     {
         return $this->hasMany(AlertaEvidencia::class, 'alerta_id');
+    }
+
+    /**
+     * Todas las alertas que pertenecen al mismo pago agrupado (incluida esta).
+     * Si la alerta no pertenece a un grupo, la relación devuelve una colección vacía.
+     */
+    public function grupoAlertas(): HasMany
+    {
+        return $this->hasMany(Alerta::class, 'grupo_pago_id', 'grupo_pago_id');
+    }
+
+    public function esPagoAgrupado(): bool
+    {
+        return !empty($this->grupo_pago_id);
     }
 
     public function isPendiente(): bool

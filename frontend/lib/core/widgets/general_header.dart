@@ -11,6 +11,7 @@ class GeneralHeader extends StatelessWidget {
   final List<Color>? gradientColors;
   final bool showBackButton;
   final VoidCallback? onBackPressed;
+  final bool isCompact;
 
   const GeneralHeader({
     super.key,
@@ -22,6 +23,7 @@ class GeneralHeader extends StatelessWidget {
     this.gradientColors,
     this.showBackButton = false,
     this.onBackPressed,
+    this.isCompact = false,
   });
 
   @override
@@ -32,6 +34,14 @@ class GeneralHeader extends StatelessWidget {
 
     final shouldShowBack = showBackButton || onBackPressed != null;
 
+    final effectivePadding = isCompact
+        ? const EdgeInsets.fromLTRB(14, 10, 10, 10)
+        : const EdgeInsets.fromLTRB(24, 20, 16, 20);
+
+    final iconBoxSize = isCompact ? 36.0 : 44.0;
+    final iconInnerSize = isCompact ? 20.0 : 24.0;
+    final titleFontSize = isCompact ? 15.0 : 18.0;
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -40,7 +50,7 @@ class GeneralHeader extends StatelessWidget {
           colors: colorsToUse,
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+      padding: effectivePadding,
       child: Row(
         children: [
           if (shouldShowBack) ...[
@@ -52,21 +62,22 @@ class GeneralHeader extends StatelessWidget {
               constraints: const BoxConstraints(),
               tooltip: 'Volver',
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: isCompact ? 8 : 12),
           ],
           Container(
-            width: 44,
-            height: 44,
+            width: iconBoxSize,
+            height: iconBoxSize,
             decoration: BoxDecoration(
               color: iconColor.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(isCompact ? 10 : 12),
             ),
-            child: Icon(icon, color: iconColor, size: 24),
+            child: Icon(icon, color: iconColor, size: iconInnerSize),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: isCompact ? 10 : 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -74,9 +85,9 @@ class GeneralHeader extends StatelessWidget {
                     Flexible(
                       child: Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: titleFontSize,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.2,
                         ),
@@ -84,10 +95,10 @@ class GeneralHeader extends StatelessWidget {
                       ),
                     ),
                     if (isDemoMode) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
+                          horizontal: 6,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
@@ -103,17 +114,17 @@ class GeneralHeader extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.info_outline,
-                              size: 11,
+                              size: 10,
                               color: Colors.amberAccent,
                             ),
-                            SizedBox(width: 3),
+                            SizedBox(width: 2),
                             Text(
                               'DEMO',
                               style: TextStyle(
                                 color: Colors.amberAccent,
-                                fontSize: 10,
+                                fontSize: 9.5,
                                 fontWeight: FontWeight.bold,
-                                letterSpacing: 0.8,
+                                letterSpacing: 0.6,
                               ),
                             ),
                           ],
@@ -126,19 +137,18 @@ class GeneralHeader extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
-                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.70),
+                      fontSize: isCompact ? 11 : 12,
+                      fontWeight: FontWeight.w500,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
               ],
             ),
           ),
           if (actions != null && actions!.isNotEmpty)
-            Wrap(
-              alignment: WrapAlignment.end,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 0,
-              runSpacing: 4,
+            Row(
+              mainAxisSize: MainAxisSize.min,
               children: actions!,
             ),
         ],
@@ -152,6 +162,8 @@ class HeaderButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback? onTap;
   final Color color;
+  final double size;
+  final double iconSize;
 
   const HeaderButton({
     super.key,
@@ -159,29 +171,33 @@ class HeaderButton extends StatelessWidget {
     required this.tooltip,
     this.onTap,
     this.color = Colors.white,
+    this.size = 44,
+    this.iconSize = 22,
   });
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(size <= 36 ? 9 : 12);
+
     return Padding(
-      padding: const EdgeInsets.only(right: 4.0),
+      padding: EdgeInsets.only(right: size <= 36 ? 3.0 : 4.0),
       child: Tooltip(
         message: tooltip,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: borderRadius,
           child: Container(
-            width: 44,
-            height: 44,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: borderRadius,
               border: Border.all(
                 color: color.withValues(alpha: 0.25),
                 width: 1,
               ),
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: iconSize),
           ),
         ),
       ),

@@ -1,13 +1,18 @@
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/widgets/general_header.dart';
+import '../../../core/widgets/compact_info_banner.dart';
 import '../../../core/utils/formatters.dart';
 import '../services/vendedor_cxc_service.dart';
+import '../widgets/cxc_filter_bar.dart';
+import '../widgets/vendedor_pago_agrupado_dialog.dart';
 import 'vendedor_cxc_detalle_screen.dart';
 
 class VendedorCxcScreen extends StatefulWidget {
@@ -35,6 +40,16 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
   bool _conAlerta = false;
   String? _ordenMonto;
 
+  // Selección múltiple para pago agrupado
+  bool _modoSeleccion = false;
+  final Set<int> _seleccionadosIds = {};
+  int? _clienteSeleccionadoId;
+
+  // Showcase keys para onboarding interactivo
+  final GlobalKey _keyBotonSeleccion = GlobalKey();
+  final GlobalKey _keyPrimerFactura = GlobalKey();
+  bool _mostrarBannerTip = true;
+
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   Timer? _debounce;
@@ -43,6 +58,95 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+
+    // Configuración moderna de ShowcaseView con botón de omitir y navegación
+    ShowcaseView.register(
+      enableAutoScroll: true,
+      blurValue: 1.5,
+      globalFloatingActionWidget: (showcaseContext) => FloatingActionWidget(
+        top: 16,
+        right: 16,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.90),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+          ),
+          child: TextButton.icon(
+            onPressed: () => ShowcaseView.get().dismiss(),
+            icon: const Icon(Icons.close, color: Colors.white, size: 14),
+            label: const Text(
+              'Omitir Tour',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
+      globalTooltipActionConfig: const TooltipActionConfig(
+        position: TooltipActionPosition.inside,
+        alignment: MainAxisAlignment.spaceBetween,
+        gapBetweenContentAndAction: 14,
+      ),
+      globalTooltipActions: [
+        TooltipActionButton(
+          type: TooltipDefaultActionType.previous,
+          name: 'Anterior',
+          backgroundColor: AppTheme.secondaryBlue,
+          borderRadius: const BorderRadius.all(Radius.circular(6)),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          textStyle: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+          leadIcon: const ActionButtonIcon(
+            icon: Icon(
+              Icons.arrow_back_ios_rounded,
+              size: 11,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        TooltipActionButton(
+          type: TooltipDefaultActionType.skip,
+          name: 'Omitir',
+          backgroundColor: const Color(0xFFF1F5F9),
+          border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
+          borderRadius: const BorderRadius.all(Radius.circular(6)),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          textStyle: const TextStyle(
+            color: Color(0xFF475569),
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        TooltipActionButton(
+          type: TooltipDefaultActionType.next,
+          name: 'Siguiente',
+          backgroundColor: AppTheme.primaryBlue,
+          borderRadius: const BorderRadius.all(Radius.circular(6)),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          textStyle: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+          tailIcon: const ActionButtonIcon(
+            icon: Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 11,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    _cargarPreferenciaBanner();
     _load();
   }
 
@@ -111,6 +215,9 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
               0;
         }
       });
+      if (items.isNotEmpty) {
+        _verificarYEjecutarTour();
+      }
     } catch (e) {
       if (mounted) {
         CompactSnackBar.showError(context, 'Error: $e');
@@ -118,6 +225,49 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _cargarPreferenciaBanner() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool dismissed =
+        prefs.getBool('cxc_pago_agrupado_banner_dismissed_v1') ?? false;
+    if (mounted && dismissed) {
+      setState(() => _mostrarBannerTip = false);
+    }
+  }
+
+  Future<void> _verificarYEjecutarTour({bool forzar = false}) async {
+    if (!mounted || _cxcs.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    final bool yaVisto = prefs.getBool('tour_pago_agrupado_cxc_v1') ?? false;
+
+    if ((!yaVisto || forzar) && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _cxcs.isEmpty) return;
+        ShowcaseView.get().startShowCase([
+          _keyBotonSeleccion,
+          _keyPrimerFactura,
+        ]);
+      });
+      await prefs.setBool('tour_pago_agrupado_cxc_v1', true);
+    }
+  }
+
+  void _iniciarTourManualmente() {
+    if (_cxcs.isEmpty) {
+      CompactSnackBar.showInfo(
+        context,
+        'No hay facturas cargadas en la lista para mostrar el tour interactivo.',
+      );
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ShowcaseView.get().startShowCase([
+        _keyBotonSeleccion,
+        _keyPrimerFactura,
+      ]);
+    });
   }
 
   Future<void> _loadMore() async {
@@ -204,172 +354,143 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
       body: Column(
         children: [
           GeneralHeader(
-            title: 'Cuentas por Cobrar \n$_totalRecords registros',
-            icon: Icons.money,
-            iconColor: Colors.green,
-            gradientColors: [AppTheme.primaryBlue, AppTheme.secondaryBlue],
-
+            title: 'Cuentas por Cobrar',
+            subtitle: '$_totalRecords facturas pendientes',
+            icon: Icons.receipt_long_rounded,
+            iconColor: Colors.greenAccent,
+            gradientColors: const [AppTheme.primaryBlue, AppTheme.secondaryBlue],
+            isCompact: true,
             actions: [
-              if (_cxcs.isNotEmpty)
+              if (_cxcs.isNotEmpty) ...[
+                Showcase(
+                  key: _keyBotonSeleccion,
+                  title: '1. Selección Múltiple',
+                  description:
+                      'Toca este botón para activar la selección de facturas de un mismo cliente y crear un Pago Agrupado con una sola foto de comprobante.',
+                  tooltipBackgroundColor: Colors.white,
+                  textColor: const Color(0xFF1E293B),
+                  titleTextStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryBlue,
+                  ),
+                  descTextStyle: const TextStyle(
+                    fontSize: 11.5,
+                    color: Color(0xFF334155),
+                    height: 1.35,
+                  ),
+                  tooltipBorderRadius: BorderRadius.circular(10),
+                  tooltipPadding: const EdgeInsets.all(14),
+                  targetPadding: const EdgeInsets.all(4),
+                  targetShapeBorder: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: HeaderButton(
+                    icon: _modoSeleccion
+                        ? Icons.close_rounded
+                        : Icons.checklist_rounded,
+                    tooltip: _modoSeleccion
+                        ? 'Cancelar selección'
+                        : 'Seleccionar para pago agrupado',
+                    color: _modoSeleccion ? Colors.orangeAccent : Colors.white,
+                    size: 34,
+                    iconSize: 18,
+                    onTap: () {
+                      setState(() {
+                        _modoSeleccion = !_modoSeleccion;
+                        if (!_modoSeleccion) {
+                          _seleccionadosIds.clear();
+                          _clienteSeleccionadoId = null;
+                        }
+                      });
+                    },
+                  ),
+                ),
                 HeaderButton(
                   icon: Icons.picture_as_pdf_rounded,
                   tooltip: 'Generar PDF',
                   color: Colors.redAccent,
+                  size: 34,
+                  iconSize: 18,
                   onTap: _openPdf,
                 ),
+              ],
+              HeaderButton(
+                icon: Icons.help_outline_rounded,
+                tooltip: 'Guía: ¿Cómo agrupar pagos?',
+                color: Colors.amberAccent,
+                size: 34,
+                iconSize: 18,
+                onTap: _iniciarTourManualmente,
+              ),
               HeaderButton(
                 icon: Icons.refresh_rounded,
                 tooltip: 'Actualizar',
+                size: 34,
+                iconSize: 18,
                 onTap: _load,
               ),
             ],
           ),
-          Material(
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: 40,
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: _onSearchChanged,
-                      style: const TextStyle(fontSize: 13),
-                      decoration: InputDecoration(
-                        hintText: 'Buscar documento o cliente...',
-                        hintStyle: const TextStyle(fontSize: 13),
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          color: Colors.grey,
-                          size: 20,
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CheckboxListTile(
-                          title: const Text(
-                            'Solo Vencidos',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                          value: _soloVencidos,
-                          onChanged: (val) {
-                            setState(() {
-                              _soloVencidos = val ?? false;
-                              _load();
-                            });
-                          },
-                          controlAffinity: ListTileControlAffinity.leading,
-                          contentPadding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                          activeColor: Colors.red.shade700,
-                        ),
-                      ),
-                      Expanded(
-                        child: CheckboxListTile(
-                          title: const Text(
-                            'Con Alerta',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                          value: _conAlerta,
-                          onChanged: (val) {
-                            setState(() {
-                              _conAlerta = val ?? false;
-                              _load();
-                            });
-                          },
-                          controlAffinity: ListTileControlAffinity.leading,
-                          contentPadding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                          activeColor: Colors.orange.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'Ordenar por monto: ',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        height: 30,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String?>(
-                            value: _ordenMonto,
-                            hint: const Text(
-                              'Por defecto',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black87,
-                            ),
-                            icon: const Icon(
-                              Icons.keyboard_arrow_down,
-                              size: 16,
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: null,
-                                child: Text('Por defecto (Fecha)'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'asc',
-                                child: Text('Menor a Mayor (ASC)'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'desc',
-                                child: Text('Mayor a Menor (DESC)'),
-                              ),
-                            ],
-                            onChanged: (val) {
-                              setState(() {
-                                _ordenMonto = val;
-                                _load();
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          CxcFilterBar(
+            searchController: _searchController,
+            onSearchChanged: _onSearchChanged,
+            onClearSearch: () {
+              _searchController.clear();
+              _onSearchChanged('');
+            },
+            soloVencidos: _soloVencidos,
+            onToggleVencidos: (val) {
+              setState(() {
+                _soloVencidos = val;
+                _load();
+              });
+            },
+            conAlerta: _conAlerta,
+            onToggleConAlerta: (val) {
+              setState(() {
+                _conAlerta = val;
+                _load();
+              });
+            },
+            ordenMonto: _ordenMonto,
+            onOrdenChanged: (val) {
+              setState(() {
+                _ordenMonto = val;
+                _load();
+              });
+            },
+            onResetFilters: () {
+              setState(() {
+                _searchController.clear();
+                _searchQuery = '';
+                _soloVencidos = false;
+                _conAlerta = false;
+                _ordenMonto = null;
+                _load();
+              });
+            },
           ),
+          if (_mostrarBannerTip && !_modoSeleccion && _cxcs.isNotEmpty)
+            CompactInfoBanner(
+              icon: Icons.touch_app_outlined,
+              iconColor: AppTheme.primaryBlue,
+              backgroundColor: const Color(0xFFEFF6FF),
+              borderColor: const Color(0xFFBFDBFE),
+              textColor: const Color(0xFF1E3A8A),
+              actionBackgroundColor: AppTheme.primaryBlue,
+              actionTextColor: Colors.white,
+              title: '💡 Tip Pago Agrupado:',
+              message:
+                  'Mantén presionada cualquier factura o usa el botón checklist en la cabecera para pagar varias facturas con una sola foto.',
+              actionLabel: 'Ver Guía',
+              onAction: _iniciarTourManualmente,
+              onDismiss: () async {
+                setState(() => _mostrarBannerTip = false);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('cxc_pago_agrupado_banner_dismissed_v1', true);
+              },
+            ),
           Expanded(
             child: _isLoading && _currentPage == 1
                 ? const Center(child: CircularProgressIndicator())
@@ -389,11 +510,40 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                             child: Center(child: CircularProgressIndicator()),
                           );
                         }
-                        return _buildCxcCard(_cxcs[i]);
+                        final card = _buildCxcCard(_cxcs[i]);
+                        if (i == 0) {
+                          return Showcase(
+                            key: _keyPrimerFactura,
+                            title: '2. Mantén Presionada la Factura',
+                            description:
+                                '¡Atajo rápido! Deja presionada (long-press) cualquier factura directamente para seleccionarla e iniciar un pago agrupado para este cliente.',
+                            tooltipBackgroundColor: Colors.white,
+                            textColor: const Color(0xFF1E293B),
+                            titleTextStyle: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryBlue,
+                            ),
+                            descTextStyle: const TextStyle(
+                              fontSize: 11.5,
+                              color: Color(0xFF334155),
+                              height: 1.35,
+                            ),
+                            tooltipBorderRadius: BorderRadius.circular(10),
+                            tooltipPadding: const EdgeInsets.all(14),
+                            targetPadding: const EdgeInsets.all(4),
+                            targetShapeBorder: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: card,
+                          );
+                        }
+                        return card;
                       },
                     ),
                   ),
           ),
+          if (_seleccionadosIds.isNotEmpty) _buildBarraPagoAgrupado(),
           if (_cxcs.isNotEmpty)
             _buildTotales(
               _totalFacturadoGlobal,
@@ -401,6 +551,101 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
               _totalVencidoGlobal,
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBarraPagoAgrupado() {
+    double totalSeleccionado = 0;
+    final facturas = <Map<String, dynamic>>[];
+    for (var c in _cxcs) {
+      final id = int.tryParse(c['id']?.toString() ?? '0') ?? 0;
+      if (_seleccionadosIds.contains(id)) {
+        facturas.add(Map<String, dynamic>.from(c));
+        totalSeleccionado +=
+            double.tryParse(c['monto_pendiente']?.toString() ?? '0') ?? 0;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade800,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        bottom: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${_seleccionadosIds.length} facturas seleccionadas',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    'Total pendiente: ${Formatters.formatCurrency(totalSeleccionado)}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                if (facturas.length < 2) {
+                  CompactSnackBar.showWarning(
+                    context,
+                    'Selecciona al menos 2 facturas para pago agrupado',
+                  );
+                  return;
+                }
+                VendedorPagoAgrupadoDialog.show(
+                  context: context,
+                  facturas: facturas,
+                  onSuccess: () {
+                    setState(() {
+                      _modoSeleccion = false;
+                      _seleccionadosIds.clear();
+                      _clienteSeleccionadoId = null;
+                    });
+                    _load();
+                  },
+                );
+              },
+              icon: const Icon(Icons.send_rounded, size: 14),
+              label: const Text(
+                'Pago Agrupado',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.orange.shade900,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -426,6 +671,21 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                 'FACTURADO',
                 Formatters.formatCurrency(_totalFacturadoGlobal),
                 AppTheme.primaryBlue,
+                onTap: () {
+                  if (_soloVencidos || _conAlerta) {
+                    setState(() {
+                      _soloVencidos = false;
+                      _conAlerta = false;
+                      _load();
+                    });
+                    CompactSnackBar.showInfo(
+                      context,
+                      'Mostrando todas las facturas',
+                    );
+                  }
+                },
+                isActive: false,
+                tooltip: 'Total facturado en cartera',
               ),
             ),
             const SizedBox(width: 8),
@@ -434,6 +694,20 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                 'PENDIENTE',
                 Formatters.formatCurrency(_totalPendienteGlobal),
                 const Color(0xFFFB8C00),
+                onTap: () {
+                  if (_soloVencidos) {
+                    setState(() {
+                      _soloVencidos = false;
+                      _load();
+                    });
+                    CompactSnackBar.showInfo(
+                      context,
+                      'Mostrando facturas pendientes',
+                    );
+                  }
+                },
+                isActive: !_soloVencidos && !_conAlerta,
+                tooltip: 'Toca para ver todas las pendientes',
               ),
             ),
             const SizedBox(width: 8),
@@ -442,6 +716,20 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
                 'VENCIDO',
                 Formatters.formatCurrency(_totalVencidoGlobal),
                 Colors.red.shade700,
+                onTap: () {
+                  setState(() {
+                    _soloVencidos = !_soloVencidos;
+                    _load();
+                  });
+                  CompactSnackBar.showInfo(
+                    context,
+                    _soloVencidos
+                        ? 'Filtrando solo facturas vencidas'
+                        : 'Filtro de vencidas desactivado',
+                  );
+                },
+                isActive: _soloVencidos,
+                tooltip: 'Toca para filtrar solo vencidas',
               ),
             ),
           ],
@@ -450,40 +738,81 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
     );
   }
 
-  Widget _buildMiniTotalCard(String title, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
+  Widget _buildMiniTotalCard(
+    String title,
+    String value,
+    Color color, {
+    VoidCallback? onTap,
+    bool isActive = false,
+    String? tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip ?? title,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 8,
-              fontWeight: FontWeight.bold,
-              color: color,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          decoration: BoxDecoration(
+            color: isActive
+                ? color.withValues(alpha: 0.12)
+                : color.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isActive ? color : color.withValues(alpha: 0.2),
+              width: isActive ? 1.5 : 1,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
           ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: Colors.black87,
-              letterSpacing: -0.5,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                      letterSpacing: 0.3,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (isActive) ...[
+                    const SizedBox(width: 3),
+                    Icon(Icons.check_circle_rounded, size: 9, color: color),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  color: isActive ? color : const Color(0xFF0F172A),
+                  letterSpacing: -0.3,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -507,164 +836,337 @@ class _VendedorCxcScreenState extends State<VendedorCxcScreen> {
       } catch (_) {}
     }
 
-    final bgColor = isVencido ? Colors.red.shade50 : Colors.white;
+    final int id = int.tryParse(cxc['id']?.toString() ?? '0') ?? 0;
+    final bool isSelected = _seleccionadosIds.contains(id);
+    final int clienteId =
+        int.tryParse(cxc['cliente_id']?.toString() ?? '0') ?? 0;
+    final bool isDifferentClient =
+        _clienteSeleccionadoId != null &&
+        _clienteSeleccionadoId != clienteId &&
+        _seleccionadosIds.isNotEmpty;
+
+    final bgColor = isSelected
+        ? Colors.orange.shade50
+        : isVencido
+        ? Colors.red.shade50
+        : Colors.white;
+
+    final borderColor = isSelected
+        ? Colors.orange.shade700
+        : isDifferentClient && _modoSeleccion
+        ? Colors.grey.shade300
+        : Colors.transparent;
+
+    void onCardTap() {
+      if (_modoSeleccion) {
+        if (isDifferentClient) {
+          CompactSnackBar.showWarning(
+            context,
+            'Solo puedes agrupar facturas del mismo cliente',
+          );
+          return;
+        }
+        setState(() {
+          if (isSelected) {
+            _seleccionadosIds.remove(id);
+            if (_seleccionadosIds.isEmpty) {
+              _clienteSeleccionadoId = null;
+            }
+          } else {
+            _clienteSeleccionadoId = clienteId;
+            _seleccionadosIds.add(id);
+          }
+        });
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VendedorCxcDetalleScreen(cxcData: cxc),
+          ),
+        ).then((_) => _load());
+      }
+    }
+
+    void onCardLongPress() {
+      if (isDifferentClient && _modoSeleccion) {
+        CompactSnackBar.showWarning(
+          context,
+          'Solo puedes agrupar facturas del mismo cliente',
+        );
+        return;
+      }
+      setState(() {
+        _modoSeleccion = true;
+        if (isSelected) {
+          _seleccionadosIds.remove(id);
+          if (_seleccionadosIds.isEmpty) {
+            _clienteSeleccionadoId = null;
+          }
+        } else {
+          _clienteSeleccionadoId = clienteId;
+          _seleccionadosIds.add(id);
+        }
+      });
+    }
+
+    final String? fechaVenceRaw = cxc['fecha_vencimiento']?.toString();
+    String venceBadgeText = '';
+    Color venceBadgeColor = Colors.grey.shade600;
+    Color venceBadgeBg = Colors.grey.shade100;
+
+    if (fechaVenceRaw != null) {
+      final parsed = DateTime.tryParse(fechaVenceRaw);
+      if (parsed != null) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final due = DateTime(parsed.year, parsed.month, parsed.day);
+        final diff = due.difference(today).inDays;
+        if (diff < 0) {
+          venceBadgeText = 'Venció hace ${-diff}d';
+          venceBadgeColor = Colors.red.shade800;
+          venceBadgeBg = const Color(0xFFFEE2E2);
+        } else if (diff == 0) {
+          venceBadgeText = '¡Vence Hoy!';
+          venceBadgeColor = const Color(0xFFD97706);
+          venceBadgeBg = const Color(0xFFFEF3C7);
+        } else if (diff <= 5) {
+          venceBadgeText = 'Vence en ${diff}d';
+          venceBadgeColor = const Color(0xFFB45309);
+          venceBadgeBg = const Color(0xFFFFFBEB);
+        }
+      }
+    }
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => VendedorCxcDetalleScreen(cxcData: cxc),
-        ),
-      ).then((_) => _load()),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+      onTap: onCardTap,
+      onLongPress: onCardLongPress,
+      child: Opacity(
+        opacity: (isDifferentClient && _modoSeleccion) ? 0.45 : 1.0,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: borderColor,
+              width: isSelected ? 1.5 : 1,
             ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Barra vertical
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 4,
-              child: Container(color: color),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          cxc['documento'] ?? '-',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            color: Colors.grey.shade800,
-                            letterSpacing: 0.1,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (alertasPendientes > 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              margin: const EdgeInsets.only(right: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade100,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.notifications_active,
-                                    color: Colors.red,
-                                    size: 10,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '$alertasPendientes',
-                                    style: const TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
+            boxShadow: [
+              BoxShadow(
+                color: isSelected
+                    ? Colors.orange.withValues(alpha: 0.15)
+                    : Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Barra vertical de estado
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 4,
+                child: Container(
+                  color: isSelected ? Colors.orange.shade700 : color,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (_modoSeleccion)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: Icon(
+                              isSelected
+                                  ? Icons.check_circle_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                              size: 16,
+                              color: isSelected
+                                  ? Colors.orange.shade800
+                                  : Colors.grey.shade400,
                             ),
+                          ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F172A).withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.receipt_outlined,
+                                size: 11,
+                                color: Color(0xFF475569),
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                cxc['documento'] ?? '-',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12.5,
+                                  color: Color(0xFF0F172A),
+                                  fontFamily: 'monospace',
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        if (alertasPendientes > 0)
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
                               vertical: 2,
                             ),
+                            margin: const EdgeInsets.only(right: 5),
                             decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.1),
+                              color: Colors.red.shade50,
+                              border: Border.all(
+                                color: Colors.red.shade200,
+                                width: 0.8,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.notifications_active,
+                                  color: Colors.red,
+                                  size: 10,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '$alertasPendientes',
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (venceBadgeText.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            margin: const EdgeInsets.only(right: 5),
+                            decoration: BoxDecoration(
+                              color: venceBadgeBg,
+                              border: Border.all(
+                                color: venceBadgeColor.withValues(alpha: 0.3),
+                                width: 0.8,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              estado.toUpperCase(),
+                              venceBadgeText,
                               style: TextStyle(
-                                color: color,
-                                fontSize: 8,
+                                color: venceBadgeColor,
+                                fontSize: 8.5,
                                 fontWeight: FontWeight.bold,
-                                letterSpacing: 0.2,
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 12,
-                        color: Colors.grey.shade500,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          cxc['cliente']?['nombre']?.toString().toUpperCase() ??
-                              'SIN CLIENTE',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.1,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            estado.toUpperCase(),
+                            style: TextStyle(
+                              color: color,
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.2,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildMontoItem(
-                        'Pendiente',
-                        Formatters.formatCurrency(cxc['monto_pendiente']),
-                        Colors.orange.shade700,
-                      ),
-                      _buildMontoItem(
-                        'Factura',
-                        Formatters.formatCurrency(cxc['monto_factura']),
-                        Colors.blue.shade600,
-                      ),
-                      _buildMontoItem(
-                        'Vence',
-                        _formatDate(cxc['fecha_vencimiento']),
-                        isVencido ? Colors.red.shade700 : Colors.grey.shade700,
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.storefront_rounded,
+                          size: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            cxc['cliente']?['nombre']?.toString().toUpperCase() ??
+                                'SIN CLIENTE',
+                            style: TextStyle(
+                              color: Colors.grey.shade700,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.1,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        _buildMontoItem(
+                          'Pendiente',
+                          Formatters.formatCurrency(cxc['monto_pendiente']),
+                          const Color(0xFFD97706),
+                        ),
+                        _buildMontoItem(
+                          'Factura',
+                          Formatters.formatCurrency(cxc['monto_factura']),
+                          const Color(0xFF2563EB),
+                        ),
+                        _buildMontoItem(
+                          'Vencimiento',
+                          _formatDate(cxc['fecha_vencimiento']),
+                          isVencido ? Colors.red.shade700 : const Color(0xFF475569),
+                        ),
+                        if (!_modoSeleccion)
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 2),
+                            child: Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 11,
+                              color: Color(0xFFCBD5E1),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

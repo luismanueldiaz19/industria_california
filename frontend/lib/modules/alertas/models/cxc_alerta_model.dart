@@ -5,6 +5,7 @@ class CxcAlertaModel {
   final int id;
   final String tipo;
   final String estadoAlerta;
+  final String? grupoPagoId;
   final String? nota;
   final double? montoInformado;
   final String? fechaRevision;
@@ -13,11 +14,15 @@ class CxcAlertaModel {
   final UserModel? revisador;
   final CxcModel? cxc;
   final List<EvidenciaModel> evidencias;
+  final List<GrupoAlertaItemModel> grupoAlertas;
+
+  bool get esPagoAgrupado => grupoPagoId != null && grupoPagoId!.isNotEmpty;
 
   CxcAlertaModel({
     required this.id,
     required this.tipo,
     required this.estadoAlerta,
+    this.grupoPagoId,
     this.nota,
     this.montoInformado,
     this.fechaRevision,
@@ -26,6 +31,7 @@ class CxcAlertaModel {
     this.revisador,
     this.cxc,
     this.evidencias = const [],
+    this.grupoAlertas = const [],
   });
 
   factory CxcAlertaModel.fromJson(Map<String, dynamic> json) {
@@ -33,6 +39,7 @@ class CxcAlertaModel {
       id: json['id'] ?? 0,
       tipo: json['tipo'] ?? 'informacion',
       estadoAlerta: json['estado_alerta'] ?? 'pendiente',
+      grupoPagoId: json['grupo_pago_id'],
       nota: json['nota'],
       montoInformado: json['monto_informado'] != null
           ? double.tryParse(json['monto_informado'].toString())
@@ -51,6 +58,11 @@ class CxcAlertaModel {
               ?.map((e) => EvidenciaModel.fromJson(e))
               .toList() ??
           [],
+      grupoAlertas:
+          (json['grupo_alertas'] as List?)
+              ?.map((e) => GrupoAlertaItemModel.fromJson(e))
+              .toList() ??
+          [],
     );
   }
 
@@ -60,6 +72,7 @@ class CxcAlertaModel {
     "id": id,
     "tipo": tipo,
     "estado_alerta": estadoAlerta,
+    "grupo_pago_id": grupoPagoId,
     "nota": nota,
     "monto_informado": montoInformado,
     "fecha_revision": fechaRevision,
@@ -68,6 +81,7 @@ class CxcAlertaModel {
     "revisador": revisador?.toRawJson(),
     "cxc": cxc?.toRawJson(),
     "evidencias": List<dynamic>.from(evidencias.map((x) => x.toRawJson())),
+    "grupo_alertas": List<dynamic>.from(grupoAlertas.map((x) => x.toJson())),
   };
 }
 
@@ -235,5 +249,45 @@ class EvidenciaModel {
     "nombre_archivo": nombreArchivo,
     "ruta_archivo": rutaArchivo,
     "tipo_archivo": tipoArchivo,
+  };
+}
+
+class GrupoAlertaItemModel {
+  final int id;
+  final String? grupoPagoId;
+  final int ledhouseCxcId;
+  final double? montoInformado;
+  final String estadoAlerta;
+  final CxcModel? cxc;
+
+  GrupoAlertaItemModel({
+    required this.id,
+    this.grupoPagoId,
+    required this.ledhouseCxcId,
+    this.montoInformado,
+    required this.estadoAlerta,
+    this.cxc,
+  });
+
+  factory GrupoAlertaItemModel.fromJson(Map<String, dynamic> json) {
+    return GrupoAlertaItemModel(
+      id: json['id'] ?? 0,
+      grupoPagoId: json['grupo_pago_id'],
+      ledhouseCxcId: json['ledhouse_cxc_id'] ?? 0,
+      montoInformado: json['monto_informado'] != null
+          ? double.tryParse(json['monto_informado'].toString())
+          : null,
+      estadoAlerta: json['estado_alerta'] ?? 'pendiente',
+      cxc: json['cxc'] != null ? CxcModel.fromJson(json['cxc']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "grupo_pago_id": grupoPagoId,
+    "ledhouse_cxc_id": ledhouseCxcId,
+    "monto_informado": montoInformado,
+    "estado_alerta": estadoAlerta,
+    "cxc": cxc?.toJson(),
   };
 }

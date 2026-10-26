@@ -266,6 +266,47 @@ class AlertasDataTable extends StatelessWidget {
                   fontSize: 11,
                 ),
               ),
+              if (alerta.esPagoAgrupado)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Tooltip(
+                    message:
+                        'Pago agrupado (comparte comprobante con otras facturas)',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.purpleAccent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(3),
+                        border: Border.all(
+                          color: Colors.purpleAccent.withValues(alpha: 0.4),
+                          width: 0.7,
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.layers_rounded,
+                            size: 9,
+                            color: Colors.purpleAccent,
+                          ),
+                          SizedBox(width: 2),
+                          Text(
+                            'GRUPO',
+                            style: TextStyle(
+                              color: Colors.purpleAccent,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               if (tieneRepetidas)
                 Padding(
                   padding: const EdgeInsets.only(left: 4),

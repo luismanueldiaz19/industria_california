@@ -174,6 +174,82 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
     }
   }
 
+  // 1.1 Procesar todo el grupo de pago agrupado
+  Future<void> _procesarTodoElGrupo() async {
+    final grupoId = widget.alerta.grupoPagoId;
+    if (grupoId == null || grupoId.isEmpty) return;
+
+    final cant = widget.alerta.grupoAlertas.isNotEmpty
+        ? widget.alerta.grupoAlertas.length
+        : 'varias';
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.darkCardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppTheme.darkBorderColor),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.layers_rounded, color: Colors.purpleAccent, size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Procesar Pago Agrupado',
+              style: TextStyle(color: Colors.white, fontSize: 15),
+            ),
+          ],
+        ),
+        content: Text(
+          'Se procesarán todas las facturas asociadas a este pago ($cant facturas) '
+          'y se registrarán los abonos automáticamente a cada cuenta por cobrar.\n\n¿Deseas continuar?',
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purpleAccent.shade700,
+            ),
+            child: const Text(
+              'Procesar Todo el Grupo',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    setState(() => _isSaving = true);
+    try {
+      await _service.resolverGrupo(
+        grupoId: grupoId,
+        estadoAlerta: 'procesada',
+        actualizarCxc: true,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context);
+      widget.onUpdated();
+      CompactSnackBar.showSuccess(
+        context,
+        '¡Todas las facturas del pago agrupado fueron procesadas correctamente!',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      CompactSnackBar.showError(context, 'Error al procesar grupo: $e');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   // 2. Marcar como revisada solamente
   Future<void> _marcarRevisada() async {
     setState(() => _isSaving = true);
@@ -452,6 +528,11 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
                       ),
                     ),
                     const SizedBox(height: 14),
+
+                    if (widget.alerta.esPagoAgrupado) ...[
+                      _buildGrupoPagoCard(),
+                      const SizedBox(height: 14),
+                    ],
 
                     // Selector de Concepto
                     Row(
@@ -946,6 +1027,34 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
                     ),
                     const SizedBox(width: 8),
 
+                    if (widget.alerta.esPagoAgrupado) ...[
+                      ElevatedButton.icon(
+                        onPressed: (_isSaving || _isDeleting)
+                            ? null
+                            : _procesarTodoElGrupo,
+                        icon: const Icon(Icons.done_all_rounded, size: 14),
+                        label: const Text(
+                          'Procesar Grupo',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purpleAccent.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+
                     // Procesar y Guardar
                     ElevatedButton(
                       onPressed: (_isSaving || _isDeleting)
@@ -1017,6 +1126,136 @@ class _AlertaGestionDialogState extends State<AlertaGestionDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildGrupoPagoCard() {
+    final grupo = widget.alerta.grupoAlertas;
+    double totalGrupo = 0;
+    for (var g in grupo) {
+      totalGrupo += g.montoInformado ?? 0;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.purple.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.purpleAccent.withValues(alpha: 0.35),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.layers_rounded,
+                color: Colors.purpleAccent,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'PAGO AGRUPADO (${grupo.length} Facturas · Comprobante Único)',
+                  style: const TextStyle(
+                    color: Colors.purpleAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              if (totalGrupo > 0)
+                Text(
+                  'Total: ${_formatCurrency(totalGrupo)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'El vendedor subió una sola foto/comprobante distribuida en estas facturas:',
+            style: TextStyle(color: Colors.grey.shade400, fontSize: 10),
+          ),
+          const SizedBox(height: 8),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: grupo.length,
+            separatorBuilder: (_, _) => const Divider(
+              color: Colors.white12,
+              height: 8,
+            ),
+            itemBuilder: (context, index) {
+              final item = grupo[index];
+              final isCurrent = item.id == widget.alerta.id;
+              final isProc = item.estadoAlerta == 'procesada';
+
+              return Row(
+                children: [
+                  Icon(
+                    isCurrent
+                        ? Icons.arrow_right_rounded
+                        : Icons.circle,
+                    size: isCurrent ? 18 : 6,
+                    color: isCurrent ? Colors.purpleAccent : Colors.grey,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      item.cxc?.noFactura.isNotEmpty == true
+                          ? item.cxc!.noFactura
+                          : 'Factura #${item.ledhouseCxcId}',
+                      style: TextStyle(
+                        color: isCurrent ? Colors.white : Colors.white70,
+                        fontSize: 11,
+                        fontWeight:
+                            isCurrent ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    _formatCurrency(item.montoInformado),
+                    style: const TextStyle(
+                      color: Colors.greenAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 1.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (isProc ? Colors.green : Colors.orange)
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      isProc ? 'PROCESADA' : 'PENDIENTE',
+                      style: TextStyle(
+                        color:
+                            isProc ? Colors.greenAccent : Colors.orangeAccent,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }

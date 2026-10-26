@@ -14,8 +14,11 @@ use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Throwable;
 
 class AlertaService
 {
@@ -30,6 +33,8 @@ class AlertaService
             'vendedor:id,name,email',
             'revisador:id,name,email',
             'evidencias',
+            'grupoAlertas:id,grupo_pago_id,ledhouse_cxc_id,monto_informado,estado_alerta',
+            'grupoAlertas.cxc:id,documento,monto_factura,monto_pendiente,estado',
         ])->orderByDesc('created_at');
 
         // Restricción por rol: vendedor solo ve sus propias alertas
@@ -136,6 +141,209 @@ class AlertaService
     }
 
     /**
+     * Registra un PAGO AGRUPADO: un único comprobante que cubre varias facturas.
+     *
+     * - Crea una alerta por cada factura (con su propio monto_informado).
+     * - Todas comparten el mismo grupo_pago_id.
+     * - El archivo se guarda UNA sola vez y se crea un registro de evidencia por alerta
+     *   apuntando a la misma ruta física.
+     *
+     * @param array $datos ['tipo', 'nota', 'monto_total', 'items' => [['cxc_id', 'monto'], ...]]
+     */
+    public function crearLote(array $datos, UploadedFile $file, User $usuario): Collection
+    {
+        $items = collect($datos['items'] ?? [])->map(fn ($i) => [
+            'cxc_id' => (int) $i['cxc_id'],
+            'monto'  => round((float) $i['monto'], 2),
+        ])->values();
+
+        if ($items->count() < 2) {
+            throw new Exception('Un pago agrupado debe incluir al menos 2 facturas.');
+        }
+
+        if ($items->pluck('cxc_id')->unique()->count() !== $items->count()) {
+            throw new Exception('Hay facturas repetidas en el pago agrupado.');
+        }
+
+        $cxcs = LedhouseCxc::whereIn('id', $items->pluck('cxc_id'))->get()->keyBy('id');
+
+        if ($cxcs->count() !== $items->count()) {
+            throw new Exception('Una o más facturas seleccionadas no existen.');
+        }
+
+        if ($cxcs->pluck('cliente_id')->unique()->count() > 1) {
+            throw new Exception('Todas las facturas de un pago agrupado deben ser del mismo cliente.');
+        }
+
+        foreach ($items as $item) {
+            $cxc = $cxcs[$item['cxc_id']];
+
+            if ($usuario->hasRole('vendedor') && (int) $cxc->vendedor_id !== (int) $usuario->id) {
+                throw new Exception("No tienes permiso para alertar el documento {$cxc->documento}.");
+            }
+
+            if ($cxc->estado === 'pagado') {
+                throw new Exception("La factura {$cxc->documento} ya está pagada.");
+            }
+
+            if ($item['monto'] <= 0) {
+                throw new Exception("El monto asignado a {$cxc->documento} debe ser mayor que cero.");
+            }
+
+            if ($item['monto'] - (float) $cxc->monto_pendiente > 0.01) {
+                throw new Exception(sprintf(
+                    'El monto asignado a %s ($%s) supera su saldo pendiente ($%s).',
+                    $cxc->documento,
+                    number_format($item['monto'], 2),
+                    number_format((float) $cxc->monto_pendiente, 2)
+                ));
+            }
+        }
+
+        $total = round((float) $datos['monto_total'], 2);
+        $suma  = round($items->sum('monto'), 2);
+
+        if (abs($suma - $total) > 0.01) {
+            throw new Exception(sprintf(
+                'La suma repartida ($%s) no coincide con el monto total del pago ($%s).',
+                number_format($suma, 2),
+                number_format($total, 2)
+            ));
+        }
+
+        $grupoId = (string) Str::uuid();
+        $ext     = strtolower($file->getClientOriginalExtension());
+        $nombre  = $file->getClientOriginalName();
+        $path    = $file->store("cxc-evidencias/grupos/{$grupoId}", 'public');
+
+        $documentos = $items->map(fn ($i) => $cxcs[$i['cxc_id']]->documento)->implode(', ');
+        $nota = trim($datos['nota']) . "\n" . sprintf(
+            '[Pago agrupado: %d facturas (%s) · Total $%s]',
+            $items->count(),
+            $documentos,
+            number_format($total, 2)
+        );
+
+        try {
+            $ids = DB::transaction(function () use ($items, $grupoId, $usuario, $datos, $nota, $path, $nombre, $ext) {
+                $ids = [];
+
+                foreach ($items as $item) {
+                    $alerta = Alerta::create([
+                        'ledhouse_cxc_id' => $item['cxc_id'],
+                        'vendedor_id'     => $usuario->id,
+                        'grupo_pago_id'   => $grupoId,
+                        'tipo'            => $datos['tipo'],
+                        'monto_informado' => $item['monto'],
+                        'nota'            => $nota,
+                        'estado_alerta'   => EstadoAlerta::Pendiente,
+                    ]);
+
+                    AlertaEvidencia::create([
+                        'ledhouse_cxc_id' => $item['cxc_id'],
+                        'alerta_id'       => $alerta->id,
+                        'grupo_pago_id'   => $grupoId,
+                        'subido_por'      => $usuario->id,
+                        'nombre_archivo'  => $nombre,
+                        'ruta_archivo'    => $path,
+                        'tipo_archivo'    => $ext,
+                    ]);
+
+                    $ids[] = $alerta->id;
+                }
+
+                return $ids;
+            });
+        } catch (Throwable $e) {
+            // Si falla la BD, no dejar el archivo huérfano en disco
+            Storage::disk('public')->delete($path);
+            throw $e;
+        }
+
+        return Alerta::with([
+            'vendedor:id,name,email',
+            'cxc.cliente',
+            'evidencias',
+            'grupoAlertas:id,grupo_pago_id,ledhouse_cxc_id,monto_informado,estado_alerta',
+            'grupoAlertas.cxc:id,documento,monto_factura,monto_pendiente,estado',
+        ])->whereIn('id', $ids)->get();
+    }
+
+    /**
+     * Procesa todas las alertas pendientes de un pago agrupado en una sola operación.
+     *
+     * El monto de cada factura se toma de $datos['items'] (alerta_id => monto_pagado)
+     * o, si no se envía, del monto_informado por el vendedor. El monto se aplica como
+     * ABONO (se suma a lo ya pagado y se resta del pendiente).
+     */
+    public function resolverGrupo(string $grupoId, array $datos, User $revisor): Collection
+    {
+        $alertas = Alerta::with('cxc')->where('grupo_pago_id', $grupoId)->get();
+
+        if ($alertas->isEmpty()) {
+            throw new Exception('El pago agrupado no existe.');
+        }
+
+        $montos = collect($datos['items'] ?? [])->mapWithKeys(fn ($i) => [
+            (int) $i['alerta_id'] => round((float) $i['monto_pagado'], 2),
+        ]);
+
+        $actualizarCxc = !empty($datos['actualizar_cxc']);
+
+        DB::transaction(function () use ($alertas, $datos, $revisor, $montos, $actualizarCxc) {
+            foreach ($alertas as $alerta) {
+                if ($alerta->isProcesada()) {
+                    continue;
+                }
+
+                $alerta->update([
+                    'estado_alerta'  => $datos['estado_alerta'],
+                    'revisada_por'   => $revisor->id,
+                    'fecha_revision' => now(),
+                ]);
+
+                if ($actualizarCxc && $alerta->cxc) {
+                    $abono = $montos[$alerta->id] ?? (float) $alerta->monto_informado;
+                    if ($abono > 0) {
+                        $this->aplicarAbono($alerta->cxc, $abono);
+                    }
+                }
+            }
+        });
+
+        return Alerta::with([
+            'cxc.cliente',
+            'vendedor:id,name',
+            'revisador:id,name',
+            'evidencias',
+            'grupoAlertas:id,grupo_pago_id,ledhouse_cxc_id,monto_informado,estado_alerta',
+            'grupoAlertas.cxc:id,documento,monto_factura,monto_pendiente,estado',
+        ])->where('grupo_pago_id', $grupoId)->get();
+    }
+
+    /**
+     * Aplica un abono a una CXC: suma a lo pagado, resta del pendiente y marca
+     * como 'pagado' automáticamente cuando el saldo llega a cero.
+     */
+    private function aplicarAbono(LedhouseCxc $cxc, float $abono): void
+    {
+        $pendienteActual = (float) $cxc->monto_pendiente;
+        $abonoReal       = min($abono, $pendienteActual);
+        $nuevoPendiente  = max(0, round($pendienteActual - $abonoReal, 2));
+
+        $updates = [
+            'monto_pagado'    => round((float) $cxc->monto_pagado + $abonoReal, 2),
+            'monto_pendiente' => $nuevoPendiente,
+        ];
+
+        if ($nuevoPendiente <= 0.0001) {
+            $updates['estado'] = 'pagado';
+        }
+
+        $cxc->update($updates);
+    }
+
+    /**
      * Resuelve/procesa una alerta con la regla automática de negocio:
      * Si el monto pagado reportado es mayor o igual al saldo pendiente de la CXC,
      * la cuenta por cobrar se marca automáticamente en estado 'pagado'.
@@ -224,14 +432,15 @@ class AlertaService
                           ->whereNull('alerta_id');
                 })->get();
 
-            foreach ($evidencias as $ev) {
-                if ($ev->ruta_archivo && Storage::disk('public')->exists($ev->ruta_archivo)) {
-                    Storage::disk('public')->delete($ev->ruta_archivo);
-                }
-                $ev->delete();
-            }
+            $rutas = $evidencias->pluck('ruta_archivo')->filter()->unique();
 
+            AlertaEvidencia::whereIn('id', $evidencias->pluck('id'))->delete();
             $alerta->delete();
+
+            // Solo borrar el archivo físico si ninguna otra alerta del grupo lo usa
+            foreach ($rutas as $ruta) {
+                AlertaEvidencia::borrarArchivoSiHuerfano($ruta);
+            }
         });
     }
 

@@ -4,6 +4,8 @@ namespace App\Modules\Alerta\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Alerta\Http\Requests\ResolverAlertaRequest;
+use App\Modules\Alerta\Http\Requests\ResolverGrupoAlertaRequest;
+use App\Modules\Alerta\Http\Requests\StoreAlertaLoteRequest;
 use App\Modules\Alerta\Http\Requests\StoreAlertaRequest;
 use App\Modules\Alerta\Http\Requests\UpdateTipoAlertaRequest;
 use App\Modules\Alerta\Models\Alerta;
@@ -40,11 +42,52 @@ class AlertaController extends Controller
         }
     }
 
+    /**
+     * Pago agrupado: un comprobante para varias facturas (una alerta por factura).
+     */
+    public function storeLote(StoreAlertaLoteRequest $request): JsonResponse
+    {
+        try {
+            $alertas = $this->service->crearLote(
+                $request->validated(),
+                $request->file('file'),
+                $request->user()
+            );
+
+            return response()->json([
+                'grupo_pago_id' => $alertas->first()?->grupo_pago_id,
+                'alertas'       => $alertas,
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
     public function show(Alerta $alerta): JsonResponse
     {
         return response()->json(
-            $alerta->load(['cxc.cliente', 'vendedor:id,name', 'revisador:id,name', 'evidencias'])
+            $alerta->load([
+                'cxc.cliente',
+                'vendedor:id,name',
+                'revisador:id,name',
+                'evidencias',
+                'grupoAlertas:id,grupo_pago_id,ledhouse_cxc_id,monto_informado,estado_alerta',
+                'grupoAlertas.cxc:id,documento,monto_factura,monto_pendiente,estado',
+            ])
         );
+    }
+
+    /**
+     * Procesa todas las facturas de un pago agrupado de una sola vez.
+     */
+    public function resolverGrupo(ResolverGrupoAlertaRequest $request, string $grupo): JsonResponse
+    {
+        try {
+            $alertas = $this->service->resolverGrupo($grupo, $request->validated(), $request->user());
+            return response()->json($alertas);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 
     public function resolver(ResolverAlertaRequest $request, int $alertaId): JsonResponse

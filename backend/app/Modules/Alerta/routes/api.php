@@ -15,6 +15,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('alertas/{alerta}/resolver', [AlertaController::class, 'resolver']);
     Route::patch('alertas/{alerta}/tipo', [AlertaController::class, 'updateTipo']);
 
+    // Pago agrupado (un comprobante para varias facturas)
+    Route::post('alertas/lote', [AlertaController::class, 'storeLote']);
+    Route::patch('alertas/grupo/{grupo}/resolver', [AlertaController::class, 'resolverGrupo']);
+
     // Evidencias (Subir y Listar)
     Route::post('alertas/evidencia', [AlertaController::class, 'uploadEvidencia']);
     Route::post('alertas/{cxc}/evidencia', [AlertaController::class, 'uploadEvidencia']);

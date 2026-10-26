@@ -113,6 +113,24 @@ class CxcAlertaService {
   }
 
   /// ─────────────────────────────────────────────────────────────────────────
+  /// 2.1 RESOLVER GRUPO COMPLETO DE ALERTAS (PAGO AGRUPADO)
+  /// ─────────────────────────────────────────────────────────────────────────
+  Future<dynamic> resolverGrupo({
+    required String grupoId,
+    required String estadoAlerta,
+    bool actualizarCxc = false,
+    List<Map<String, dynamic>>? items,
+  }) async {
+    final body = <String, dynamic>{
+      'estado_alerta': estadoAlerta,
+      if (actualizarCxc) 'actualizar_cxc': true,
+      'items': ?items,
+    };
+
+    return await _http.patchV2('alertas/grupo/$grupoId/resolver', body);
+  }
+
+  /// ─────────────────────────────────────────────────────────────────────────
   /// 3. ACTUALIZAR CONCEPTO / TIPO DE ALERTA
   /// ─────────────────────────────────────────────────────────────────────────
   /// Opciones de URL disponibles:

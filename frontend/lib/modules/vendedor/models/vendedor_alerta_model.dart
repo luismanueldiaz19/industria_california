@@ -2,6 +2,7 @@ class VendedorAlertaModel {
   final int id;
   final int ledhouseCxcId;
   final int? vendedorId;
+  final String? grupoPagoId;
   final String? tipo;
   final String? montoInformado;
   final String? nota;
@@ -10,10 +11,13 @@ class VendedorAlertaModel {
   final AlertaCxcModel? cxc;
   final List<dynamic>? evidencias;
 
+  bool get esPagoAgrupado => grupoPagoId != null && grupoPagoId!.isNotEmpty;
+
   VendedorAlertaModel({
     required this.id,
     required this.ledhouseCxcId,
     this.vendedorId,
+    this.grupoPagoId,
     this.tipo,
     this.montoInformado,
     this.nota,
@@ -28,6 +32,7 @@ class VendedorAlertaModel {
       id: json['id'] ?? 0,
       ledhouseCxcId: json['ledhouse_cxc_id'] ?? 0,
       vendedorId: json['vendedor_id'],
+      grupoPagoId: json['grupo_pago_id'],
       tipo: json['tipo'],
       montoInformado: json['monto_informado']?.toString(),
       nota: json['nota'],

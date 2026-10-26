@@ -7,6 +7,7 @@ use App\Models\LedhouseCxc;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class AlertaEvidencia extends Model
 {
@@ -17,6 +18,7 @@ class AlertaEvidencia extends Model
     protected $fillable = [
         'ledhouse_cxc_id',
         'alerta_id',
+        'grupo_pago_id',
         'subido_por',
         'nombre_archivo',
         'ruta_archivo',
@@ -51,5 +53,23 @@ class AlertaEvidencia extends Model
     public function isPdf(): bool
     {
         return strtolower($this->tipo_archivo) === 'pdf';
+    }
+
+    /**
+     * Elimina el archivo físico SOLO si ya ningún registro de evidencia lo referencia.
+     * Necesario porque en un pago agrupado varias evidencias comparten la misma ruta.
+     * Debe llamarse DESPUÉS de borrar el/los registros de evidencia.
+     */
+    public static function borrarArchivoSiHuerfano(?string $ruta): void
+    {
+        if (!$ruta) {
+            return;
+        }
+
+        $sigueEnUso = static::where('ruta_archivo', $ruta)->exists();
+
+        if (!$sigueEnUso && Storage::disk('public')->exists($ruta)) {
+            Storage::disk('public')->delete($ruta);
+        }
     }
 }

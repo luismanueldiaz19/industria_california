@@ -78,6 +78,50 @@ class VendedorCxcService {
   }
 
   /// ─────────────────────────────────────────────────────────────────────────
+  /// 1.1 CREAR PAGO AGRUPADO (UNA FOTO PARA VARIAS FACTURAS)
+  /// ─────────────────────────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> addAlertaLote({
+    required double montoTotal,
+    required String tipo,
+    required String nota,
+    required List<Map<String, dynamic>> items,
+    required Uint8List fileBytes,
+    required String fileName,
+    required String token,
+  }) async {
+    final uri = Uri.parse('$hostDev/alertas/lote');
+    final req = http.MultipartRequest('POST', uri)
+      ..headers.addAll(_headers(token))
+      ..fields['monto_total'] = montoTotal.toString()
+      ..fields['tipo'] = tipo
+      ..fields['nota'] = nota
+      ..fields['items'] = json.encode(items)
+      ..files.add(
+        http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
+      );
+
+    final streamed = await req.send();
+    final body = await streamed.stream.bytesToString();
+    if (streamed.statusCode == 201 || streamed.statusCode == 200) {
+      return json.decode(body) as Map<String, dynamic>;
+    }
+
+    try {
+      final errorJson = json.decode(body);
+      throw Exception(
+        errorJson['message'] ??
+            errorJson['error'] ??
+            'Error al registrar pago agrupado (${streamed.statusCode})',
+      );
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception(
+        'Error al registrar pago agrupado (${streamed.statusCode}): $body',
+      );
+    }
+  }
+
+  /// ─────────────────────────────────────────────────────────────────────────
   /// 2. OBTENER ALERTAS DEL VENDEDOR
   /// ─────────────────────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> getMisAlertas({
