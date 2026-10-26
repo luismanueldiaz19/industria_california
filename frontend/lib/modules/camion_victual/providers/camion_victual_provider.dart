@@ -229,6 +229,10 @@ class CamionVictualProvider extends ChangeNotifier {
     int camionId, {
     required int vehiculoId,
     required int choferId,
+    int? cantAyudantes,
+    String? nombresAyudantes,
+    String? comentarios,
+    List<Map<String, dynamic>>? gastos,
   }) async {
     _isActualizando = true;
     notifyListeners();
@@ -237,6 +241,10 @@ class CamionVictualProvider extends ChangeNotifier {
         camionId,
         vehiculoId: vehiculoId,
         choferId: choferId,
+        cantAyudantes: cantAyudantes,
+        nombresAyudantes: nombresAyudantes,
+        comentarios: comentarios,
+        gastos: gastos,
       );
       _actualizarEnLista(actualizado);
       return true;
@@ -255,6 +263,30 @@ class CamionVictualProvider extends ChangeNotifier {
     try {
       final actualizado = await _service.cerrar(camionId);
       _actualizarEnLista(actualizado);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isActualizando = false;
+      notifyListeners();
+    }
+  }
+
+  /// Guarda datos preliminares del viaje (gastos, ayudantes, notas)
+  /// SIN cerrar el viaje ni liberar el camión.
+  Future<bool> guardarDatosViaje(
+    int camionId,
+    Map<String, dynamic> data,
+  ) async {
+    _isActualizando = true;
+    notifyListeners();
+    try {
+      final res = await _service.guardarDatosViaje(camionId, data);
+      if (res['camion'] != null) {
+        final camionActualizado = CamionVictual.fromJson(res['camion']);
+        _actualizarEnLista(camionActualizado);
+      }
       return true;
     } catch (e) {
       _error = e.toString();

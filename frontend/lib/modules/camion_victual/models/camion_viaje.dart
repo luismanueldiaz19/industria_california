@@ -181,9 +181,12 @@ class CamionViajeGasto {
     return CamionViajeGasto(
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       viajeId: int.tryParse(json['viaje_id']?.toString() ?? '0') ?? 0,
-      tipoGasto: json['tipo_gasto'] is Map
-          ? (json['tipo_gasto']['value'] ?? json['tipo_gasto'].toString())
-          : (json['tipo_gasto'] ?? 'otro'),
+      tipoGasto: (json['tipo_gasto'] is Map
+              ? (json['tipo_gasto']['value'] ?? json['tipo_gasto'].toString())
+              : (json['tipo_gasto'] ?? 'otro'))
+          .toString()
+          .trim()
+          .toLowerCase(),
       concepto: json['concepto'] ?? '',
       cantidad: double.tryParse(json['cantidad']?.toString() ?? '0') ?? 0,
       precioUnitario:

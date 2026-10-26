@@ -1,3 +1,5 @@
+import 'camion_viaje.dart';
+
 /// Modelo de un Camión Victual.
 /// Contiene los pedidos cargados por el vendedor, ordenados por [ordenViaje].
 class CamionVictual {
@@ -18,6 +20,7 @@ class CamionVictual {
   final String? vehiculoPlaca;
   final String? vehiculoMarca;
   final String? vehiculoModelo;
+  final CamionViaje? viajeActivo;
   final List<CamionPedido> pedidos;
 
   const CamionVictual({
@@ -38,6 +41,7 @@ class CamionVictual {
     this.vehiculoPlaca,
     this.vehiculoMarca,
     this.vehiculoModelo,
+    this.viajeActivo,
     this.pedidos = const [],
   });
 
@@ -69,6 +73,9 @@ class CamionVictual {
       vehiculoPlaca: json['vehiculo']?['placa'],
       vehiculoMarca: json['vehiculo']?['marca'],
       vehiculoModelo: json['vehiculo']?['modelo'],
+      viajeActivo: json['viaje_activo'] != null
+          ? CamionViaje.fromJson(json['viaje_activo'] as Map<String, dynamic>)
+          : null,
       pedidos: pedidosRaw.map((p) => CamionPedido.fromJson(p)).toList(),
     );
   }

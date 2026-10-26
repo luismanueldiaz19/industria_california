@@ -31,6 +31,7 @@ class CamionVictualController extends Controller
             'chofer.user:id,name',
             'vendedor:id,name',
             'vehiculo',
+            'viajeActivo.gastos',
         ]);
 
         // Si es vendedor y no es admin, solo ve sus camiones
@@ -210,12 +211,23 @@ class CamionVictualController extends Controller
 
     /**
      * Logística pone el camión en_ruta con vehículo físico y conductor real obligatorios.
+     * Permite opcionalmente registrar datos iniciales del viaje (ayudantes, gastos de salida, notas).
      */
     public function ponerEnRuta(Request $request, CamionVictual $camionVictual): JsonResponse
     {
         $datos = $request->validate([
-            'vehiculo_id' => 'required|integer|exists:vehiculos,id',
-            'chofer_id'   => 'required|integer|exists:choferes,id',
+            'vehiculo_id'          => 'required|integer|exists:vehiculos,id',
+            'chofer_id'            => 'required|integer|exists:choferes,id',
+            'cant_ayudantes'       => 'nullable|integer|min:0',
+            'nombres_ayudantes'    => 'nullable|string|max:500',
+            'comentarios'          => 'nullable|string|max:1000',
+            'gastos'               => 'nullable|array',
+            'gastos.*.tipo_gasto'  => 'required|string',
+            'gastos.*.concepto'    => 'nullable|string|max:255',
+            'gastos.*.cantidad'    => 'nullable|numeric|min:0',
+            'gastos.*.precio_unitario' => 'nullable|numeric|min:0',
+            'gastos.*.monto_total' => 'nullable|numeric|min:0',
+            'gastos.*.comprobante' => 'nullable|string|max:100',
         ], [
             'vehiculo_id.required' => 'Debe asignar un vehículo físico real para despachar el camión a ruta.',
             'vehiculo_id.exists'   => 'El vehículo seleccionado no es válido.',
@@ -226,6 +238,33 @@ class CamionVictualController extends Controller
         try {
             $camion = $this->service->ponerEnRuta($camionVictual, $datos);
             return response()->json($camion);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Guarda datos preliminares del viaje (gastos, ayudantes, notas)
+     * SIN cerrar el viaje ni liberar el camión.
+     */
+    public function guardarDatosViaje(Request $request, CamionVictual $camionVictual): JsonResponse
+    {
+        $datos = $request->validate([
+            'cant_ayudantes'       => 'nullable|integer|min:0',
+            'nombres_ayudantes'    => 'nullable|string|max:500',
+            'comentarios'          => 'nullable|string|max:1000',
+            'gastos'               => 'nullable|array',
+            'gastos.*.tipo_gasto'  => 'required|string',
+            'gastos.*.concepto'    => 'nullable|string|max:255',
+            'gastos.*.cantidad'    => 'nullable|numeric|min:0',
+            'gastos.*.precio_unitario' => 'nullable|numeric|min:0',
+            'gastos.*.monto_total' => 'nullable|numeric|min:0',
+            'gastos.*.comprobante' => 'nullable|string|max:100',
+        ]);
+
+        try {
+            $resultado = $this->service->guardarDatosViaje($camionVictual, $datos, Auth::user());
+            return response()->json($resultado);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

@@ -22,8 +22,15 @@ class _DespachoEnRutaDialogState extends State<DespachoEnRutaDialog> {
   int? _selectedChoferId;
   bool _isSubmitting = false;
 
-  final NumberFormat _currencyFmt =
-      NumberFormat.currency(symbol: 'RD\$ ', decimalDigits: 2);
+  int _cantAyudantes = 0;
+  final TextEditingController _nombresAyudantesCtrl = TextEditingController();
+  final TextEditingController _comentariosCtrl = TextEditingController();
+  bool _mostrarDetallesViaje = false;
+
+  final NumberFormat _currencyFmt = NumberFormat.currency(
+    symbol: 'RD\$ ',
+    decimalDigits: 2,
+  );
 
   @override
   void initState() {
@@ -34,6 +41,13 @@ class _DespachoEnRutaDialogState extends State<DespachoEnRutaDialog> {
       context.read<VehiculoProvider>().loadVehiculos();
       context.read<ChoferProvider>().fetchChoferes();
     });
+  }
+
+  @override
+  void dispose() {
+    _nombresAyudantesCtrl.dispose();
+    _comentariosCtrl.dispose();
+    super.dispose();
   }
 
   bool _esChoferVirtual(Chofer c) {
@@ -70,6 +84,13 @@ class _DespachoEnRutaDialogState extends State<DespachoEnRutaDialog> {
         widget.camion.id,
         vehiculoId: _selectedVehiculoId!,
         choferId: _selectedChoferId!,
+        cantAyudantes: _cantAyudantes > 0 ? _cantAyudantes : null,
+        nombresAyudantes: _nombresAyudantesCtrl.text.trim().isNotEmpty
+            ? _nombresAyudantesCtrl.text.trim()
+            : null,
+        comentarios: _comentariosCtrl.text.trim().isNotEmpty
+            ? _comentariosCtrl.text.trim()
+            : null,
       );
 
       if (!mounted) return;
@@ -81,6 +102,7 @@ class _DespachoEnRutaDialogState extends State<DespachoEnRutaDialog> {
         );
         Navigator.of(context).pop(true);
       } else {
+        // print('provider Error: ${provider.error}');
         CompactSnackBar.showError(
           context,
           provider.error ?? 'Error al despachar el camión.',
@@ -88,6 +110,7 @@ class _DespachoEnRutaDialogState extends State<DespachoEnRutaDialog> {
       }
     } catch (e) {
       if (!mounted) return;
+      // print('Error: $e');
       CompactSnackBar.showError(context, 'Error: $e');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -357,8 +380,8 @@ class _DespachoEnRutaDialogState extends State<DespachoEnRutaDialog> {
                         ),
                       ),
                       items: vehiculosDisponibles.map((v) {
-                        final desc =
-                            '${v.marca ?? ''} ${v.modelo ?? ''}'.trim();
+                        final desc = '${v.marca ?? ''} ${v.modelo ?? ''}'
+                            .trim();
                         final placa = v.placa != null && v.placa!.isNotEmpty
                             ? ' • Placa: ${v.placa}'
                             : '';
@@ -508,8 +531,10 @@ class _DespachoEnRutaDialogState extends State<DespachoEnRutaDialog> {
                         ),
                       ),
                       items: choferesReales.map((c) {
-                        final nombre = c.name ?? c.username ?? 'Conductor #${c.id}';
-                        final lic = c.numeroLicencia != null &&
+                        final nombre =
+                            c.name ?? c.username ?? 'Conductor #${c.id}';
+                        final lic =
+                            c.numeroLicencia != null &&
                                 c.numeroLicencia!.isNotEmpty
                             ? 'Lic: ${c.numeroLicencia}'
                             : 'Sin Licencia';
@@ -556,6 +581,209 @@ class _DespachoEnRutaDialogState extends State<DespachoEnRutaDialog> {
                       onChanged: (val) =>
                           setState(() => _selectedChoferId = val),
                     ),
+                  const SizedBox(height: 14),
+
+                  // ── Sección opcional: Datos preliminares del viaje (ayudantes y notas) ─
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      children: [
+                        InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => setState(() =>
+                              _mostrarDetallesViaje = !_mostrarDetallesViaje),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _mostrarDetallesViaje
+                                      ? Icons.keyboard_arrow_down_rounded
+                                      : Icons.keyboard_arrow_right_rounded,
+                                  size: 18,
+                                  color: const Color(0xFF2563EB),
+                                ),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'Datos de Salida / Ayudantes (Opcional)',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                                const Spacer(),
+                                if (_cantAyudantes > 0 ||
+                                    _nombresAyudantesCtrl.text.isNotEmpty ||
+                                    _comentariosCtrl.text.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      _cantAyudantes > 0
+                                          ? '$_cantAyudantes ayudante(s)'
+                                          : 'Con notas',
+                                      style: const TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF2563EB),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_mostrarDetallesViaje) ...[
+                          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                          Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'Cant. Ayudantes:',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF334155),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: const Color(0xFFCBD5E1),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          InkWell(
+                                            onTap: _cantAyudantes > 0
+                                                ? () => setState(
+                                                    () => _cantAyudantes--)
+                                                : null,
+                                            child: const Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 6,
+                                                vertical: 3,
+                                              ),
+                                              child: Icon(
+                                                Icons.remove,
+                                                size: 14,
+                                                color: Color(0xFF64748B),
+                                              ),
+                                            ),
+                                          ),
+                                          Text(
+                                            '$_cantAyudantes',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          InkWell(
+                                            onTap: () => setState(
+                                                () => _cantAyudantes++),
+                                            child: const Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 6,
+                                                vertical: 3,
+                                              ),
+                                              child: Icon(
+                                                Icons.add,
+                                                size: 14,
+                                                color: Color(0xFF64748B),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _nombresAyudantesCtrl,
+                                        style: const TextStyle(fontSize: 11),
+                                        decoration: InputDecoration(
+                                          hintText: 'Nombres de ayudantes...',
+                                          hintStyle: const TextStyle(
+                                            fontSize: 10.5,
+                                            color: Color(0xFF94A3B8),
+                                          ),
+                                          filled: true,
+                                          fillColor: Colors.white,
+                                          isDense: true,
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 8,
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            borderSide: const BorderSide(
+                                              color: Color(0xFFCBD5E1),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: _comentariosCtrl,
+                                  maxLines: 2,
+                                  style: const TextStyle(fontSize: 11),
+                                  decoration: InputDecoration(
+                                    hintText:
+                                        'Observaciones o notas iniciales del despacho...',
+                                    hintStyle: const TextStyle(
+                                      fontSize: 10.5,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    isDense: true,
+                                    contentPadding:
+                                        const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 8,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFFCBD5E1),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 14),
 
                   // ── Nota informativa del flujo de despacho ────────────
@@ -617,7 +845,8 @@ class _DespachoEnRutaDialogState extends State<DespachoEnRutaDialog> {
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton.icon(
-                      onPressed: (_isSubmitting ||
+                      onPressed:
+                          (_isSubmitting ||
                               _selectedVehiculoId == null ||
                               _selectedChoferId == null)
                           ? null

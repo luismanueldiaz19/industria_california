@@ -172,6 +172,7 @@ class CompactSnackBar extends StatelessWidget {
     Duration? duration,
     VoidCallback? onClose,
   }) {
+    print('message : $message');
     _show(
       context,
       CompactSnackBar.info(message: message, title: title, onClose: onClose),

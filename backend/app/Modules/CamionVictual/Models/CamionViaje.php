@@ -93,4 +93,54 @@ class CamionViaje extends Model
     {
         return $this->hasMany(VehiculoGasto::class, 'viaje_id')->orderBy('id', 'asc');
     }
+
+    /**
+     * Genera el siguiente código correlativo único para un viaje (ej: VJ-0001, VJ-0005).
+     * Evita colisiones cuando hay viajes eliminados, saltos de numeración o concurrencia.
+     */
+    public static function generarSiguienteCodigo(): string
+    {
+        // 1. Tomar el número más alto entre los últimos registros creados
+        $ultimosCodigos = static::where('codigo', 'like', 'VJ-%')
+            ->orderBy('id', 'desc')
+            ->limit(100)
+            ->pluck('codigo');
+
+        $maxNumero = 0;
+        foreach ($ultimosCodigos as $c) {
+            if (preg_match('/VJ-(\d+)/i', $c, $m)) {
+                $num = (int) $m[1];
+                if ($num > $maxNumero) {
+                    $maxNumero = $num;
+                }
+            }
+        }
+
+        // 2. Verificar también por longitud de código por si hay códigos mayores fuera de los últimos 100 IDs
+        $viajePorLargo = static::where('codigo', 'like', 'VJ-%')
+            ->orderByRaw('LENGTH(codigo) DESC, codigo DESC')
+            ->first();
+
+        if ($viajePorLargo && preg_match('/VJ-(\d+)/i', $viajePorLargo->codigo, $m)) {
+            $num = (int) $m[1];
+            if ($num > $maxNumero) {
+                $maxNumero = $num;
+            }
+        }
+
+        // 3. Tomar el mayor entre: el número más alto encontrado + 1, max(id) + 1, o count() + 1
+        $maxId = (int) (static::max('id') ?? 0);
+        $count = (int) (static::count() ?? 0);
+
+        $siguienteNumero = max($maxNumero + 1, $maxId + 1, $count + 1);
+
+        // 4. Bucle defensivo: si por alguna razón el código generado ya existe en BD, seguir incrementando
+        do {
+            $codigo = 'VJ-' . str_pad($siguienteNumero, 4, '0', STR_PAD_LEFT);
+            $siguienteNumero++;
+        } while (static::where('codigo', $codigo)->exists());
+
+        return $codigo;
+    }
 }
+

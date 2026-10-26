@@ -13,6 +13,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('camiones-victuales/{camionVictual}/reordenar', [CamionVictualController::class, 'reordenar']);
     Route::patch('camiones-victuales/{camionVictual}/pedidos/{pedidoId}/entrega', [CamionVictualController::class, 'actualizarEntrega']);
     Route::patch('camiones-victuales/{camionVictual}/en-ruta', [CamionVictualController::class, 'ponerEnRuta']);
+    Route::post('camiones-victuales/{camionVictual}/guardar-viaje', [CamionVictualController::class, 'guardarDatosViaje']);
     Route::post('camiones-victuales/{camionVictual}/cerrar-liquidacion', [CamionVictualController::class, 'cerrarConLiquidacion']);
     Route::patch('camiones-victuales/{camionVictual}/cerrar', [CamionVictualController::class, 'cerrar']);
     Route::patch('camiones-victuales/{camionVictual}/vaciar', [CamionVictualController::class, 'vaciar']);

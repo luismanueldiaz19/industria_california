@@ -116,17 +116,41 @@ class CamionVictualService {
     int camionId, {
     required int vehiculoId,
     required int choferId,
+    int? cantAyudantes,
+    String? nombresAyudantes,
+    String? comentarios,
+    List<Map<String, dynamic>>? gastos,
   }) async {
-    final response = await _http.patchV2('$_base/$camionId/en-ruta', {
+    final body = <String, dynamic>{
       'vehiculo_id': vehiculoId,
       'chofer_id': choferId,
-    });
+      if (cantAyudantes != null) 'cant_ayudantes': cantAyudantes,
+      if (nombresAyudantes != null && nombresAyudantes.trim().isNotEmpty)
+        'nombres_ayudantes': nombresAyudantes.trim(),
+      if (comentarios != null && comentarios.trim().isNotEmpty)
+        'comentarios': comentarios.trim(),
+      if (gastos != null && gastos.isNotEmpty) 'gastos': gastos,
+    };
+    final response = await _http.patchV2('$_base/$camionId/en-ruta', body);
     return CamionVictual.fromJson(response);
   }
 
   Future<CamionVictual> cerrar(int camionId) async {
     final response = await _http.patchV2('$_base/$camionId/cerrar', {});
     return CamionVictual.fromJson(response);
+  }
+
+  /// Guarda datos preliminares del viaje (gastos, ayudantes, comentarios)
+  /// SIN cerrar el viaje ni liberar el camión.
+  Future<Map<String, dynamic>> guardarDatosViaje(
+    int camionId,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await _http.postV2(
+      '$_base/$camionId/guardar-viaje',
+      data,
+    );
+    return response as Map<String, dynamic>;
   }
 
   /// Cierra el camión con liquidación de viaje (gastos, ayudantes, comentarios)
