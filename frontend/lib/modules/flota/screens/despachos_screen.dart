@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../core/utils/formatters.dart';
 import 'package:provider/provider.dart';
 import '../../camion_victual/models/camion_victual.dart';
 import '../../camion_victual/providers/camion_victual_provider.dart';
@@ -17,10 +17,6 @@ class DespachosScreen extends StatefulWidget {
 }
 
 class _DespachosScreenState extends State<DespachosScreen> {
-  final NumberFormat _currencyFmt = NumberFormat.currency(
-    symbol: '\$',
-    decimalDigits: 0,
-  );
 
   String _filtroEstado = 'todos';
   int? _filtroChoferId;
@@ -374,7 +370,7 @@ class _DespachosScreenState extends State<DespachosScreen> {
             const SizedBox(width: 12),
             _buildStatChip(
               'Total Facturado en Flota',
-              _currencyFmt.format(montoTotalFlota),
+              Formatters.formatCurrency(montoTotalFlota),
               Icons.attach_money,
               const Color(0xFF16A34A),
             ),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/formatters.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../core/widgets/compact_snack_bar.dart';
 import '../../camion_victual/models/camion_viaje.dart';
 import '../../camion_victual/services/camion_victual_service.dart';
 import '../providers/chofer_provider.dart';
@@ -17,8 +20,6 @@ class HistorialViajesScreen extends StatefulWidget {
 
 class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
   final CamionVictualService _service = CamionVictualService();
-  final NumberFormat _currencyFmt =
-      NumberFormat.currency(symbol: '\$', decimalDigits: 2);
   final DateFormat _dateFmt = DateFormat('dd/MM/yyyy hh:mm a');
 
   List<CamionViaje> _viajes = [];
@@ -111,21 +112,21 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
               const SizedBox(width: 12),
               _MetricBadge(
                 label: 'Facturado Total',
-                value: _currencyFmt.format(_totalFacturadoGlobal),
+                value: Formatters.formatCurrency(_totalFacturadoGlobal),
                 color: const Color(0xFF0284C7),
                 icon: Icons.receipt_outlined,
               ),
               const SizedBox(width: 12),
               _MetricBadge(
                 label: 'Gastos Operativos',
-                value: _currencyFmt.format(_totalGastosGlobal),
+                value: Formatters.formatCurrency(_totalGastosGlobal),
                 color: const Color(0xFFDC2626),
                 icon: Icons.money_off_csred_outlined,
               ),
               const SizedBox(width: 12),
               _MetricBadge(
                 label: 'Margen Neto Global',
-                value: _currencyFmt.format(_margenNetoGlobal),
+                value: Formatters.formatCurrency(_margenNetoGlobal),
                 color: const Color(0xFF16A34A),
                 icon: Icons.trending_up,
               ),
@@ -606,7 +607,7 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
                                 fontSize: 9.5, color: Color(0xFF64748B)),
                           ),
                           Text(
-                            _currencyFmt.format(v.totalFacturado),
+                            Formatters.formatCurrency(v.totalFacturado),
                             style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.bold,
@@ -626,7 +627,7 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
                                 fontSize: 9.5, color: Color(0xFFDC2626)),
                           ),
                           Text(
-                            _currencyFmt.format(v.totalGastos),
+                            Formatters.formatCurrency(v.totalGastos),
                             style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.bold,
@@ -646,7 +647,7 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
                                 fontSize: 9.5, color: Color(0xFF16A34A)),
                           ),
                           Text(
-                            _currencyFmt.format(v.margenNeto),
+                            Formatters.formatCurrency(v.margenNeto),
                             style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.bold,
@@ -668,6 +669,19 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
     );
   }
 
+  Future<void> _imprimirReporteViaje(CamionViaje viaje) async {
+    try {
+      final urlStr = await _service.getReporteViajeHistoricoPdfUrl(viaje.id);
+      final url = Uri.parse(urlStr);
+      if (!await launchUrl(url)) {
+        throw Exception('No se pudo abrir el Reporte de Viaje PDF');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      CompactSnackBar.showError(context, 'Error al abrir Reporte de Viaje: $e');
+    }
+  }
+
   Widget _buildDetalleViaje(CamionViaje viaje) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(14),
@@ -675,8 +689,11 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header del viaje
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               Text(
                 'Detalle: ${viaje.codigo}',
@@ -686,7 +703,36 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
                   color: Color(0xFF0F172A),
                 ),
               ),
-              _buildEstadoChip(viaje.estado),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => _imprimirReporteViaje(viaje),
+                    icon: const Icon(Icons.summarize, size: 12),
+                    label: const Text(
+                      'Reporte PDF',
+                      style: TextStyle(fontSize: 10.5),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF1F5F9),
+                      foregroundColor: const Color(0xFF1E293B),
+                      elevation: 0,
+                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+                  _buildEstadoChip(viaje.estado),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -760,9 +806,13 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
                     children: [
                       const Icon(Icons.verified_outlined, size: 13, color: Color(0xFF64748B)),
                       const SizedBox(width: 5),
-                      Text(
-                        'Cerrado por: ${viaje.cerradoPorNombre ?? "Sistema"}${viaje.fechaCierre != null ? " · ${_dateFmt.format(viaje.fechaCierre!)}" : ""}',
-                        style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                      Expanded(
+                        child: Text(
+                          'Cerrado por: ${viaje.cerradoPorNombre ?? "Sistema"}${viaje.fechaCierre != null ? " · ${_dateFmt.format(viaje.fechaCierre!)}" : ""}',
+                          style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
                     ],
                   ),
@@ -854,7 +904,7 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
                         ),
                       ),
                       Text(
-                        _currencyFmt.format(g.montoTotal),
+                        Formatters.formatCurrency(g.montoTotal),
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -941,7 +991,7 @@ class _HistorialViajesScreenState extends State<HistorialViajesScreen> {
                         ),
                       ),
                       Text(
-                        _currencyFmt.format(p.totalPedido),
+                        Formatters.formatCurrency(p.totalPedido),
                         style: const TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.bold,

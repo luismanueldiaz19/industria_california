@@ -375,44 +375,56 @@ class CamionVictualService
                     'updated_at'       => now(),
                 ]);
 
-            // Generar correlativo amigable y garantizado único (ej: VJ-0001, VJ-0005)
-            $codigo = CamionViaje::generarSiguienteCodigo();
+            // Localizar viaje previo si ya existía (guardado preliminarmente) o crear uno nuevo
+            $viaje = CamionViaje::where('camion_victual_id', $camion->id)
+                ->where('estado', EstadoViaje::EnRuta)
+                ->latest()
+                ->first();
 
-            // Calcular gastos iniciales si se proporcionaron
-            $totalGastos = 0;
+            if (!$viaje) {
+                $codigo = CamionViaje::generarSiguienteCodigo();
+                $viaje = CamionViaje::create([
+                    'codigo'            => $codigo,
+                    'camion_victual_id' => $camion->id,
+                    'chofer_id'         => $choferId,
+                    'vehiculo_id'       => $vehiculoId,
+                    'vendedor_id'       => $camion->vendedor_id,
+                    'fecha_salida'      => now(),
+                    'total_facturado'   => $camion->monto_total,
+                    'total_gastos'      => 0,
+                    'cant_ayudantes'    => (int) ($datos['cant_ayudantes'] ?? 0),
+                    'nombres_ayudantes' => $datos['nombres_ayudantes'] ?? null,
+                    'comentarios'       => $datos['comentarios'] ?? null,
+                    'estado'            => EstadoViaje::EnRuta,
+                ]);
+            } else {
+                $viaje->chofer_id = $choferId;
+                $viaje->vehiculo_id = $vehiculoId;
+                $viaje->fecha_salida = now();
+                $viaje->total_facturado = $camion->monto_total;
+                if (array_key_exists('cant_ayudantes', $datos)) {
+                    $viaje->cant_ayudantes = (int) $datos['cant_ayudantes'];
+                }
+                if (array_key_exists('nombres_ayudantes', $datos)) {
+                    $viaje->nombres_ayudantes = $datos['nombres_ayudantes'];
+                }
+                if (array_key_exists('comentarios', $datos)) {
+                    $viaje->comentarios = $datos['comentarios'];
+                }
+                $viaje->save();
+            }
+
+            // Sincronizar gastos si se indicaron
             if (!empty($datos['gastos']) && is_array($datos['gastos'])) {
+                VehiculoGasto::where('viaje_id', $viaje->id)->delete();
+                $totalGastos = 0;
                 foreach ($datos['gastos'] as $g) {
                     $monto = (float) ($g['monto_total'] ?? 0);
                     if ($monto <= 0 && !empty($g['cantidad']) && !empty($g['precio_unitario'])) {
                         $monto = (float) $g['cantidad'] * (float) $g['precio_unitario'];
                     }
                     $totalGastos += $monto;
-                }
-            }
 
-            // Crear el registro del Viaje en ruta con el vehículo y chofer reales asignados
-            $viaje = CamionViaje::create([
-                'codigo'            => $codigo,
-                'camion_victual_id' => $camion->id,
-                'chofer_id'         => $choferId,
-                'vehiculo_id'       => $vehiculoId,
-                'vendedor_id'       => $camion->vendedor_id,
-                'fecha_salida'      => now(),
-                'total_facturado'   => $camion->monto_total,
-                'total_gastos'      => $totalGastos,
-                'cant_ayudantes'    => (int) ($datos['cant_ayudantes'] ?? 0),
-                'nombres_ayudantes' => $datos['nombres_ayudantes'] ?? null,
-                'comentarios'       => $datos['comentarios'] ?? null,
-                'estado'            => EstadoViaje::EnRuta,
-            ]);
-
-            // Registrar gastos iniciales si se indicaron
-            if (!empty($datos['gastos']) && is_array($datos['gastos'])) {
-                foreach ($datos['gastos'] as $g) {
-                    $monto = (float) ($g['monto_total'] ?? 0);
-                    if ($monto <= 0 && !empty($g['cantidad']) && !empty($g['precio_unitario'])) {
-                        $monto = (float) $g['cantidad'] * (float) $g['precio_unitario'];
-                    }
                     VehiculoGasto::create([
                         'viaje_id'        => $viaje->id,
                         'vehiculo_id'     => $vehiculoId,
@@ -428,20 +440,23 @@ class CamionVictualService
                         'registrado_por'  => auth()->id() ?? $camion->vendedor_id,
                     ]);
                 }
+                $viaje->total_gastos = $totalGastos;
+                $viaje->save();
             }
 
-            // Copiar los pedidos asignados al viaje histórico
+            // Sincronizar o copiar los pedidos asignados al viaje histórico
             $pedidos = $camion->pedidos()->get();
             foreach ($pedidos as $p) {
-                CamionViajePedido::create([
-                    'viaje_id'           => $viaje->id,
-                    'pedido_id'          => $p->id,
-                    'orden_viaje'        => $p->pivot->orden_viaje ?? 0,
-                    'estado_entrega'     => EstadoEntrega::EnCurso,
-                    'fecha_entregado'    => null,
-                    'comentario_entrega' => $p->pivot->comentario_entrega ?? null,
-                    'total_pedido'       => $p->total,
-                ]);
+                CamionViajePedido::updateOrCreate(
+                    ['viaje_id' => $viaje->id, 'pedido_id' => $p->id],
+                    [
+                        'orden_viaje'        => $p->pivot->orden_viaje ?? 0,
+                        'estado_entrega'     => EstadoEntrega::EnCurso,
+                        'fecha_entregado'    => null,
+                        'comentario_entrega' => $p->pivot->comentario_entrega ?? null,
+                        'total_pedido'       => $p->total,
+                    ]
+                );
             }
         });
 
@@ -455,7 +470,30 @@ class CamionVictualService
     public function guardarDatosViaje(CamionVictual $camion, array $datos, User $responsable): array
     {
         return DB::transaction(function () use ($camion, $datos, $responsable) {
-            // Localizar el viaje activo en ruta o crear uno si hiciera falta
+            // Actualizar vehículo y chofer en el camión si se proporcionaron
+            $datosCamion = [];
+            if (!empty($datos['vehiculo_id'])) {
+                $vehiculo = Vehiculo::find($datos['vehiculo_id']);
+                if ($vehiculo && $vehiculo->estado !== 'inactivo') {
+                    $camion->vehiculo_id = $datos['vehiculo_id'];
+                    $datosCamion['vehiculo_id'] = $datos['vehiculo_id'];
+                }
+            }
+            if (!empty($datos['chofer_id'])) {
+                $camion->chofer_id = $datos['chofer_id'];
+                $datosCamion['chofer_id'] = $datos['chofer_id'];
+            }
+            if (!empty($datos['dejar_listo']) || $camion->estado === EstadoCamion::Armando) {
+                if ($camion->pedidos()->count() > 0) {
+                    $camion->estado = EstadoCamion::Listo;
+                    $datosCamion['estado'] = EstadoCamion::Listo;
+                }
+            }
+            if (!empty($datosCamion)) {
+                $camion->update($datosCamion);
+            }
+
+            // Localizar el viaje activo en ruta o crear uno para almacenar estos datos preliminares
             $viaje = CamionViaje::where('camion_victual_id', $camion->id)
                 ->where('estado', EstadoViaje::EnRuta)
                 ->latest()
@@ -474,6 +512,14 @@ class CamionVictualService
                     'cant_ayudantes'    => 0,
                     'estado'            => EstadoViaje::EnRuta,
                 ]);
+            } else {
+                if (!empty($datos['vehiculo_id'])) {
+                    $viaje->vehiculo_id = $datos['vehiculo_id'];
+                }
+                if (!empty($datos['chofer_id'])) {
+                    $viaje->chofer_id = $datos['chofer_id'];
+                }
+                $viaje->total_facturado = $camion->monto_total;
             }
 
             // Sincronizar gastos si se envían
@@ -518,6 +564,19 @@ class CamionVictualService
 
             $viaje->save();
 
+            // Sincronizar pedidos en el viaje
+            $pedidos = $camion->pedidos()->get();
+            foreach ($pedidos as $p) {
+                CamionViajePedido::firstOrCreate(
+                    ['viaje_id' => $viaje->id, 'pedido_id' => $p->id],
+                    [
+                        'orden_viaje'        => $p->pivot->orden_viaje ?? 0,
+                        'estado_entrega'     => $p->pivot->estado_entrega ?? EstadoEntrega::Pendiente->value,
+                        'total_pedido'       => $p->total,
+                    ]
+                );
+            }
+
             return [
                 'camion' => $this->cargarRelaciones($camion->fresh()),
                 'viaje'  => $viaje->fresh(['gastos', 'pedidos.pedido.cliente', 'chofer.user', 'vendedor']),
@@ -530,6 +589,9 @@ class CamionVictualService
      */
     public function cerrar(CamionVictual $camion, User $responsable): CamionVictual
     {
+        if ($camion->estado !== EstadoCamion::EnRuta) {
+            throw new \Exception("Solo se pueden liquidar camiones que se encuentren en ruta. Estado actual: '{$camion->estado->value}'.");
+        }
         $res = $this->cerrarConLiquidacion($camion, [], $responsable);
         return $res['camion'];
     }
@@ -540,6 +602,9 @@ class CamionVictualService
      */
     public function cerrarConLiquidacion(CamionVictual $camion, array $datos, User $responsable): array
     {
+        if ($camion->estado !== EstadoCamion::EnRuta) {
+            throw new \Exception("Solo se pueden liquidar camiones que se encuentren en ruta. Estado actual: '{$camion->estado->value}'.");
+        }
         return DB::transaction(function () use ($camion, $datos, $responsable) {
             // 1. Localizar el viaje activo en ruta o crear uno para archivar
             $viaje = CamionViaje::where('camion_victual_id', $camion->id)

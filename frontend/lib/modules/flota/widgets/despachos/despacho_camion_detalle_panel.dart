@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/utils/formatters.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/widgets/compact_snack_bar.dart';
@@ -9,9 +9,9 @@ import '../../../pedido/providers/pedido_provider.dart';
 import '../../../pedido/widgets/pedido_detalle_dialog.dart';
 import '../camiones/camion_victual_form_modal.dart';
 import 'despacho_agregar_pedidos_modal.dart';
-import 'despacho_cambiar_chofer_dialog.dart';
 import 'despacho_en_ruta_dialog.dart';
 import 'despacho_liquidacion_dialog.dart';
+import 'despacho_viaje_info_card.dart';
 
 class DespachoCamionDetallePanel extends StatefulWidget {
   final CamionVictual camion;
@@ -30,10 +30,6 @@ class DespachoCamionDetallePanel extends StatefulWidget {
 
 class _DespachoCamionDetallePanelState
     extends State<DespachoCamionDetallePanel> {
-  final NumberFormat _currencyFmt = NumberFormat.currency(
-    symbol: '\$',
-    decimalDigits: 2,
-  );
 
   bool _isReordering = false;
   List<CamionPedido> _pedidosLocales = [];
@@ -60,6 +56,10 @@ class _DespachoCamionDetallePanelState
   }
 
   Future<void> _imprimirConduce() async {
+    if (widget.camion.pedidos.isEmpty) {
+      CompactSnackBar.showWarning(context, 'El camión no tiene pedidos para generar el Conduce.');
+      return;
+    }
     try {
       final provider = context.read<CamionVictualProvider>();
       final urlStr = await provider.getConducePdfUrl(widget.camion.id);
@@ -73,25 +73,21 @@ class _DespachoCamionDetallePanelState
     }
   }
 
-  Future<void> _marcarListo() async {
-    if (widget.camion.montoTotal < widget.camion.minimoSalida) {
-      final falta = widget.camion.minimoSalida - widget.camion.montoTotal;
-      CompactSnackBar.showError(
-        context,
-        'No alcanza el mínimo de salida. Faltan ${_currencyFmt.format(falta)}',
-      );
+  Future<void> _imprimirReporteViaje() async {
+    if (widget.camion.pedidos.isEmpty && widget.camion.viajeActivo == null) {
+      CompactSnackBar.showWarning(context, 'El camión no tiene pedidos ni datos de viaje para generar el reporte.');
       return;
     }
-
-    final provider = context.read<CamionVictualProvider>();
     try {
-      await provider.update(widget.camion.id, {'estado': 'listo'});
-      if (!mounted) return;
-      CompactSnackBar.showSuccess(context, 'Camión marcado como LISTO');
-      widget.onCamionUpdated();
+      final provider = context.read<CamionVictualProvider>();
+      final urlStr = await provider.getReporteViajePdfUrl(widget.camion.id);
+      final url = Uri.parse(urlStr);
+      if (!await launchUrl(url)) {
+        throw Exception('No se pudo abrir el Reporte de Viaje PDF');
+      }
     } catch (e) {
       if (!mounted) return;
-      CompactSnackBar.showError(context, 'Error: $e');
+      CompactSnackBar.showError(context, 'Error al abrir Reporte de Viaje: $e');
     }
   }
 
@@ -108,7 +104,7 @@ class _DespachoCamionDetallePanelState
       final falta = widget.camion.minimoSalida - widget.camion.montoTotal;
       CompactSnackBar.showError(
         context,
-        'No alcanza el mínimo de salida (${_currencyFmt.format(widget.camion.minimoSalida)}). Faltan ${_currencyFmt.format(falta)}.',
+        'No alcanza el mínimo de salida (${Formatters.formatCurrency(widget.camion.minimoSalida)}). Faltan ${Formatters.formatCurrency(falta)}.',
       );
       return;
     }
@@ -125,6 +121,13 @@ class _DespachoCamionDetallePanelState
   }
 
   Future<void> _cerrarCamion() async {
+    if (widget.camion.estado != 'en_ruta') {
+      CompactSnackBar.showError(
+        context,
+        'Solo se pueden liquidar camiones que se encuentren en ruta.',
+      );
+      return;
+    }
     final ok = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -341,63 +344,43 @@ class _DespachoCamionDetallePanelState
       runSpacing: 6,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        // Imprimir Conduce
-        ElevatedButton.icon(
-          onPressed: _imprimirConduce,
-          icon: const Icon(Icons.picture_as_pdf, size: 14),
-          label: const Text('Conduce PDF', style: TextStyle(fontSize: 11)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFF1F5F9),
-            foregroundColor: const Color(0xFF334155),
-            elevation: 0,
-            side: const BorderSide(color: Color(0xFFCBD5E1)),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            visualDensity: VisualDensity.compact,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
+        // Botones PDF (solo visibles si el camión tiene pedidos cargados)
+        if (camion.pedidos.isNotEmpty) ...[
+          ElevatedButton.icon(
+            onPressed: _imprimirConduce,
+            icon: const Icon(Icons.picture_as_pdf, size: 14),
+            label: const Text('Conduce PDF', style: TextStyle(fontSize: 11)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF1F5F9),
+              foregroundColor: const Color(0xFF334155),
+              elevation: 0,
+              side: const BorderSide(color: Color(0xFFCBD5E1)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              visualDensity: VisualDensity.compact,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
             ),
           ),
-        ),
-
-        // Workflow buttons based on state
-        if (camion.estado == 'armando') ...[
-          () {
-            final bool cumpleMinimo =
-                camion.pedidos.isNotEmpty &&
-                camion.montoTotal >= camion.minimoSalida;
-            final double falta = (camion.minimoSalida - camion.montoTotal)
-                .clamp(0.0, double.infinity);
-
-            return Tooltip(
-              message: cumpleMinimo
-                  ? 'Marcar como listo para salir'
-                  : 'Faltan ${_currencyFmt.format(falta)} para alcanzar el mínimo de salida',
-              child: ElevatedButton.icon(
-                onPressed: _marcarListo,
-                icon: const Icon(Icons.check_circle, size: 14),
-                label: const Text(
-                  'Marcar Listo',
-                  style: TextStyle(fontSize: 11),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cumpleMinimo
-                      ? const Color(0xFF16A34A)
-                      : const Color(0xFF94A3B8),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
+          ElevatedButton.icon(
+            onPressed: _imprimirReporteViaje,
+            icon: const Icon(Icons.summarize, size: 14),
+            label: const Text('Reporte Viaje PDF', style: TextStyle(fontSize: 11)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF1F5F9),
+              foregroundColor: const Color(0xFF1E293B),
+              elevation: 0,
+              side: const BorderSide(color: Color(0xFFCBD5E1)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              visualDensity: VisualDensity.compact,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
               ),
-            );
-          }(),
+            ),
+          ),
         ],
 
+        // Workflow buttons based on state
         if (camion.estado == 'listo' || camion.estado == 'armando') ...[
           () {
             final bool puedeDespachar =
@@ -408,13 +391,13 @@ class _DespachoCamionDetallePanelState
 
             return Tooltip(
               message: puedeDespachar
-                  ? 'Despachar camión a ruta logística'
-                  : 'Faltan ${_currencyFmt.format(falta)} para alcanzar el mínimo de salida',
+                  ? 'Preparar viaje y salida a ruta'
+                  : 'Faltan ${Formatters.formatCurrency(falta)} para alcanzar el mínimo de salida',
               child: ElevatedButton.icon(
                 onPressed: _ponerEnRuta,
                 icon: const Icon(Icons.departure_board, size: 14),
                 label: const Text(
-                  'Despachar / En Ruta',
+                  'Preparar Viaje',
                   style: TextStyle(fontSize: 11),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -436,9 +419,7 @@ class _DespachoCamionDetallePanelState
           }(),
         ],
 
-        if (camion.estado == 'en_ruta' ||
-            camion.estado == 'listo' ||
-            (camion.estado == 'cerrado' && camion.pedidos.isNotEmpty))
+        if (camion.estado == 'en_ruta')
           ElevatedButton.icon(
             onPressed: _cerrarCamion,
             icon: const Icon(Icons.receipt_long, size: 14),
@@ -477,46 +458,36 @@ class _DespachoCamionDetallePanelState
         }
       },
       itemBuilder: (_) => [
-        if (camion.pedidos.isNotEmpty)
+        if (camion.estado != 'en_ruta' && camion.estado != 'cerrado')
           const PopupMenuItem(
-            value: 'liquidar',
+            value: 'editar',
             child: Row(
               children: [
-                Icon(Icons.receipt_long, color: Color(0xFFEA580C), size: 16),
+                Icon(Icons.edit, color: Color(0xFF475569), size: 16),
                 SizedBox(width: 8),
                 Text(
-                  'Liquidar Viaje',
-                  style: TextStyle(color: Color(0xFFEA580C), fontSize: 12),
+                  'Editar Datos',
+                  style: TextStyle(color: Color(0xFF0F172A), fontSize: 12),
                 ),
               ],
             ),
           ),
-        const PopupMenuItem(
-          value: 'editar',
-          child: Row(
-            children: [
-              Icon(Icons.edit, color: Color(0xFF475569), size: 16),
-              SizedBox(width: 8),
-              Text(
-                'Editar Datos',
-                style: TextStyle(color: Color(0xFF0F172A), fontSize: 12),
-              ),
-            ],
+        if (camion.estado != 'en_ruta' &&
+            camion.estado != 'cerrado' &&
+            camion.pedidos.isNotEmpty)
+          const PopupMenuItem(
+            value: 'vaciar',
+            child: Row(
+              children: [
+                Icon(Icons.delete_sweep, color: Color(0xFFDC2626), size: 16),
+                SizedBox(width: 8),
+                Text(
+                  'Vaciar Camión',
+                  style: TextStyle(color: Color(0xFFDC2626), fontSize: 12),
+                ),
+              ],
+            ),
           ),
-        ),
-        const PopupMenuItem(
-          value: 'vaciar',
-          child: Row(
-            children: [
-              Icon(Icons.delete_sweep, color: Color(0xFFDC2626), size: 16),
-              SizedBox(width: 8),
-              Text(
-                'Vaciar Camión',
-                style: TextStyle(color: Color(0xFFDC2626), fontSize: 12),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -617,35 +588,68 @@ class _DespachoCamionDetallePanelState
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              Row(
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 2,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  const Icon(
-                                    Icons.badge,
-                                    size: 12,
-                                    color: Color(0xFF94A3B8),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Slot #${camion.slotNumero}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF64748B),
-                                      fontSize: 11,
-                                    ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.badge,
+                                        size: 12,
+                                        color: Color(0xFF94A3B8),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Slot #${camion.slotNumero}',
+                                        style: const TextStyle(
+                                          color: Color(0xFF64748B),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   if (camion.vendedorNombre != null) ...[
-                                    const SizedBox(width: 10),
-                                    const Icon(
-                                      Icons.storefront,
-                                      size: 12,
-                                      color: Color(0xFF94A3B8),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.storefront,
+                                          size: 12,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Vend: ${camion.vendedorNombre}',
+                                          style: const TextStyle(
+                                            color: Color(0xFF64748B),
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Vend: ${camion.vendedorNombre}',
-                                      style: const TextStyle(
-                                        color: Color(0xFF64748B),
-                                        fontSize: 11,
-                                      ),
+                                  ],
+                                  if (camion.choferNombre != null) ...[
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.person_outline,
+                                          size: 12,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Chofer: ${camion.choferNombre}',
+                                          style: const TextStyle(
+                                            color: Color(0xFF64748B),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ],
@@ -668,163 +672,14 @@ class _DespachoCamionDetallePanelState
                       const SizedBox(height: 8),
                       _buildHeaderActionButtons(camion),
                     ],
-                    const SizedBox(height: 10),
 
-                    // Driver Strip with Quick Assignment Button
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.person,
-                            color: Color(0xFFE31E24),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Conductor:',
-                            style: TextStyle(
-                              color: Color(0xFF64748B),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              camion.choferNombre ?? 'SIN ASIGNAR',
-                              style: TextStyle(
-                                color: camion.choferNombre != null
-                                    ? const Color(0xFF0F172A)
-                                    : const Color(0xFFD97706),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          InkWell(
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) =>
-                                    DespachoCambiarChoferDialog(camion: camion),
-                              ).then((val) {
-                                if (val == true) widget.onCamionUpdated();
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFFE31E24,
-                                ).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.swap_horiz,
-                                    color: Color(0xFFE31E24),
-                                    size: 14,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    constraints.maxWidth < 460
-                                        ? 'Cambiar'
-                                        : 'Asignar / Cambiar Chofer',
-                                    style: const TextStyle(
-                                      color: Color(0xFFE31E24),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    // ── Visualización Unificada de Datos Operativos y Despacho ──
+                    DespachoViajeInfoCard(
+                      camion: camion,
+                      onEditar: (camion.estado != 'en_ruta' && camion.estado != 'cerrado')
+                          ? _ponerEnRuta
+                          : null,
                     ),
-                    if (camion.vehiculoFicha != null) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFBFDBFE)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.local_shipping,
-                              color: Color(0xFF2563EB),
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Vehículo Físico:',
-                              style: TextStyle(
-                                color: Color(0xFF64748B),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2563EB).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                camion.vehiculoFicha!,
-                                style: const TextStyle(
-                                  color: Color(0xFF2563EB),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                '${camion.vehiculoMarca ?? ''} ${camion.vehiculoModelo ?? ''} ${camion.vehiculoPlaca != null ? '(${camion.vehiculoPlaca})' : ''}'.trim(),
-                                style: const TextStyle(
-                                  color: Color(0xFF1E293B),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -856,7 +711,7 @@ class _DespachoCamionDetallePanelState
                                     ),
                                   ),
                                   Text(
-                                    _currencyFmt.format(camion.montoTotal),
+                                    Formatters.formatCurrency(camion.montoTotal),
                                     style: const TextStyle(
                                       color: Color(0xFF16A34A),
                                       fontSize: 16,
@@ -929,7 +784,7 @@ class _DespachoCamionDetallePanelState
                             children: [
                               Flexible(
                                 child: Text(
-                                  'Mínimo: ${_currencyFmt.format(camion.minimoSalida)}',
+                                  'Mínimo: ${Formatters.formatCurrency(camion.minimoSalida)}',
                                   style: const TextStyle(
                                     color: Color(0xFF64748B),
                                     fontSize: 10,
@@ -940,7 +795,7 @@ class _DespachoCamionDetallePanelState
                               const SizedBox(width: 6),
                               Text(
                                 falta > 0
-                                    ? 'Faltan ${_currencyFmt.format(falta)}'
+                                    ? 'Faltan ${Formatters.formatCurrency(falta)}'
                                     : '✓ Mínimo Alcanzado',
                                 style: TextStyle(
                                   color: falta > 0
@@ -984,7 +839,7 @@ class _DespachoCamionDetallePanelState
                                   ),
                                 ),
                                 Text(
-                                  _currencyFmt.format(camion.montoTotal),
+                                  Formatters.formatCurrency(camion.montoTotal),
                                   style: const TextStyle(
                                     color: Color(0xFF16A34A),
                                     fontSize: 16,
@@ -1007,7 +862,7 @@ class _DespachoCamionDetallePanelState
                                   children: [
                                     Flexible(
                                       child: Text(
-                                        'Mínimo: ${_currencyFmt.format(camion.minimoSalida)}',
+                                        'Mínimo: ${Formatters.formatCurrency(camion.minimoSalida)}',
                                         style: const TextStyle(
                                           color: Color(0xFF64748B),
                                           fontSize: 10,
@@ -1018,7 +873,7 @@ class _DespachoCamionDetallePanelState
                                     const SizedBox(width: 6),
                                     Text(
                                       falta > 0
-                                          ? 'Faltan ${_currencyFmt.format(falta)}'
+                                          ? 'Faltan ${Formatters.formatCurrency(falta)}'
                                           : '✓ Mínimo Alcanzado',
                                       style: TextStyle(
                                         color: falta > 0
@@ -1230,124 +1085,6 @@ class _DespachoCamionDetallePanelState
                 ),
               ),
 
-              // ── Banner Informativo de Liquidación (cuando está en ruta o cerrado con pedidos) ──
-              if ((camion.estado == 'en_ruta' || camion.estado == 'cerrado') &&
-                  camion.pedidos.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: camion.estado == 'cerrado'
-                        ? const Color(0xFFFEF2F2)
-                        : (pedidosEntregados == camion.pedidos.length &&
-                                  camion.pedidos.isNotEmpty
-                              ? const Color(0xFFF0FDF4)
-                              : const Color(0xFFFFF7ED)),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: camion.estado == 'cerrado'
-                          ? const Color(0xFFFECACA)
-                          : (pedidosEntregados == camion.pedidos.length &&
-                                    camion.pedidos.isNotEmpty
-                                ? const Color(0xFF86EFAC)
-                                : const Color(0xFFFDBA74)),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        camion.estado == 'cerrado'
-                            ? Icons.assignment_late_outlined
-                            : (pedidosEntregados == camion.pedidos.length &&
-                                      camion.pedidos.isNotEmpty
-                                  ? Icons.check_circle_outline
-                                  : Icons.local_shipping_outlined),
-                        color: camion.estado == 'cerrado'
-                            ? const Color(0xFFDC2626)
-                            : (pedidosEntregados == camion.pedidos.length &&
-                                      camion.pedidos.isNotEmpty
-                                  ? const Color(0xFF16A34A)
-                                  : const Color(0xFFEA580C)),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              camion.estado == 'cerrado'
-                                  ? 'Camión cerrado pendiente de liquidar (${camion.pedidos.length} pedidos)'
-                                  : (pedidosEntregados ==
-                                                camion.pedidos.length &&
-                                            camion.pedidos.isNotEmpty
-                                        ? '¡Todos los pedidos han sido entregados!'
-                                        : 'Viaje en ruta ($pedidosEntregados/${camion.pedidos.length} entregados)'),
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
-                                color: camion.estado == 'cerrado'
-                                    ? const Color(0xFFB91C1C)
-                                    : (pedidosEntregados ==
-                                                  camion.pedidos.length &&
-                                              camion.pedidos.isNotEmpty
-                                          ? const Color(0xFF15803D)
-                                          : const Color(0xFF9A3412)),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              camion.estado == 'cerrado'
-                                  ? 'Haz clic en "Liquidar Viaje" para asentar los gastos y liberar el camión a VACÍO.'
-                                  : 'Haz clic en "Liquidar Viaje" para registrar los gastos (combustible, viáticos), ayudantes y liberar el camión.',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: camion.estado == 'cerrado'
-                                    ? const Color(0xFF991B1B)
-                                    : (pedidosEntregados ==
-                                                  camion.pedidos.length &&
-                                              camion.pedidos.isNotEmpty
-                                          ? const Color(0xFF166534)
-                                          : const Color(0xFF7C2D12)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton.icon(
-                        onPressed: _cerrarCamion,
-                        icon: const Icon(Icons.receipt_long, size: 14),
-                        label: const Text(
-                          'Liquidar Viaje',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFEA580C),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 7,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
               // ── Lista / Tabla Interactiva de Pedidos ─────────────────────
               Expanded(
                 child: _pedidosLocales.isEmpty
@@ -1497,7 +1234,7 @@ class _DespachoCamionDetallePanelState
                                   ),
                                 ),
                                 Text(
-                                  _currencyFmt.format(p.total),
+                                  Formatters.formatCurrency(p.total),
                                   style: const TextStyle(
                                     color: Color(0xFF16A34A),
                                     fontSize: 12,
@@ -1620,7 +1357,7 @@ class _DespachoCamionDetallePanelState
 
                                     // Monto Total
                                     Text(
-                                      _currencyFmt.format(p.total),
+                                      Formatters.formatCurrency(p.total),
                                       style: const TextStyle(
                                         color: Color(0xFF16A34A),
                                         fontWeight: FontWeight.bold,
@@ -1843,20 +1580,22 @@ class _DespachoCamionDetallePanelState
                                       padding: const EdgeInsets.all(4),
                                       constraints: const BoxConstraints(),
                                     ),
-                                    const SizedBox(width: 2),
-
-                                    // Botón Quitar del Camión
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.remove_circle_outline,
-                                        size: 15,
-                                        color: Color(0xFFDC2626),
+                                    // Botón Quitar del Camión (solo antes de salir a ruta)
+                                    if (camion.estado != 'en_ruta' &&
+                                        camion.estado != 'cerrado') ...[
+                                      const SizedBox(width: 2),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.remove_circle_outline,
+                                          size: 15,
+                                          color: Color(0xFFDC2626),
+                                        ),
+                                        tooltip: 'Quitar del Camión',
+                                        onPressed: () => _quitarPedido(p),
+                                        padding: const EdgeInsets.all(4),
+                                        constraints: const BoxConstraints(),
                                       ),
-                                      tooltip: 'Quitar del Camión',
-                                      onPressed: () => _quitarPedido(p),
-                                      padding: const EdgeInsets.all(4),
-                                      constraints: const BoxConstraints(),
-                                    ),
+                                    ],
                                   ],
                                 ),
                               ],

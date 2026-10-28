@@ -10,7 +10,6 @@ import '../widgets/auth_text_field.dart';
 import '../widgets/auth_submit_button.dart';
 // import 'widgets/auth_quick_credential_card.dart';
 import '../widgets/login_branding_panel.dart';
-import '../../demo_tour/demo_coach_mark_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -495,7 +494,7 @@ class _LoginScreenState extends State<LoginScreen>
                 height: 40,
               ),
               // Comentar esto en producción para ocultar los botones de prueba
-              // _buildQuickLoginRoles(),
+              _buildQuickLoginRoles(),
             ],
           ),
         ),

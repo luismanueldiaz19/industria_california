@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/utils/formatters.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/widgets/compact_snack_bar.dart';
 import '../../../../core/widgets/zoom_dialog.dart';
@@ -42,10 +42,6 @@ class _GastoItemDraft {
 }
 
 class _DespachoLiquidacionDialogState extends State<DespachoLiquidacionDialog> {
-  final NumberFormat _currencyFmt = NumberFormat.currency(
-    symbol: '\$',
-    decimalDigits: 2,
-  );
 
   int _cantAyudantes = 0;
   final TextEditingController _nombresAyudantesCtrl = TextEditingController();
@@ -374,7 +370,7 @@ class _DespachoLiquidacionDialogState extends State<DespachoLiquidacionDialog> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  _currencyFmt.format(widget.camion.montoTotal),
+                                  Formatters.formatCurrency(widget.camion.montoTotal),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -430,7 +426,7 @@ class _DespachoLiquidacionDialogState extends State<DespachoLiquidacionDialog> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  _currencyFmt.format(_totalGastos),
+                                  Formatters.formatCurrency(_totalGastos),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -466,7 +462,7 @@ class _DespachoLiquidacionDialogState extends State<DespachoLiquidacionDialog> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  _currencyFmt.format(_margenNeto),
+                                  Formatters.formatCurrency(_margenNeto),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -1103,34 +1099,23 @@ class _DespachoLiquidacionDialogState extends State<DespachoLiquidacionDialog> {
                     ),
                   ),
                   const Spacer(),
-                  // Botón FINALIZAR Y LIQUIDAR (Secundario / Outline para prevenir clics accidentales)
+                  // Botón GUARDAR SIN CERRAR (Acción secundaria)
                   OutlinedButton.icon(
-                    onPressed: _isSaving ? null : _finalizarLiquidacion,
-                    icon: _isSaving
-                        ? const SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 1.5,
-                              color: Color(0xFFEA580C),
-                            ),
-                          )
-                        : const Icon(Icons.check_circle_outline, size: 15),
-                    label: Text(
-                      _isSaving
-                          ? 'Liquidando...'
-                          : 'Finalizar y Liquidar Viaje',
-                      style: const TextStyle(
+                    onPressed: _isSaving ? null : _guardarSinCerrar,
+                    icon: const Icon(Icons.save_outlined, size: 15),
+                    label: const Text(
+                      'Guardar sin Cerrar',
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFC2410C),
-                      side: const BorderSide(color: Color(0xFFFDBA74)),
-                      backgroundColor: const Color(0xFFFFF7ED),
+                      foregroundColor: const Color(0xFF475569),
+                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      backgroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
+                        horizontal: 12,
                         vertical: 9,
                       ),
                       visualDensity: VisualDensity.compact,
@@ -1140,9 +1125,9 @@ class _DespachoLiquidacionDialogState extends State<DespachoLiquidacionDialog> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Botón GUARDAR SIN CERRAR (Acción principal destacada en ROJO)
+                  // Botón FINALIZAR Y LIQUIDAR (Acción principal destacada para cerrar)
                   ElevatedButton.icon(
-                    onPressed: _isSaving ? null : _guardarSinCerrar,
+                    onPressed: _isSaving ? null : _finalizarLiquidacion,
                     icon: _isSaving
                         ? const SizedBox(
                             width: 14,
@@ -1152,16 +1137,18 @@ class _DespachoLiquidacionDialogState extends State<DespachoLiquidacionDialog> {
                               color: Colors.white,
                             ),
                           )
-                        : const Icon(Icons.save_rounded, size: 16),
-                    label: const Text(
-                      'Guardar sin Cerrar',
-                      style: TextStyle(
+                        : const Icon(Icons.check_circle_rounded, size: 16),
+                    label: Text(
+                      _isSaving
+                          ? 'Liquidando...'
+                          : 'Finalizar y Liquidar Viaje',
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE31E24),
+                      backgroundColor: const Color(0xFFEA580C),
                       foregroundColor: Colors.white,
                       elevation: 1,
                       padding: const EdgeInsets.symmetric(

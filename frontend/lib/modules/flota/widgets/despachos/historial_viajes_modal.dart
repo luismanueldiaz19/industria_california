@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/formatters.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/widgets/compact_snack_bar.dart';
 import '../../../camion_victual/models/camion_viaje.dart';
 import '../../../camion_victual/services/camion_victual_service.dart';
 import '../../providers/chofer_provider.dart';
@@ -15,8 +18,6 @@ class HistorialViajesModal extends StatefulWidget {
 
 class _HistorialViajesModalState extends State<HistorialViajesModal> {
   final CamionVictualService _service = CamionVictualService();
-  final NumberFormat _currencyFmt =
-      NumberFormat.currency(symbol: '\$', decimalDigits: 2);
   final DateFormat _dateFmt = DateFormat('dd/MM/yyyy hh:mm a');
 
   List<CamionViaje> _viajes = [];
@@ -80,8 +81,7 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
       _viajes.fold(0, (sum, v) => sum + v.totalFacturado);
   double get _totalGastosGlobal =>
       _viajes.fold(0, (sum, v) => sum + v.totalGastos);
-  double get _margenNetoGlobal =>
-      _totalFacturadoGlobal - _totalGastosGlobal;
+  double get _margenNetoGlobal => _totalFacturadoGlobal - _totalGastosGlobal;
 
   @override
   Widget build(BuildContext context) {
@@ -142,13 +142,21 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.refresh, size: 18, color: Color(0xFF64748B)),
+                    icon: const Icon(
+                      Icons.refresh,
+                      size: 18,
+                      color: Color(0xFF64748B),
+                    ),
                     tooltip: 'Recargar',
                     onPressed: _cargarViajes,
                   ),
                   const SizedBox(width: 4),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 18, color: Color(0xFF64748B)),
+                    icon: const Icon(
+                      Icons.close,
+                      size: 18,
+                      color: Color(0xFF64748B),
+                    ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () => Navigator.of(context).pop(),
@@ -172,21 +180,21 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                   const SizedBox(width: 16),
                   _MetricBadge(
                     label: 'Facturado Total',
-                    value: _currencyFmt.format(_totalFacturadoGlobal),
+                    value: Formatters.formatCurrency(_totalFacturadoGlobal),
                     color: const Color(0xFF0284C7),
                     icon: Icons.receipt_outlined,
                   ),
                   const SizedBox(width: 16),
                   _MetricBadge(
                     label: 'Gastos Operativos',
-                    value: _currencyFmt.format(_totalGastosGlobal),
+                    value: Formatters.formatCurrency(_totalGastosGlobal),
                     color: const Color(0xFFDC2626),
                     icon: Icons.money_off_csred_outlined,
                   ),
                   const SizedBox(width: 16),
                   _MetricBadge(
                     label: 'Margen Neto Global',
-                    value: _currencyFmt.format(_margenNetoGlobal),
+                    value: Formatters.formatCurrency(_margenNetoGlobal),
                     color: const Color(0xFF16A34A),
                     icon: Icons.trending_up,
                   ),
@@ -205,16 +213,23 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                     child: DropdownButtonFormField<int?>(
                       initialValue: _filtroChoferId,
                       isExpanded: true,
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF0F172A)),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF0F172A),
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Filtrar por Chofer',
                         labelStyle: const TextStyle(fontSize: 11),
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 8),
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFCBD5E1),
+                          ),
                         ),
                       ),
                       items: [
@@ -246,16 +261,23 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                     child: DropdownButtonFormField<int?>(
                       initialValue: _filtroVehiculoId,
                       isExpanded: true,
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF0F172A)),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF0F172A),
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Filtrar por Vehículo',
                         labelStyle: const TextStyle(fontSize: 11),
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 8),
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFCBD5E1),
+                          ),
                         ),
                       ),
                       items: [
@@ -269,8 +291,10 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                             child: Text(
                               [
                                 if (vh.ficha.isNotEmpty) vh.ficha,
-                                if (vh.marca != null && vh.marca!.isNotEmpty) vh.marca!,
-                                if (vh.placa != null && vh.placa!.isNotEmpty) '(${vh.placa!})',
+                                if (vh.marca != null && vh.marca!.isNotEmpty)
+                                  vh.marca!,
+                                if (vh.placa != null && vh.placa!.isNotEmpty)
+                                  '(${vh.placa!})',
                               ].join(' '),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -290,26 +314,39 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                     width: 160,
                     child: DropdownButtonFormField<String>(
                       initialValue: _filtroEstado,
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF0F172A)),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF0F172A),
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Estado de Viaje',
                         labelStyle: const TextStyle(fontSize: 11),
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 8),
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFCBD5E1),
+                          ),
                         ),
                       ),
                       items: const [
                         DropdownMenuItem(value: '', child: Text('Todos')),
                         DropdownMenuItem(
-                            value: 'completado', child: Text('Completados')),
+                          value: 'completado',
+                          child: Text('Completados'),
+                        ),
                         DropdownMenuItem(
-                            value: 'en_ruta', child: Text('En Ruta')),
+                          value: 'en_ruta',
+                          child: Text('En Ruta'),
+                        ),
                         DropdownMenuItem(
-                            value: 'cancelado', child: Text('Cancelados')),
+                          value: 'cancelado',
+                          child: Text('Cancelados'),
+                        ),
                       ],
                       onChanged: (val) {
                         setState(() => _filtroEstado = val ?? '');
@@ -337,59 +374,63 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : _error != null
-                      ? Center(
-                          child: Text(
-                            'Error: $_error',
-                            style: const TextStyle(
-                                color: Color(0xFFDC2626), fontSize: 12),
+                  ? Center(
+                      child: Text(
+                        'Error: $_error',
+                        style: const TextStyle(
+                          color: Color(0xFFDC2626),
+                          fontSize: 12,
+                        ),
+                      ),
+                    )
+                  : _viajes.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(
+                            Icons.inbox_outlined,
+                            size: 36,
+                            color: Color(0xFF94A3B8),
                           ),
-                        )
-                      : _viajes.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(Icons.inbox_outlined,
-                                      size: 36, color: Color(0xFF94A3B8)),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'No hay viajes registrados en el historial.',
+                          SizedBox(height: 8),
+                          Text(
+                            'No hay viajes registrados en el historial.',
+                            style: TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : isDesktop
+                  ? Row(
+                      children: [
+                        // Lista de Viajes (Izquierda)
+                        Expanded(flex: 3, child: _buildViajesList()),
+                        const VerticalDivider(
+                          width: 1,
+                          color: Color(0xFFE2E8F0),
+                        ),
+                        // Detalle del Viaje Seleccionado (Derecha)
+                        Expanded(
+                          flex: 2,
+                          child: _viajeSeleccionado == null
+                              ? const Center(
+                                  child: Text(
+                                    'Seleccione un viaje para ver su desglose',
                                     style: TextStyle(
-                                        color: Color(0xFF64748B),
-                                        fontSize: 12),
+                                      color: Color(0xFF94A3B8),
+                                      fontSize: 12,
+                                    ),
                                   ),
-                                ],
-                              ),
-                            )
-                          : isDesktop
-                              ? Row(
-                                  children: [
-                                    // Lista de Viajes (Izquierda)
-                                    Expanded(
-                                      flex: 3,
-                                      child: _buildViajesList(),
-                                    ),
-                                    const VerticalDivider(
-                                        width: 1, color: Color(0xFFE2E8F0)),
-                                    // Detalle del Viaje Seleccionado (Derecha)
-                                    Expanded(
-                                      flex: 2,
-                                      child: _viajeSeleccionado == null
-                                          ? const Center(
-                                              child: Text(
-                                                'Seleccione un viaje para ver su desglose',
-                                                style: TextStyle(
-                                                  color: Color(0xFF94A3B8),
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            )
-                                          : _buildDetalleViaje(
-                                              _viajeSeleccionado!),
-                                    ),
-                                  ],
                                 )
-                              : _buildViajesList(),
+                              : _buildDetalleViaje(_viajeSeleccionado!),
+                        ),
+                      ],
+                    )
+                  : _buildViajesList(),
             ),
           ],
         ),
@@ -401,7 +442,7 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
     return ListView.separated(
       padding: const EdgeInsets.all(12),
       itemCount: _viajes.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final v = _viajes[index];
         final isSelected = _viajeSeleccionado?.id == v.id;
@@ -416,9 +457,7 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
           child: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? const Color(0xFFEFF6FF)
-                  : Colors.white,
+              color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isSelected
@@ -438,7 +477,9 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF0F172A),
                             borderRadius: BorderRadius.circular(4),
@@ -453,8 +494,11 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.person,
-                            size: 13, color: Color(0xFF2563EB)),
+                        const Icon(
+                          Icons.person,
+                          size: 13,
+                          color: Color(0xFF2563EB),
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           v.choferNombre ?? 'Sin chofer',
@@ -474,8 +518,11 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                 // Vehículo row
                 Row(
                   children: [
-                    const Icon(Icons.local_shipping,
-                        size: 13, color: Color(0xFF0284C7)),
+                    const Icon(
+                      Icons.local_shipping,
+                      size: 13,
+                      color: Color(0xFF0284C7),
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
@@ -497,27 +544,37 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                 // Info row: Fechas & Personal
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today_outlined,
-                        size: 11, color: Color(0xFF64748B)),
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 11,
+                      color: Color(0xFF64748B),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       v.fechaCierre != null
                           ? _dateFmt.format(v.fechaCierre!)
                           : (v.fechaSalida != null
-                              ? 'Salida: ${_dateFmt.format(v.fechaSalida!)}'
-                              : 'Sin fecha'),
+                                ? 'Salida: ${_dateFmt.format(v.fechaSalida!)}'
+                                : 'Sin fecha'),
                       style: const TextStyle(
-                          fontSize: 10.5, color: Color(0xFF64748B)),
+                        fontSize: 10.5,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                     if (v.cantAyudantes > 0) ...[
                       const SizedBox(width: 12),
-                      const Icon(Icons.people_alt_outlined,
-                          size: 11, color: Color(0xFF64748B)),
+                      const Icon(
+                        Icons.people_alt_outlined,
+                        size: 11,
+                        color: Color(0xFF64748B),
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '${v.cantAyudantes} ayudante${v.cantAyudantes > 1 ? "s" : ""}',
                         style: const TextStyle(
-                            fontSize: 10.5, color: Color(0xFF64748B)),
+                          fontSize: 10.5,
+                          color: Color(0xFF64748B),
+                        ),
                       ),
                     ],
                   ],
@@ -534,10 +591,12 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                           const Text(
                             'Facturado',
                             style: TextStyle(
-                                fontSize: 9.5, color: Color(0xFF64748B)),
+                              fontSize: 9.5,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
                           Text(
-                            _currencyFmt.format(v.totalFacturado),
+                            Formatters.formatCurrency(v.totalFacturado),
                             style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.bold,
@@ -554,10 +613,12 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                           const Text(
                             'Gastos',
                             style: TextStyle(
-                                fontSize: 9.5, color: Color(0xFFDC2626)),
+                              fontSize: 9.5,
+                              color: Color(0xFFDC2626),
+                            ),
                           ),
                           Text(
-                            _currencyFmt.format(v.totalGastos),
+                            Formatters.formatCurrency(v.totalGastos),
                             style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.bold,
@@ -574,10 +635,12 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                           const Text(
                             'Margen Neto',
                             style: TextStyle(
-                                fontSize: 9.5, color: Color(0xFF16A34A)),
+                              fontSize: 9.5,
+                              color: Color(0xFF16A34A),
+                            ),
                           ),
                           Text(
-                            _currencyFmt.format(v.margenNeto),
+                            Formatters.formatCurrency(v.margenNeto),
                             style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.bold,
@@ -587,8 +650,11 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right,
-                        size: 16, color: Color(0xFF94A3B8)),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: Color(0xFF94A3B8),
+                    ),
                   ],
                 ),
               ],
@@ -599,6 +665,19 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
     );
   }
 
+  Future<void> _imprimirReporteViaje(CamionViaje viaje) async {
+    try {
+      final urlStr = await _service.getReporteViajeHistoricoPdfUrl(viaje.id);
+      final url = Uri.parse(urlStr);
+      if (!await launchUrl(url)) {
+        throw Exception('No se pudo abrir el Reporte de Viaje PDF');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      CompactSnackBar.showError(context, 'Error al abrir Reporte de Viaje: $e');
+    }
+  }
+
   Widget _buildDetalleViaje(CamionViaje viaje) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(14),
@@ -606,8 +685,11 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header del viaje
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               Text(
                 'Detalle: ${viaje.codigo}',
@@ -617,7 +699,36 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                   color: Color(0xFF0F172A),
                 ),
               ),
-              _buildEstadoChip(viaje.estado),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => _imprimirReporteViaje(viaje),
+                    icon: const Icon(Icons.summarize, size: 12),
+                    label: const Text(
+                      'Reporte PDF',
+                      style: TextStyle(fontSize: 10.5),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF1F5F9),
+                      foregroundColor: const Color(0xFF1E293B),
+                      elevation: 0,
+                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+                  _buildEstadoChip(viaje.estado),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -635,7 +746,11 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.person, size: 14, color: Color(0xFF2563EB)),
+                    const Icon(
+                      Icons.person,
+                      size: 14,
+                      color: Color(0xFF2563EB),
+                    ),
                     const SizedBox(width: 6),
                     const Text(
                       'Chofer que entregó: ',
@@ -661,7 +776,11 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.local_shipping, size: 14, color: Color(0xFF0284C7)),
+                    const Icon(
+                      Icons.local_shipping,
+                      size: 14,
+                      color: Color(0xFF0284C7),
+                    ),
                     const SizedBox(width: 6),
                     const Text(
                       'Vehículo de transporte: ',
@@ -673,7 +792,8 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                     ),
                     Expanded(
                       child: Text(
-                        viaje.vehiculoDescripcion ?? (viaje.vehiculoCorto ?? 'Sin vehículo registrado'),
+                        viaje.vehiculoDescripcion ??
+                            (viaje.vehiculoCorto ?? 'Sin vehículo registrado'),
                         style: const TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.bold,
@@ -684,16 +804,28 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
                     ),
                   ],
                 ),
-                if (viaje.cerradoPorNombre != null || viaje.fechaCierre != null) ...[
+                if (viaje.cerradoPorNombre != null ||
+                    viaje.fechaCierre != null) ...[
                   const SizedBox(height: 6),
                   const Divider(height: 8, color: Color(0xFFE2E8F0)),
                   Row(
                     children: [
-                      const Icon(Icons.verified_outlined, size: 13, color: Color(0xFF64748B)),
+                      const Icon(
+                        Icons.verified_outlined,
+                        size: 13,
+                        color: Color(0xFF64748B),
+                      ),
                       const SizedBox(width: 5),
-                      Text(
-                        'Cerrado por: ${viaje.cerradoPorNombre ?? "Sistema"}${viaje.fechaCierre != null ? " · ${_dateFmt.format(viaje.fechaCierre!)}" : ""}',
-                        style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                      Expanded(
+                        child: Text(
+                          'Cerrado por: ${viaje.cerradoPorNombre ?? "Sistema"}${viaje.fechaCierre != null ? " · ${_dateFmt.format(viaje.fechaCierre!)}" : ""}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Color(0xFF64748B),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
                     ],
                   ),
@@ -732,7 +864,11 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
           // Desglose de Gastos
           Row(
             children: [
-              const Icon(Icons.receipt_long, size: 14, color: Color(0xFFDC2626)),
+              const Icon(
+                Icons.receipt_long,
+                size: 14,
+                color: Color(0xFFDC2626),
+              ),
               const SizedBox(width: 4),
               Text(
                 'Gastos Operativos (${viaje.gastos.length})',
@@ -751,57 +887,63 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
               style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
             )
           else
-            ...viaje.gastos.map((g) => Container(
-                  margin: const EdgeInsets.only(bottom: 4),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF1F2),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: const Color(0xFFFECDD3)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+            ...viaje.gastos.map(
+              (g) => Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF1F2),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: const Color(0xFFFECDD3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${g.tipoGasto.toUpperCase()} · ${g.concepto}',
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF9F1239),
+                            ),
+                          ),
+                          if (g.comprobante != null)
                             Text(
-                              '${g.tipoGasto.toUpperCase()} · ${g.concepto}',
+                              'NCF: ${g.comprobante}',
                               style: const TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF9F1239),
+                                fontSize: 9.5,
+                                color: Color(0xFFBE123C),
                               ),
                             ),
-                            if (g.comprobante != null)
-                              Text(
-                                'NCF: ${g.comprobante}',
-                                style: const TextStyle(
-                                    fontSize: 9.5, color: Color(0xFFBE123C)),
-                              ),
-                          ],
-                        ),
+                        ],
                       ),
-                      Text(
-                        _currencyFmt.format(g.montoTotal),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFBE123C),
-                        ),
+                    ),
+                    Text(
+                      Formatters.formatCurrency(g.montoTotal),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFBE123C),
                       ),
-                    ],
-                  ),
-                )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           const SizedBox(height: 12),
 
           // Desglose de Pedidos Entregados
           Row(
             children: [
-              const Icon(Icons.inventory_2_outlined,
-                  size: 14, color: Color(0xFF2563EB)),
+              const Icon(
+                Icons.inventory_2_outlined,
+                size: 14,
+                color: Color(0xFF2563EB),
+              ),
               const SizedBox(width: 4),
               Text(
                 'Facturas y Entregas (${viaje.pedidos.length})',
@@ -820,70 +962,75 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
               style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
             )
           else
-            ...viaje.pedidos.map((p) => Container(
-                  margin: const EdgeInsets.only(bottom: 4),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE2E8F0),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: Text(
-                          '#${p.ordenViaje}',
-                          style: const TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
+            ...viaje.pedidos.map(
+              (p) => Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1.5,
                       ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p.clienteNombre ?? 'Cliente',
-                              style: const TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0F172A),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (p.numFactura != null)
-                              Text(
-                                'Fact: ${p.numFactura}',
-                                style: const TextStyle(
-                                    fontSize: 9.5, color: Color(0xFF64748B)),
-                              ),
-                          ],
-                        ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(3),
                       ),
-                      Text(
-                        _currencyFmt.format(p.totalPedido),
+                      child: Text(
+                        '#${p.ordenViaje}',
                         style: const TextStyle(
-                          fontSize: 10.5,
+                          fontSize: 9.5,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
+                          color: Color(0xFF334155),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      _buildEntregaStatusBadge(p.estadoEntrega),
-                    ],
-                  ),
-                )),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            p.clienteNombre ?? 'Cliente',
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (p.numFactura != null)
+                            Text(
+                              'Fact: ${p.numFactura}',
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      Formatters.formatCurrency(p.totalPedido),
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildEntregaStatusBadge(p.estadoEntrega),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -924,11 +1071,7 @@ class _HistorialViajesModalState extends State<HistorialViajesModal> {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: fg,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(color: fg, fontSize: 10, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -994,7 +1137,9 @@ class _MetricBadge extends StatelessWidget {
                   Text(
                     label,
                     style: const TextStyle(
-                        fontSize: 9.5, color: Color(0xFF64748B)),
+                      fontSize: 9.5,
+                      color: Color(0xFF64748B),
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

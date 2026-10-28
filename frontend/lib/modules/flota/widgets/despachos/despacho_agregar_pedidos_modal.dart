@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/utils/formatters.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/widgets/compact_snack_bar.dart';
 import '../../../camion_victual/models/camion_victual.dart';
@@ -18,10 +18,6 @@ class DespachoAgregarPedidosModal extends StatefulWidget {
 class _DespachoAgregarPedidosModalState
     extends State<DespachoAgregarPedidosModal> {
   final TextEditingController _searchCtrl = TextEditingController();
-  final NumberFormat _currencyFmt = NumberFormat.currency(
-    symbol: '\$',
-    decimalDigits: 2,
-  );
   int? _addingPedidoId;
 
   @override
@@ -353,7 +349,7 @@ class _DespachoAgregarPedidosModalState
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  _currencyFmt.format(pedido.total),
+                                  Formatters.formatCurrency(pedido.total),
                                   style: const TextStyle(
                                     color: Color(0xFF16A34A),
                                     fontWeight: FontWeight.bold,

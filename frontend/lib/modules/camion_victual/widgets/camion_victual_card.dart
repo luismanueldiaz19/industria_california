@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/utils/formatters.dart';
 import '../models/camion_victual.dart';
 
 /// Tarjeta visual compacta y detallada de un camión victual — Estilo combinado Despacho/Vendedor.
@@ -57,7 +57,6 @@ class CamionVictualCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
     final estadoColor = _getEstadoColor(camion.estado);
     final tieneChofer =
         camion.choferNombre != null && camion.choferNombre!.trim().isNotEmpty;
@@ -284,7 +283,7 @@ class CamionVictualCard extends StatelessWidget {
                         if (!isCompletado && actualMinimo > 0) ...[
                           const SizedBox(width: 6),
                           Text(
-                            '• Falta ${currencyFmt.format(falta)}',
+                            '• Falta ${Formatters.formatCurrency(falta)}',
                             style: const TextStyle(
                               color: Color(0xFFD97706),
                               fontSize: 9,
@@ -295,7 +294,7 @@ class CamionVictualCard extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      currencyFmt.format(camion.montoTotal),
+                      Formatters.formatCurrency(camion.montoTotal),
                       style: const TextStyle(
                         color: Color(0xFF16A34A),
                         fontSize: 12.5,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../camion_victual/models/camion_victual.dart';
 
 class DespachoCamionCard extends StatelessWidget {
@@ -50,7 +50,6 @@ class DespachoCamionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFmt = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
     final estadoColor = _getEstadoColor(camion.estado);
     final tieneChofer = camion.choferNombre != null && camion.choferNombre!.isNotEmpty;
     final double progreso = camion.minimoSalida > 0
@@ -222,7 +221,7 @@ class DespachoCamionCard extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  currencyFmt.format(camion.montoTotal),
+                  Formatters.formatCurrency(camion.montoTotal),
                   style: const TextStyle(
                     color: Color(0xFF16A34A),
                     fontSize: 12,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/formatters.dart';
 import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import '../../models/vehiculo_mantenimiento.dart';
 import '../../services/vehiculo_service.dart';
@@ -72,7 +73,7 @@ class _VehiculoMantenimientosTabState extends State<VehiculoMantenimientosTab> {
       if (_searchController.text.isNotEmpty) {
         final query = _searchController.text.toLowerCase();
         passSearch =
-            (mant.descripcion?.toLowerCase().contains(query) ?? false) ||
+            mant.descripcion.toLowerCase().contains(query) ||
             (mant.estado.toLowerCase().contains(query)) ||
             (mant.tipo.toLowerCase().contains(query));
       }
@@ -148,7 +149,6 @@ class _VehiculoMantenimientosTabState extends State<VehiculoMantenimientosTab> {
 
   @override
   Widget build(BuildContext context) {
-    final curFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton(
@@ -322,7 +322,7 @@ class _VehiculoMantenimientosTabState extends State<VehiculoMantenimientosTab> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  curFormat.format(mant.costo),
+                                  Formatters.formatCurrency(mant.costo),
                                   style: const TextStyle(
                                     color: Colors.greenAccent,
                                     fontWeight: FontWeight.bold,

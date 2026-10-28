@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/formatters.dart';
 import 'package:industria_california/core/widgets/compact_snack_bar.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../models/camion_victual.dart';
 import '../providers/camion_victual_provider.dart';
 
@@ -23,10 +23,6 @@ class AgregarPedidoSheet extends StatefulWidget {
 
 class _AgregarPedidoSheetState extends State<AgregarPedidoSheet> {
   final _searchCtrl = TextEditingController();
-  final NumberFormat _currencyFmt = NumberFormat.currency(
-    symbol: '\$',
-    decimalDigits: 2,
-  );
   int? _addingPedidoId;
 
   CamionVictual? get _camion {
@@ -434,7 +430,7 @@ class _AgregarPedidoSheetState extends State<AgregarPedidoSheet> {
                                     ),
                                   ),
                                   Text(
-                                    _currencyFmt.format(pedido.total),
+                                    Formatters.formatCurrency(pedido.total),
                                     style: const TextStyle(
                                       color: Color(0xFF16A34A),
                                       fontWeight: FontWeight.bold,

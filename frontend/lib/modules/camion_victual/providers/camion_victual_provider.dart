@@ -26,6 +26,14 @@ class CamionVictualProvider extends ChangeNotifier {
     return await _service.getConducePdfUrl(id);
   }
 
+  Future<String> getReporteViajePdfUrl(int id) async {
+    return await _service.getReporteViajePdfUrl(id);
+  }
+
+  Future<String> getReporteViajeHistoricoPdfUrl(int viajeId) async {
+    return await _service.getReporteViajeHistoricoPdfUrl(viajeId);
+  }
+
   /// Carga los camiones activos y el monto mínimo configurado.
   Future<void> fetchCamiones() async {
     _isLoading = true;

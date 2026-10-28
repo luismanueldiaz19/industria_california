@@ -244,15 +244,18 @@ class CamionVictualController extends Controller
     }
 
     /**
-     * Guarda datos preliminares del viaje (gastos, ayudantes, notas)
-     * SIN cerrar el viaje ni liberar el camión.
+     * Guarda datos preliminares del viaje (gastos, ayudantes, notas, vehículo, chofer)
+     * SIN cerrar el viaje ni liberar el camión. Permite dejar el camión en 'listo'.
      */
     public function guardarDatosViaje(Request $request, CamionVictual $camionVictual): JsonResponse
     {
         $datos = $request->validate([
+            'vehiculo_id'          => 'nullable|integer|exists:vehiculos,id',
+            'chofer_id'            => 'nullable|integer|exists:choferes,id',
             'cant_ayudantes'       => 'nullable|integer|min:0',
             'nombres_ayudantes'    => 'nullable|string|max:500',
             'comentarios'          => 'nullable|string|max:1000',
+            'dejar_listo'          => 'nullable|boolean',
             'gastos'               => 'nullable|array',
             'gastos.*.tipo_gasto'  => 'required|string',
             'gastos.*.concepto'    => 'nullable|string|max:255',
@@ -407,7 +410,41 @@ class CamionVictualController extends Controller
      */
     public function getConducePdfUrl($id)
     {
+        $camion = CamionVictual::find($id);
+        if (!$camion) {
+            return response()->json(['message' => 'Camión no encontrado.'], 404);
+        }
+        if ($camion->pedidos()->count() === 0) {
+            return response()->json(['message' => 'El camión no tiene pedidos asignados para generar el conduce.'], 422);
+        }
+
         $url = PdfSecurityService::generarUrl('camion_conduce', ['id' => $id], Auth::id(), 30);
+        return response()->json(['url' => $url]);
+    }
+
+    /**
+     * Generar URL para PDF del reporte gerencial de viaje del camión.
+     */
+    public function getReporteViajePdfUrl($id)
+    {
+        $camion = CamionVictual::find($id);
+        if (!$camion) {
+            return response()->json(['message' => 'Camión no encontrado.'], 404);
+        }
+        if ($camion->pedidos()->count() === 0 && !$camion->viajeActivo) {
+            return response()->json(['message' => 'El camión no tiene pedidos ni datos de viaje para generar el reporte.'], 422);
+        }
+
+        $url = PdfSecurityService::generarUrl('camion_reporte_viaje', ['id' => $id], Auth::id(), 30);
+        return response()->json(['url' => $url]);
+    }
+
+    /**
+     * Generar URL para PDF del reporte de viaje histórico.
+     */
+    public function getReporteViajeHistoricoPdfUrl($viajeId)
+    {
+        $url = PdfSecurityService::generarUrl('camion_reporte_viaje', ['viaje_id' => $viajeId], Auth::id(), 30);
         return response()->json(['url' => $url]);
     }
 }

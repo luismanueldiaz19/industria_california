@@ -64,7 +64,10 @@ class VehiculoService {
     if (estado != null && estado != 'Todos') params['estado'] = estado;
     if (year != null && year != 'Todos') params['year'] = year;
 
-    final response = await _http.get('$_base/$vehiculoId/mantenimientos-paginated', params: params);
+    final response = await _http.get(
+      '$_base/$vehiculoId/mantenimientos-paginated',
+      params: params,
+    );
     return response as Map<String, dynamic>;
   }
 
@@ -125,9 +128,7 @@ class VehiculoService {
     return data.map((json) => VehiculoGasto.fromJson(json)).toList();
   }
 
-  Future<String> getGastosPdfUrl(
-    Map<String, dynamic> queryParams,
-  ) async {
+  Future<String> getGastosPdfUrl(Map<String, dynamic> queryParams) async {
     final Map<String, String> stringParams = {};
     queryParams.forEach((key, value) {
       if (value != null) {
@@ -177,10 +178,7 @@ class VehiculoService {
     if (vehiculoId != null) {
       payload['vehiculo_id'] = vehiculoId;
     }
-    final response = await _http.patch(
-      '$_base/gastos/$gastoId',
-      payload,
-    );
+    final response = await _http.patch('$_base/gastos/$gastoId', payload);
     return VehiculoGasto.fromJson(response);
   }
 
@@ -201,7 +199,9 @@ class VehiculoService {
   }
 
   Future<TipoGasto> updateTipoGasto(int id, String nombre) async {
-    final response = await _http.put('$_base/tipo-gastos/$id', {'nombre': nombre});
+    final response = await _http.put('$_base/tipo-gastos/$id', {
+      'nombre': nombre,
+    });
     return TipoGasto.fromJson(response);
   }
 

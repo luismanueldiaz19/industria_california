@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../pedido/utils/pedido_utils.dart';
 import '../models/camion_victual.dart';
 
@@ -106,7 +106,6 @@ class PedidoEnCamionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
     final hasFactura =
         pedido.numFactura != null && pedido.numFactura!.trim().isNotEmpty;
     final estadoPedidoColor = PedidoUtils.getColorForEstado(
@@ -188,7 +187,7 @@ class PedidoEnCamionTile extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            fmt.format(pedido.total),
+                            Formatters.formatCurrency(pedido.total),
                             style: const TextStyle(
                               color: Color(0xFF16A34A),
                               fontWeight: FontWeight.bold,

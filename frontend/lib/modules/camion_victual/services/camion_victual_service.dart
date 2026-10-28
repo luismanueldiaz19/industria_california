@@ -10,6 +10,16 @@ class CamionVictualService {
     return response['url'] as String;
   }
 
+  Future<String> getReporteViajePdfUrl(int id) async {
+    final response = await _http.getV2('$_base/$id/reporte-viaje-pdf-url');
+    return response['url'] as String;
+  }
+
+  Future<String> getReporteViajeHistoricoPdfUrl(int viajeId) async {
+    final response = await _http.getV2('$_base/viajes/$viajeId/pdf-url');
+    return response['url'] as String;
+  }
+
   /// Obtiene todos los camiones victuales activos (armando, listo, en_ruta).
   /// El vendedor solo ve los que tiene asignados; el backend ya filtra por rol.
   Future<List<CamionVictual>> getCamiones({
@@ -19,7 +29,7 @@ class CamionVictualService {
   }) async {
     final params = {
       if (choferID != null) 'chofer_id': choferID.toString(),
-      if (estado != null) 'estado': estado,
+      'estado': ?estado,
       if (withPedidos) 'with_pedidos': '1',
     };
     final response = await _http.getV2(_base, params: params);
@@ -124,7 +134,7 @@ class CamionVictualService {
     final body = <String, dynamic>{
       'vehiculo_id': vehiculoId,
       'chofer_id': choferId,
-      if (cantAyudantes != null) 'cant_ayudantes': cantAyudantes,
+      'cant_ayudantes': ?cantAyudantes,
       if (nombresAyudantes != null && nombresAyudantes.trim().isNotEmpty)
         'nombres_ayudantes': nombresAyudantes.trim(),
       if (comentarios != null && comentarios.trim().isNotEmpty)
@@ -180,8 +190,8 @@ class CamionVictualService {
       if (choferId != null) 'chofer_id': choferId.toString(),
       if (vehiculoId != null) 'vehiculo_id': vehiculoId.toString(),
       if (estado != null && estado.isNotEmpty) 'estado': estado,
-      if (fechaInicio != null) 'fecha_inicio': fechaInicio,
-      if (fechaFin != null) 'fecha_fin': fechaFin,
+      'fecha_inicio': ?fechaInicio,
+      'fecha_fin': ?fechaFin,
       if (page != null) 'page': page.toString(),
       if (perPage != null) 'per_page': perPage.toString(),
     };

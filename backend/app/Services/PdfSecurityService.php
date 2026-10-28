@@ -548,6 +548,69 @@ class PdfSecurityService
                 $filename = "Conduce_Camion_{$camion->id}_" . date('Ymd_His') . ".pdf";
                 break;
 
+            case 'camion_reporte_viaje':
+                $viajeId = $params['viaje_id'] ?? null;
+                $camionId = $params['id'] ?? null;
+
+                if ($viajeId) {
+                    $viaje = \App\Modules\CamionVictual\Models\CamionViaje::with([
+                        'chofer.user:id,name',
+                        'vendedor:id,name',
+                        'vehiculo',
+                        'camionVictual',
+                        'gastos',
+                        'pedidos.pedido.cliente:id,nombre,direccion,documento',
+                    ])->find($viajeId);
+
+                    if (!$viaje) {
+                        abort(404, 'Viaje histórico no encontrado.');
+                    }
+
+                    $camion = $viaje->camionVictual ?? new \App\Modules\CamionVictual\Models\CamionVictual([
+                        'nombre' => 'Unidad ' . $viaje->codigo,
+                        'slot_numero' => 1,
+                        'estado' => $viaje->estado?->value ?? 'completado',
+                        'monto_total' => $viaje->total_facturado,
+                    ]);
+
+                    $pdf = Pdf::loadView('pdf.camion_reporte_viaje', [
+                        'camion' => $camion,
+                        'viaje'  => $viaje,
+                    ]);
+                    $filename = "Reporte_Viaje_{$viaje->codigo}_" . date('Ymd_His') . ".pdf";
+                    break;
+                }
+
+                if (!$camionId) {
+                    abort(404, 'ID de camión no especificado.');
+                }
+
+                $camion = CamionVictual::with([
+                    'chofer.user:id,name',
+                    'vendedor:id,name',
+                    'vehiculo',
+                    'viajeActivo.gastos',
+                    'viajeActivo.chofer.user',
+                    'viajeActivo.vehiculo',
+                    'pedidos' => function ($q) {
+                        $q->with([
+                            'cliente:id,nombre,direccion,documento',
+                            'detalles.producto',
+                        ])->orderByPivot('orden_viaje', 'asc');
+                    },
+                ])->find($camionId);
+
+                if (!$camion) {
+                    abort(404, 'Camión no encontrado.');
+                }
+
+                $pdf = Pdf::loadView('pdf.camion_reporte_viaje', [
+                    'camion' => $camion,
+                    'viaje'  => $camion->viajeActivo,
+                ]);
+                $filename = "Reporte_Viaje_Camion_{$camion->id}_" . date('Ymd_His') . ".pdf";
+                break;
+
             default:
                 abort(404, 'Tipo de documento no soportado.');
         }
