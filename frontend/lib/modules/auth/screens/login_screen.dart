@@ -494,7 +494,7 @@ class _LoginScreenState extends State<LoginScreen>
                 height: 40,
               ),
               // Comentar esto en producción para ocultar los botones de prueba
-              _buildQuickLoginRoles(),
+              // _buildQuickLoginRoles(),
             ],
           ),
         ),
