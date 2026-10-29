@@ -18,7 +18,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolesAndPermissionsSeeder::class,
-            ClienteMasivoSeeder::class
+            ClienteMasivoSeeder::class,
+            NominaConceptosSeeder::class,
+            NominaEscalasIsrSeeder::class,
         ]);
 
         // Crear usuario admin por defecto si no existe
