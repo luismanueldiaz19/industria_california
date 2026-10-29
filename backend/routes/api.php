@@ -101,7 +101,8 @@ Route::prefix('v1')->group(function () {
 
         // ── MÓDULO INDUSTRIA CALIFORNIA ───────────────────────
         foreach (['industria-california', 'ledhouse'] as $prefix) {
-            Route::prefix($prefix)->group(function () use ($prefix) {
+            $routePrefix = str_replace('-', '_', $prefix);
+            Route::prefix($prefix)->as("{$routePrefix}.")->group(function () use ($prefix, $routePrefix) {
                 Route::get('/estado-resultado/matriz', [LedhouseEstadoResultadoController::class, 'matriz']);
                 Route::get('/estado-resultado/matriz-pdf-url', [LedhouseEstadoResultadoController::class, 'getMatrizPdfUrl']);
                 Route::get('/estado-resultado/pdf-url', [LedhouseEstadoResultadoController::class, 'getEstadoResultadoPdfUrl']);
@@ -256,7 +257,7 @@ Route::prefix('v1')->group(function () {
 // ═════════════════════════════════════════════════════════════
 // API V2 (Módulos Limpios - Sin nombres de compañía)
 // ═════════════════════════════════════════════════════════════
-Route::prefix('v2')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v2')->as('v2.')->middleware('auth:sanctum')->group(function () {
     require base_path('app/Modules/Cliente/routes/api.php');
     require base_path('app/Modules/CuentasPorCobrar/routes/api.php');
     require base_path('app/Modules/Alerta/routes/api.php');
