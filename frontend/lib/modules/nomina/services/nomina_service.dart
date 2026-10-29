@@ -54,6 +54,16 @@ class NominaService {
     await _http.deleteV2('nominas/$id');
   }
 
+  Future<Nomina> agregarConceptoDetalle(int nominaId, int detalleId, Map<String, dynamic> data) async {
+    final response = await _http.postV2('nominas/$nominaId/detalles/$detalleId/conceptos', data);
+    return Nomina.fromJson(response);
+  }
+
+  Future<Nomina> eliminarConceptoDetalle(int nominaId, int detalleId, int conceptoId) async {
+    final response = await _http.deleteV2('nominas/$nominaId/detalles/$detalleId/conceptos/$conceptoId');
+    return Nomina.fromJson(response);
+  }
+
   Future<String> getTokenReporteUrl({
     required String tipo,
     int? nominaId,

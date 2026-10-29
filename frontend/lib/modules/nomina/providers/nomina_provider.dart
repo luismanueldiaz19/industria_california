@@ -145,6 +145,28 @@ class NominaProvider extends ChangeNotifier {
     await loadNominas();
   }
 
+  Future<NominaDetalle?> agregarConceptoDetalle(int nominaId, int detalleId, Map<String, dynamic> data) async {
+    _nominaSeleccionada = await _service.agregarConceptoDetalle(nominaId, detalleId, data);
+    await loadNominas();
+    notifyListeners();
+    try {
+      return _nominaSeleccionada?.detalles.firstWhere((d) => d.id == detalleId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<NominaDetalle?> eliminarConceptoDetalle(int nominaId, int detalleId, int conceptoId) async {
+    _nominaSeleccionada = await _service.eliminarConceptoDetalle(nominaId, detalleId, conceptoId);
+    await loadNominas();
+    notifyListeners();
+    try {
+      return _nominaSeleccionada?.detalles.firstWhere((d) => d.id == detalleId);
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ── CONCEPTOS ─────────────────────────────────────────────
   Future<void> loadConceptos() async {
     try {

@@ -228,6 +228,108 @@ class NominaService
     }
 
     /**
+     * Agregar una novedad o concepto manual (horas extras, feriados, comisiones, bonos) a un colaborador.
+     */
+    public function agregarConceptoDetalle(Nomina $nomina, NominaDetalle $detalle, array $datos): Nomina
+    {
+        return DB::transaction(function () use ($nomina, $detalle, $datos) {
+            $nomina = Nomina::where('id', $nomina->id)->lockForUpdate()->firstOrFail();
+
+            if (!in_array($nomina->estado, [EstadoNomina::Borrador, EstadoNomina::Calculada])) {
+                throw new \DomainException('Solo se pueden agregar novedades a nóminas en borrador o calculadas.');
+            }
+
+            $concepto = NominaConcepto::findOrFail($datos['concepto_id']);
+            $monto = round((float)$datos['monto'], 2);
+            if ($monto <= 0) {
+                throw new \DomainException('El monto debe ser superior a cero.');
+            }
+
+            NominaDetalleConcepto::create([
+                'nomina_detalle_id' => $detalle->id,
+                'concepto_id'       => $concepto->id,
+                'tipo'              => $concepto->tipo->value ?? ($concepto->tipo == 'ingreso' ? 'ingreso' : 'deduccion'),
+                'monto'             => $monto,
+                'cantidad'          => isset($datos['cantidad']) && (float)$datos['cantidad'] > 0 ? (float)$datos['cantidad'] : null,
+                'valor_unitario'    => isset($datos['valor_unitario']) ? (float)$datos['valor_unitario'] : null,
+                'notas'             => $datos['notas'] ?? null,
+            ]);
+
+            if (str_contains($concepto->codigo, 'HORAS_EXTRAS') && isset($datos['cantidad'])) {
+                $detalle->increment('horas_extras', (float)$datos['cantidad']);
+            }
+
+            $this->recalcularTotalesNomina($nomina);
+
+            return $nomina->fresh(['detalles.empleado', 'detalles.conceptos.concepto']);
+        });
+    }
+
+    /**
+     * Eliminar un concepto o novedad de un colaborador.
+     */
+    public function eliminarConceptoDetalle(Nomina $nomina, NominaDetalle $detalle, NominaDetalleConcepto $conceptoDetalle): Nomina
+    {
+        return DB::transaction(function () use ($nomina, $detalle, $conceptoDetalle) {
+            $nomina = Nomina::where('id', $nomina->id)->lockForUpdate()->firstOrFail();
+
+            if (!in_array($nomina->estado, [EstadoNomina::Borrador, EstadoNomina::Calculada])) {
+                throw new \DomainException('Solo se pueden modificar novedades en nóminas en borrador o calculadas.');
+            }
+
+            $concepto = NominaConcepto::find($conceptoDetalle->concepto_id);
+            if ($concepto && $concepto->codigo === 'SALARIO_ORDINARIO') {
+                throw new \DomainException('No se puede eliminar el salario ordinario base.');
+            }
+
+            if ($concepto && str_contains($concepto->codigo, 'HORAS_EXTRAS') && $conceptoDetalle->cantidad) {
+                $horasRestar = (float)$conceptoDetalle->cantidad;
+                $nuevoTotalHoras = max(0, (float)$detalle->horas_extras - $horasRestar);
+                $detalle->update(['horas_extras' => $nuevoTotalHoras]);
+            }
+
+            $conceptoDetalle->delete();
+
+            $this->recalcularTotalesNomina($nomina);
+
+            return $nomina->fresh(['detalles.empleado', 'detalles.conceptos.concepto']);
+        });
+    }
+
+    /**
+     * Recalcula los totales de cada detalle y de la nómina global.
+     */
+    public function recalcularTotalesNomina(Nomina $nomina): void
+    {
+        $detalles = NominaDetalle::where('nomina_id', $nomina->id)->with('conceptos')->get();
+        $totalNominaIngresos = 0;
+        $totalNominaDeducciones = 0;
+
+        foreach ($detalles as $det) {
+            $empIngresos = (float) $det->conceptos->filter(fn($c) => ($c->tipo->value ?? $c->tipo) === 'ingreso')->sum('monto');
+            $empDeducciones = (float) $det->conceptos->filter(fn($c) => ($c->tipo->value ?? $c->tipo) === 'deduccion')->sum('monto');
+            $netoPagar = round($empIngresos - $empDeducciones, 2);
+
+            $det->update([
+                'total_ingresos'    => $empIngresos,
+                'total_deducciones' => $empDeducciones,
+                'neto_pagar'        => $netoPagar,
+            ]);
+
+            $totalNominaIngresos += $empIngresos;
+            $totalNominaDeducciones += $empDeducciones;
+        }
+
+        $totalNeto = round($totalNominaIngresos - $totalNominaDeducciones, 2);
+
+        $nomina->update([
+            'total_ingresos'    => $totalNominaIngresos,
+            'total_deducciones' => $totalNominaDeducciones,
+            'total_neto'        => $totalNeto,
+        ]);
+    }
+
+    /**
      * Aprobar la nómina y aplicar el avance de cuotas a los préstamos/ahorros recurrentes.
      */
     public function aprobarNomina(Nomina $nomina, User $usuario): Nomina

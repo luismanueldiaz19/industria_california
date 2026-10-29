@@ -4,6 +4,8 @@ namespace App\Modules\Nomina\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Nomina\Models\Nomina;
+use App\Modules\Nomina\Models\NominaDetalle;
+use App\Modules\Nomina\Models\NominaDetalleConcepto;
 use App\Modules\Nomina\Services\NominaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -130,6 +132,34 @@ class NominaController extends Controller
 
         $nomina->delete();
         return response()->json(['message' => 'Nómina eliminada con éxito.']);
+    }
+
+    public function agregarConcepto(Request $request, Nomina $nomina, NominaDetalle $detalle): JsonResponse
+    {
+        $validated = $request->validate([
+            'concepto_id'    => 'required|exists:nomina_conceptos,id',
+            'monto'          => 'required|numeric|min:0.01',
+            'cantidad'       => 'nullable|numeric|min:0',
+            'valor_unitario' => 'nullable|numeric|min:0',
+            'notas'          => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $nominaActualizada = $this->service->agregarConceptoDetalle($nomina, $detalle, $validated);
+            return response()->json($nominaActualizada);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function eliminarConcepto(Nomina $nomina, NominaDetalle $detalle, NominaDetalleConcepto $concepto): JsonResponse
+    {
+        try {
+            $nominaActualizada = $this->service->eliminarConceptoDetalle($nomina, $detalle, $concepto);
+            return response()->json($nominaActualizada);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 }
 

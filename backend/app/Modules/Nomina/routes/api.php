@@ -47,6 +47,8 @@ Route::post('nominas/{nomina}/calcular', [NominaController::class, 'calcular']);
 Route::post('nominas/{nomina}/aprobar', [NominaController::class, 'aprobar']);
 Route::post('nominas/{nomina}/pagar', [NominaController::class, 'pagar']);
 Route::post('nominas/{nomina}/anular', [NominaController::class, 'anular']);
+Route::post('nominas/{nomina}/detalles/{detalle}/conceptos', [NominaController::class, 'agregarConcepto']);
+Route::delete('nominas/{nomina}/detalles/{detalle}/conceptos/{concepto}', [NominaController::class, 'eliminarConcepto']);
 
 // CRUD Base de Nóminas
 Route::apiResource('nominas', NominaController::class);
