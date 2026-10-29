@@ -47,6 +47,10 @@ import 'modules/flota/screens/gastos_estadisticas_screen.dart';
 import 'modules/flota/screens/camiones_victuales_admin_screen.dart';
 import 'modules/flota/screens/historial_viajes_screen.dart';
 import 'modules/flota/providers/chofer_provider.dart';
+import 'modules/empleado/providers/empleado_provider.dart';
+import 'modules/empleado/screens/empleados_screen.dart';
+import 'modules/nomina/providers/nomina_provider.dart';
+import 'modules/nomina/screens/nomina_screen.dart';
 import 'modules/flota/providers/vehiculo_provider.dart';
 import 'modules/flota/providers/despacho_provider.dart';
 import 'modules/flota/providers/mantenimiento_provider.dart';
@@ -105,6 +109,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => CamionVictualProvider()),
         // Usuarios y Roles
         ChangeNotifierProvider(create: (_) => RoleProvider()),
+        ChangeNotifierProvider(create: (_) => EmpleadoProvider()),
+        ChangeNotifierProvider(create: (_) => NominaProvider()),
         // Módulo Cheques Futuristas
         ChangeNotifierProvider(create: (_) => ChequeListProvider()),
         ChangeNotifierProvider(create: (_) => ChequeAdminProvider()),
@@ -226,6 +232,8 @@ class _MainLayoutState extends State<MainLayout> {
     const HistorialViajesScreen(), // 27 — Historial de Viajes y Liquidaciones
     const CxcCuarentenaScreen(), // 28 — Cuarentena CXC
     const ProductosPendientesEntregaScreen(), // 29 — Consulta Productos por Entregar
+    const EmpleadosScreen(), // 30 — Directorio de Empleados
+    const NominaScreen(), // 31 — Nómina y Retenciones
   ];
 
   @override

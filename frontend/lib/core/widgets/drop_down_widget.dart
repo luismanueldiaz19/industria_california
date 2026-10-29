@@ -13,6 +13,7 @@ class DropDownWidget<T> extends StatelessWidget {
   final String? Function(T?)? validator;
   final String? hint;
   final bool optional;
+  final bool isRequired;
   final bool isDark;
   final bool dense;
   final double? borderRadius;
@@ -33,6 +34,7 @@ class DropDownWidget<T> extends StatelessWidget {
     this.validator,
     this.hint,
     this.optional = false,
+    this.isRequired = false,
     this.isDark = false,
     this.dense = false,
     this.borderRadius,
@@ -94,6 +96,17 @@ class DropDownWidget<T> extends StatelessWidget {
                     color: effectiveLabelColor,
                   ),
             ),
+            if (isRequired) ...[
+              const SizedBox(width: 2),
+              const Text(
+                '*',
+                style: TextStyle(
+                  color: Color(0xFFDC2626),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
             if (optional) ...[
               const SizedBox(width: 6),
               Container(

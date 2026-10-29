@@ -64,6 +64,8 @@ class _CustomSidebarState extends State<CustomSidebar> {
     } else if (index == 18 || index == 19) {
       // 18: Gastos, 19: Estadísticas
       _expandedSection = '8. GASTOS';
+    } else if (index == 30 || index == 31) {
+      _expandedSection = '9. RECURSOS HUMANOS';
     }
     // if (widget.selectedIndex >= 38 && widget.selectedIndex <= 42) {
     //   _expandedSection = '9. CONFIGURACIÓN';
@@ -416,6 +418,26 @@ class _CustomSidebarState extends State<CustomSidebar> {
                                   Icons.bar_chart_outlined,
                                   Icons.bar_chart_rounded,
                                   'Estadísticas',
+                                  accentColor,
+                                ),
+                              ],
+                            ),
+                            _buildExpansionSection(
+                              '9. RECURSOS HUMANOS',
+                              Icons.badge_outlined,
+                              [
+                                _buildMenuItem(
+                                  30,
+                                  Icons.people_outline,
+                                  Icons.people,
+                                  'Empleados',
+                                  accentColor,
+                                ),
+                                _buildMenuItem(
+                                  31,
+                                  Icons.payments_outlined,
+                                  Icons.payments,
+                                  'Nómina',
                                   accentColor,
                                 ),
                               ],

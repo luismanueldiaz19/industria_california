@@ -12,6 +12,7 @@ class InputField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final String? Function(String?)? validator;
   final bool optional;
+  final bool isRequired;
   final bool readOnly;
   final VoidCallback? onTap;
   final ValueChanged<String>? onChanged;
@@ -39,6 +40,7 @@ class InputField extends StatelessWidget {
     this.inputFormatters,
     this.validator,
     this.optional = false,
+    this.isRequired = false,
     this.readOnly = false,
     this.onTap,
     this.onChanged,
@@ -85,6 +87,17 @@ class InputField extends StatelessWidget {
                     color: effectiveLabelColor,
                   ),
             ),
+            if (isRequired) ...[
+              const SizedBox(width: 2),
+              const Text(
+                '*',
+                style: TextStyle(
+                  color: Color(0xFFDC2626),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
             if (optional) ...[
               const SizedBox(width: 6),
               Container(

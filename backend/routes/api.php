@@ -200,6 +200,12 @@ Route::prefix('v1')->group(function () {
                 // ── MÓDULO CAMIONES VICTUALES ─────────────────────────
                 require base_path('app/Modules/CamionVictual/routes/api.php');
 
+                // ── MÓDULO EMPLEADOS ──────────────────────────────────
+                require base_path('app/Modules/Empleado/routes/api.php');
+
+                // ── MÓDULO NÓMINA ─────────────────────────────────────
+                require base_path('app/Modules/Nomina/routes/api.php');
+
                 // ── MÓDULO VEHÍCULOS ──────────────────────────────────────
                 Route::get('vehiculos/resumen', [VehiculoController::class, 'resumen']);
                 // Mantenimientos
@@ -257,7 +263,12 @@ Route::prefix('v2')->middleware('auth:sanctum')->group(function () {
     require base_path('app/Modules/Pedido/routes/api.php');
     require base_path('app/Modules/Produccion/routes/api.php');
     require base_path('app/Modules/CamionVictual/routes/api.php');
+    require base_path('app/Modules/Empleado/routes/api.php');
+    require base_path('app/Modules/Nomina/routes/api.php');
 });
+
+
+
 
 
 

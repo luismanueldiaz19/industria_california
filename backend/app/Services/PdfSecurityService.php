@@ -377,6 +377,11 @@ class PdfSecurityService
             case 'productos_pendientes_entrega':
                 return app(\App\Modules\Pedido\Services\PedidoPdfService::class)->renderizarPdf($pdfToken->tipo, $params);
 
+            case 'nomina_volantes':
+            case 'nomina_general':
+            case 'nomina_recurrentes':
+                return app(\App\Modules\Nomina\Services\NominaPdfService::class)->renderizarPdf($pdfToken->tipo, $params);
+
             case 'mantenimientos_flota':
                 $query = VehiculoMantenimiento::with(['vehiculo:id,ficha,placa', 'reportador:id,name']);
 

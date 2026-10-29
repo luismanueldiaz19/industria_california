@@ -13,4 +13,6 @@ return [
     App\Modules\Cliente\Providers\ClienteServiceProvider::class,
     App\Modules\CuentasPorCobrar\Providers\CuentasPorCobrarServiceProvider::class,
     App\Modules\Alerta\Providers\AlertaServiceProvider::class,
+    App\Modules\Empleado\Providers\EmpleadoServiceProvider::class,
+    App\Modules\Nomina\Providers\NominaServiceProvider::class,
 ];
