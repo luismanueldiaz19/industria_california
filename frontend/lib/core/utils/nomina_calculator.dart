@@ -5,8 +5,42 @@
 /// cambios tributarios o reformas de la DGII / TSS NO requieran recompilar la aplicación.
 class NominaCalculator {
   // Constantes de Ley por defecto (Fallback legal vigente)
+  static const double factorDiasLaboralesMes = 23.83; // Art. 85 Código de Trabajo RD
+  static const double horasJornadaDiaria = 8.0;      // Art. 72 Jornada Diurna RD
   static const double tasaAfpDefault = 0.0287; // 2.87% AFP
   static const double tasaArsDefault = 0.0304; // 3.04% ARS (SFS)
+
+  /// Calcula el salario diario promedio oficial según el Art. 85 (Salario / 23.83)
+  static double calcularSalarioDiario(double salarioMensual) {
+    if (salarioMensual <= 0) return 0.0;
+    return double.parse((salarioMensual / factorDiasLaboralesMes).toStringAsFixed(2));
+  }
+
+  /// Calcula el valor de la hora ordinaria diurna oficial (Salario Diario / 8)
+  static double calcularValorHora(double salarioMensual) {
+    if (salarioMensual <= 0) return 0.0;
+    return double.parse((calcularSalarioDiario(salarioMensual) / horasJornadaDiaria).toStringAsFixed(2));
+  }
+
+  /// Calcula el valor de la hora en jornada nocturna ordinaria con recargo legal del 15% (Art. 204)
+  static double calcularHoraNocturna(double salarioMensual) {
+    return double.parse((calcularValorHora(salarioMensual) * 1.15).toStringAsFixed(2));
+  }
+
+  /// Calcula el valor de la hora extra diurna con recargo del 35% (Art. 203)
+  static double calcularHoraExtra35(double salarioMensual) {
+    return double.parse((calcularValorHora(salarioMensual) * 1.35).toStringAsFixed(2));
+  }
+
+  /// Calcula el valor de la hora extra en jornada nocturna con recargo compuesto (Art. 204 y 206)
+  static double calcularHoraExtraNocturna(double salarioMensual) {
+    return double.parse((calcularHoraNocturna(salarioMensual) * 1.35).toStringAsFixed(2));
+  }
+
+  /// Calcula el valor de la hora en día feriado o descanso con recargo del 100% (Art. 205)
+  static double calcularHoraExtra100(double salarioMensual) {
+    return double.parse((calcularValorHora(salarioMensual) * 2.00).toStringAsFixed(2));
+  }
 
   // Configuración dinámica sincronizada en caliente
   static List<TramoIsrModel>? _tramosDinamicos;
